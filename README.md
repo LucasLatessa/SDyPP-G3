@@ -1,2 +1,2 @@
 # SDyPP
-Grupo de trabajos practicos Sistemas Distribuidos y Programacion Paralela (UNLU 2024)
+Repositorio que aloja trabajos practicos del grupo #3 - Sistemas Distribuidos y Programacion Paralela (41409) - UNLU 2024
