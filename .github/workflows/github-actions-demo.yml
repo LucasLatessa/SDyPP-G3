@@ -1,0 +1,9 @@
+name: GitHub Actions Demo
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on: [push]
+jobs:
+  testeo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Comands
+        run: echo "🎉Hola desde SD usando la rama ${{ github.repository }} en el repositorio ${{ github.ret }} "
