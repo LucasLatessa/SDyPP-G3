@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Update package list
 sudo apt update
 
@@ -13,11 +12,11 @@ sudo apt install -y mvn
 java --version
 nodejs --version
 
-#sudo apt install nginx -y
-#sudo systemctl enable nginx
-#sudo systemctl start nginx
+sudo apt install nginx -y
+sudo systemctl enable nginx
+sudo systemctl start nginx
 
-#sudo systemctl status nginx
+sudo systemctl status nginx
 
 sudo touch prueba.js
 sudo chmod 777 prueba.js
@@ -29,3 +28,5 @@ http.createServer(function (req, res) {
   res.end('Hello World!');
 }).listen(8080);"  >> prueba.js
 sudo node prueba.js
+
+
