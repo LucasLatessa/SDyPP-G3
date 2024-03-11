@@ -22,17 +22,10 @@ nodejs --version
 sudo touch prueba.js
 sudo chmod 777 prueba.js
 
-sudo echo "http = require('node:http');
-listener = function (request, response) {
-   // Send the HTTP header 
-   // HTTP Status: 200 : OK
-   // Content Type: text/html
-   response.writeHead(200, {'Content-Type': 'text/html'});
+sudo echo "var http = require('http');
 
-   // Send the response body as "Hello World"
-   response.end('<h2 style="text-align: center;">Hello World</h2>');
-};
-
-server = http.createServer(listener);
-server.listen(3000);"  >> prueba.js
+http.createServer(function (req, res) {
+  res.writeHead(200, {'Content-Type': 'text/html'});
+  res.end('Hello World!');
+}).listen(8080);"  >> prueba.js
 sudo node prueba.js
