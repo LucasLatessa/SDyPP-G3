@@ -1,23 +1,24 @@
 #!/bin/bash
-# Update package list
+# Actualizacion de los paquetes
 sudo apt update
 
-# Install Node.js 18.x
+# Instalacion Node.js 18.x
 sudo apt install -y nodejs
 
 
-# Install OpenJDK
+# Instalacion OpenJDK
 sudo apt install -y openjdk-18-jdk
 sudo apt install -y mvn
 java --version
 nodejs --version
 
+# Instalacion Nginx y poner el marcha el servidor web
 sudo apt install nginx -y
 sudo systemctl enable nginx
 sudo systemctl start nginx
-
 sudo systemctl status nginx
 
+# Creacion de la app node (basica)
 sudo touch prueba.js
 sudo chmod 777 prueba.js
 
