@@ -22,6 +22,16 @@ sudo systemctl status nginx
 sudo touch prueba.js
 sudo chmod 777 prueba.js
 
+#Clono el repo
+sudo git clone --branch josue https://github.com/LucasLatessa/SDyPP-G3.git
+sudo apt-get install python3
+sudo apt install python3-pip -y
+sudo pip install django
+sudo pip install djangorestframework
+
+cd /SDyPP-G3/scripts/Django\ Rest\ Framework/
+sudo python3 manage.py runserver 0.0.0.0:8000
+
 sudo echo "var http = require('http');
 
 http.createServer(function (req, res) {
@@ -30,13 +40,5 @@ http.createServer(function (req, res) {
 }).listen(8080);"  >> prueba.js
 sudo node prueba.js
 
-#Clono el repo
-sudo git clone --branch josue https://github.com/LucasLatessa/SDyPP-G3.git
-sudo apt-get install python3
-sudo apt install python3-pip -y
-sudo pip install django
-sudo pip install djangorestframework
 
-cd SDyPP-G3/scripts/Django\ Rest\ Framework/
-sudo python3 manage.py runserver 0.0.0.0:8000
 
