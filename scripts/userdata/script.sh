@@ -30,4 +30,12 @@ http.createServer(function (req, res) {
 }).listen(8080);"  >> prueba.js
 sudo node prueba.js
 
+#Clono el repo
+sudo git clone
+sudo apt-get install python3
+sudo apt install python3-pip
+sudo pip install django
+sudo pip install djangorestframework
 
+cd Sdypp-2024/scripts/"Django Rest Framework"
+sudo manage.py runserver 0.0.0.0:3000
