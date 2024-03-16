@@ -22,7 +22,7 @@ gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example
 # gcloud compute instances delete vm1 --zone=us-east1-b
 
 # Comando para apagar la maquina
-#gcloud compute instances stop mv1 --zone=us-east1-b
+# gcloud compute instances stop vm1 --zone=us-east1-b
 
 # Comando para prender la maquina
 # gcloud compute instances start vm1 --zone=us-east1-b
