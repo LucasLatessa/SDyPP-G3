@@ -12,6 +12,7 @@ sudo apt update
 # java --version
 # nodejs --version
 
+<<<<<<< Updated upstream
 #Instalacion docker
 sudo apt install -y \
     apt-transport-https \
@@ -33,6 +34,13 @@ docker login
 docker pull lucaslatessa/prueba3
 docker run --name prueba --rm -p 8080:8080 lucaslatessa/prueba3
 
+=======
+sudo apt install nginx -y
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+sudo systemctl status nginx
+>>>>>>> Stashed changes
 
 
 # # Instalacion Nginx y poner el marcha el servidor web
