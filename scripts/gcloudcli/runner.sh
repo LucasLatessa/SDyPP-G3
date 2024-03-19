@@ -18,6 +18,10 @@ gcloud compute instances create vm1     --machine-type=e2-micro     --preemptibl
 gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example
 #gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example --command "cat /var/log/cloud-init-output.log"
 
+# Realizo la conexion SSH ejecutando el comando para correr el contenedor
+gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example --command "docker run --name prueba --rm -p 8080:8080 lucaslatessa/prueba3"
+
+
 # Comando para eliminar la maquina
 # gcloud compute instances delete vm1 --zone=us-east1-b
 
