@@ -31,8 +31,8 @@ sudo usermod -aG docker $USER
 #Ingresar a Docker(como hacer para que no me pida las credenciales ni dejarlas aca)
 #CREO QUE QUEDO ANDANDO, NO TOCAR NADA. lucas;)
 docker login 
-docker pull lucaslatessa/prueba3
-docker run --name prueba --rm -p 8080:8080 lucaslatessa/prueba3
+docker pull lucaslatessa/h1
+docker run --name h1 --rm -p 8080:8080 lucaslatessa/h1
 
 =======
 sudo apt install nginx -y
