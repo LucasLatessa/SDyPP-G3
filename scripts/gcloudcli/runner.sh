@@ -22,4 +22,3 @@ gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example
 # gcloud compute instances delete vm1 --zone=us-east1-b
 
 
-
