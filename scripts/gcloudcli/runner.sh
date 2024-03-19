@@ -11,7 +11,7 @@
 # gcloud compute firewall-rules create allow-ssh --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:22 --source-ranges=0.0.0.0/0
 #  gcloud compute firewall-rules create appnode --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:8080 --source-ranges=0.0.0.0/0
 
-# PASO 2 - Creacion de la VM
+# PASO 2 - Creacion de la VM 
 gcloud compute instances create vm1     --machine-type=e2-micro     --preemptible     --image-family=ubuntu-2204-lts     --image-project=ubuntu-os-cloud     --tags=http-server     --metadata="ssh-keys=$(cat ./id_rsa_example.pub)"     --metadata-from-file user-data=../userdata/script.sh     --zone="us-east1-b"     --address=instance-public-ip
 
 # PASO 3 - Conexion SSH a la instancia VM1 de GCloud 
@@ -21,4 +21,9 @@ gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example
 # Comando para eliminar la maquina
 # gcloud compute instances delete vm1 --zone=us-east1-b
 
+# Comando para apagar la maquina
+# gcloud compute instances stop vm1 --zone=us-east1-b
+
+# Comando para prender la maquina
+# gcloud compute instances start vm1 --zone=us-east1-b
 
