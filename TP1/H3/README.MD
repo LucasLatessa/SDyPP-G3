@@ -13,4 +13,4 @@ docker push lucaslatessa/h3
 Comandos ejecutados en la mv de google cloud:
 docker login
 docker pull lucaslatessa/h3
-docker run --name h2 --rm -p 8080:8080 lucaslatessa/h3
+docker run --name h3 --rm -p 8080:8080 lucaslatessa/h3
