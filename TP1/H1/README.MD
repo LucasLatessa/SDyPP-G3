@@ -1,5 +1,5 @@
 Creando contenedor en docker:
-docker build . -t prueba3 -f dockerfiles/ejemplo3.dockerfile
+docker build . -t h1 -f TP1/H1/h1.dockerfile
 docker login
 docker tag h1 lucaslatessa/h1
 docker push lucaslatessa/h1
