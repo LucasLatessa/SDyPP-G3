@@ -7,22 +7,19 @@ mi_socket = socket.socket() #Genera socket
 
 mi_socket.bind((HOST,PORT)) #Recibe ip y puerto
 
-mi_socket.listen(5) #Cantidad de peticiones en cola
+mi_socket.listen(1) #Cantidad de peticiones en cola
 
 print(f"El servidor está escuchando en {HOST}:{PORT}")
 
-try:
-    while True:
-        conexion, addr = mi_socket.accept()
-        print("Nueva conexion establecida!")
-        print(addr)
+conexion, addr = mi_socket.accept()
+print("Nueva conexion establecida!")
+print(addr)
 
-        peticion = conexion.recv(1024).decode()
-        print(peticion)
+peticion = conexion.recv(1024).decode()
+print(peticion)
 
-        conexion.send("Hola, te saludo desde el servidor".encode())
-        conexion.close()
-except KeyboardInterrupt:
-    print("Interrupción del servidor. Cerrando...")
-    mi_socket.close()
+conexion.send("Hola, te saludo desde el servidor".encode())
+conexion.close()
+
+mi_socket.close()
 

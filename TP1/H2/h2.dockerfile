@@ -5,7 +5,7 @@ RUN mkdir -p /usr/local/src/H2
 ADD H2/server.py /usr/local/src/H2/server.py
 
 EXPOSE 8080
-WORKDIR /usr/local/src/H1
+WORKDIR /usr/local/src/H2
 ENTRYPOINT ["python3", "server.py"]     
 
 #ENTRYPOINT ["/bin/sleep", "10"] 
