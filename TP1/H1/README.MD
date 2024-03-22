@@ -1,5 +1,14 @@
+Hit #1
+Elabore un código de servidor TCP para B que espere el saludo de A y lo responda.
+Elabore un código de cliente TCP para A que se conecte con B y lo salude.
+
+El archivo server.py representar a el nodo B, mientras que el archivo cliente.py representara al nodo A.
+Se levanta el servidor desde la terminal con "python server.py", con el host 0.0.0.0 (cualquiera) y el puerto 8080
+Se realiza una peticion con el cliente usando "python cliente.py", donde este enviara el mensaje al servidor y recibira una respuesta.
+
+Comando para contenedores y gcloud
 Creando contenedor en docker:
-docker build . -t prueba3 -f dockerfiles/ejemplo3.dockerfile
+docker build . -t h1 -f TP1/H1/h1.dockerfile
 docker login
 docker tag h1 lucaslatessa/h1
 docker push lucaslatessa/h1

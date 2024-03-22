@@ -11,12 +11,15 @@ mi_socket.listen(1) #Cantidad de peticiones en cola
 
 print(f"El servidor está escuchando en {HOST}:{PORT}")
 
-conexion,addr = mi_socket.accept()
-print ("Nueva conexion establecida!")
-print (addr)
+conexion, addr = mi_socket.accept()
+print("Nueva conexion establecida!")
+print(addr)
 
-peticion = conexion.recv(1024)
-print (peticion)
+peticion = conexion.recv(1024).decode()
+print(peticion)
 
 conexion.send("Hola, te saludo desde el servidor".encode())
 conexion.close()
+
+mi_socket.close()
+
