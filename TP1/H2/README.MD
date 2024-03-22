@@ -7,9 +7,9 @@ En el caso del cliente, se definen dos nuevas funciones:
 .enviarsaludo = Envia la peticion al servidor cada 10 segundos
 
 Creando contenedor en docker:
-docker build . -t h2 -f TP1/H2/h2.dockerfile
+docker build . -t h2 -f H2/h2.dockerfile
 docker login
-docker tag h1 lucaslatessa/h2
+docker tag h2 lucaslatessa/h2
 docker push lucaslatessa/h2
 
 Comandos ejecutados en la mv de google cloud:

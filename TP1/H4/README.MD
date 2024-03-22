@@ -9,9 +9,9 @@ Donde el socket del servidor se conformara por los primeros 2 parametros, espera
 Es necesario ejecutar en la terminal 2 veces el comando con las ips y puertos correspondientes para garantizar la comunicacion en ambos lados.
 
 Creando contenedor en docker:
-docker build . -t h4 -f TP1/H4/h4.dockerfile
+docker build . -t h4 -f H4/h4.dockerfile
 docker login
-docker tag h1 lucaslatessa/h4
+docker tag h4 lucaslatessa/h4
 docker push lucaslatessa/h4
 
 Comandos ejecutados en la mv de google cloud:
