@@ -8,7 +8,7 @@ Se realiza una peticion con el cliente usando "python cliente.py", donde este en
 
 Comando para contenedores y gcloud
 Creando contenedor en docker:
-docker build . -t h1 -f TP1/H1/h1.dockerfile
+docker build . -t h1 -f H1/h1.dockerfile
 docker login
 docker tag h1 lucaslatessa/h1
 docker push lucaslatessa/h1
