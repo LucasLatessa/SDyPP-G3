@@ -9,7 +9,7 @@ La diferencia radica fundamentalmente en los mensajes que se van a enviar, ya qu
 Los mensajes se convierten en diccionarios de Python antes de ser serializados en formato JSON usando json.dumps(). Al recibir los mensajes, se decodifican desde JSON a diccionarios de Python utilizando json.loads().
 
 Creando contenedor en docker:
-docker build . -t h5 -f TP1/H5/h5.dockerfile
+docker build . -t h5 -f H5/h5.dockerfile
 docker login
 docker tag h5 lucaslatessa/h5
 docker push lucaslatessa/h5
