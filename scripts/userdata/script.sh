@@ -12,7 +12,6 @@ sudo apt update
 # java --version
 # nodejs --version
 
-<<<<<<< Updated upstream
 #Instalacion docker
 sudo apt install -y \
     apt-transport-https \
@@ -33,14 +32,19 @@ sudo usermod -aG docker $USER
 docker login 
 docker pull lucaslatessa/h1
 docker run --name h1 --rm -p 8080:8080 lucaslatessa/h1
-
-=======
-sudo apt install nginx -y
-sudo systemctl enable nginx
-sudo systemctl start nginx
-
-sudo systemctl status nginx
->>>>>>> Stashed changes
+#Para clonar demas repo
+#docker pull lucaslatessa/h2
+#docker run --name h2 --rm -p 8080:8080 lucaslatessa/h2
+#docker pull lucaslatessa/h3
+#docker run --name h3 --rm -p 8080:8080 lucaslatessa/h3
+#docker pull lucaslatessa/h4
+#docker run --name h4 --rm -p 8080:8080 lucaslatessa/h4
+#docker pull lucaslatessa/h5
+#docker run --name h5 --rm -p 8080:8080 lucaslatessa/h5
+#docker pull lucaslatessa/h6
+#docker run --name h6 --rm -p 8080:8080 lucaslatessa/h6
+#docker pull lucaslatessa/h7
+#docker run --name h7 --rm -p 8080:8080 lucaslatessa/h7
 
 
 # # Instalacion Nginx y poner el marcha el servidor web
