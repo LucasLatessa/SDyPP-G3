@@ -2,7 +2,7 @@ FROM python:3.13.0a5-alpine3.19
 
 RUN mkdir -p /usr/local/src/H2
 
-ADD TP1/H2/server.py /usr/local/src/H2/server.py
+ADD H2/server.py /usr/local/src/H2/server.py
 
 EXPOSE 8080
 WORKDIR /usr/local/src/H2

@@ -1,8 +1,8 @@
 import socket
 import time
 
-HOST = '35.196.99.208'
-PORT = 8080 
+HOST = '35.185.81.236'
+PORT = 8083 
 
 def conectar():
     mi_socket = socket.socket()
