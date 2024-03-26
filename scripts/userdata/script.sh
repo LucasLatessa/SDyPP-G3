@@ -31,18 +31,18 @@ sudo usermod -aG docker $USER
 docker pull lucaslatessa/h1
 docker pull lucaslatessa/h2
 docker pull lucaslatessa/h3
-docker run --name h1 -p 8081:8080 lucaslatessa/h1
-docker run --name h2 -p 8082:8080 lucaslatessa/h2
-docker run --name h3 -p 8083:8080 lucaslatessa/h3
+docker run --name h1 --rm -p 8081:8080 lucaslatessa/h1
+docker run --name h2 --rm -p 8082:8080 lucaslatessa/h2
+docker run --name h3 --rm -p 8083:8080 lucaslatessa/h3
 #Ver como hacer ya que en el run hay que pasarle ip y puerto 
 # docker pull lucaslatessa/h4
-# docker run --name h4 --rm -p 8080:8080 -e IP_SERVIDOR_DESTINO=IP_SERVIDOR -e PUERTO_DESTINO=PUERTO_SERVIDOR -e IP_CLIENTE=IP_CLIENTE -e PUERTO_CLIENTE=PUERTO_CLIENTE lucaslatessa/h4
+# docker run --name h4 --rm -p 8084:8080 -e IP_SERVIDOR_DESTINO=IP_SERVIDOR -e PUERTO_DESTINO=PUERTO_SERVIDOR -e IP_CLIENTE=IP_CLIENTE -e PUERTO_CLIENTE=PUERTO_CLIENTE lucaslatessa/h4
 # docker pull lucaslatessa/h5
-# docker run --name h5 --rm -p 8080:8080 lucaslatessa/h5
+# docker run --name h5 --rm -p 8085:8080 lucaslatessa/h5
 # docker pull lucaslatessa/h6
-# docker run --name h6 --rm -p 8080:8080 lucaslatessa/h6
+# docker run --name h6 --rm -p 8086:8080 lucaslatessa/h6
 # docker pull lucaslatessa/h7
-# docker run --name h7 --rm -p 8080:8080 lucaslatessa/h7
+# docker run --name h7 --rm -p 8087:8080 lucaslatessa/h7
 
 
 # # Instalacion Nginx y poner el marcha el servidor web
