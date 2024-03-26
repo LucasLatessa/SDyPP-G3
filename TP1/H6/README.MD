@@ -13,3 +13,6 @@ Cada vez que el Nodo C envia una peticion a el Nodo D (que se encuentra en escuc
 
 Por cada contacto que haya recibido C, este realiza una peticion, este caido o no el servidor
 
+Comando para levantar el nodo D: python .\RegistroContactos.py
+Comando para levantar los nodos C: python .\Serv_CliH6.py 127.0.0.1 65535 (modificar ip local por remota)
+
