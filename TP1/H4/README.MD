@@ -8,6 +8,12 @@ En este caso, el cliente y servidor se encuentra unificados en un solo archivo l
 Donde el socket del servidor se conformara por los primeros 2 parametros, esperando solicitudes que puedan llegar
 Es necesario ejecutar en la terminal 2 veces el comando con las ips y puertos correspondientes para garantizar la comunicacion en ambos lados.
 
+
+COMANDOS PARA CORRER DOCKER CON ARGS: corriendo los docker en nuestra maquina,
+PROBLEMA: no llegan las solicitudes
+docker run --rm --name h4b -p 9090:8080 ID_IMAGEN 127.0.0.1 9091 127.0.0.1 9090
+docker run --rm --name h4 -p 9091:8080 ID_IMAGEN 127.0.0.1 9090 127.0.0.1 9091
+
 Creando contenedor en docker:
 docker build . -t h4 -f H4/h4.dockerfile
 docker login

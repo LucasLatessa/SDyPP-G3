@@ -2,11 +2,10 @@ import socket
 import threading
 import time
 import sys
-
 HOSTServ = sys.argv[1]  #n La dirección IP de loopback, localhost
 PORTServ = int(sys.argv[2])        # Puerto para escuchar las conexioes entrantes
 HOSTDest = sys.argv[3] 
-PORTDest = int(sys.argv[4])
+PORTDest = int(sys.argv[4]) 
 # HOSTServ = '35.196.99.208' #'0.0.0.0'  # La dirección IP de loopback, localhost
 # PORTServ = 8080       # Puerto para escuchar las conexiones entrantes
 # HOSTDest = '127.0.0.1'
