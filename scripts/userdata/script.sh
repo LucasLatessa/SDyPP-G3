@@ -35,8 +35,9 @@ docker run --name h1 --rm -p 8081:8080 lucaslatessa/h1 &
 docker run --name h2 --rm -p 8082:8080 lucaslatessa/h2 &
 docker run --name h3 --rm -p 8083:8080 lucaslatessa/h3 &
 #Ver como hacer ya que en el run hay que pasarle ip y puerto 
-# docker pull lucaslatessa/h4
-# docker run --name h4 --rm -p 8086:8080 -e IP_SERVIDOR_DESTINO=0.0.0.0 -e PUERTO_DESTINO=8086 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8085 lucaslatessa/h4
+docker pull lucaslatessa/h4
+docker run --name h4 --rm -p 8084:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8084 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8088 lucaslatessa/h4 &
+docker run --name h4b --rm -p 8088:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8088 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8084 lucaslatessa/h4 &
 # docker pull lucaslatessa/h5
 # docker run --name h5 --rm -p 8085:8080 lucaslatessa/h5
 # docker pull lucaslatessa/h6
