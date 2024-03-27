@@ -6,6 +6,5 @@ ADD H4/Serv_Cli.py /usr/local/src/H4/Serv_Cli.py
 
 EXPOSE 8080
 WORKDIR /usr/local/src/H4
-ENTRYPOINT ["python3", "Serv_Cli.py"]     
-
+CMD ["python3", "Serv_Cli.py" ]     
 #ENTRYPOINT ["/bin/sleep", "10"] 
