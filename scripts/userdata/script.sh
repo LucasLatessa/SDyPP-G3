@@ -31,9 +31,9 @@ sudo usermod -aG docker $USER
 docker pull lucaslatessa/h1
 docker pull lucaslatessa/h2
 docker pull lucaslatessa/h3
-docker run --name h1 --rm -p 8081:8080 lucaslatessa/h1 &
-docker run --name h2 --rm -p 8082:8080 lucaslatessa/h2 &
-docker run --name h3 --rm -p 8083:8080 lucaslatessa/h3 &
+sudo docker run --name h1 --rm -p 8081:8080 lucaslatessa/h1 >> /logsH1.txt 2>&1 &
+sudo docker run --name h2 --rm -p 8082:8080 lucaslatessa/h2 >> /logsH2.txt 2>&1 &
+sudo docker run --name h3 --rm -p 8083:8080 lucaslatessa/h3 >> /logsH3.txt 2>&1 &
 
 docker pull lucaslatessa/h4
 # docker run --name h4 --rm -p 8084:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8084 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8088 lucaslatessa/h4 &
