@@ -4,7 +4,7 @@ import threading
 import time
 #Host y puerto del servidor D
 HOST_D = "0.0.0.0"#"35.196.99.208"
-PORT_D = 8080
+PORT_D = 65535
 
 # Lista de contactos para la ventana actual
 contactos_actual = []
