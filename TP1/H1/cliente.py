@@ -1,8 +1,8 @@
 import socket
 
 #Host y puerto al que me quiero conectar
-HOST = '35.196.99.208'
-PORT = 8080 
+HOST = '35.185.81.236'
+PORT = 8081 
 
 mi_socket = socket.socket()
 

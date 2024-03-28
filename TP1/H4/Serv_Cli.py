@@ -2,11 +2,10 @@ import socket
 import threading
 import time
 import sys
-
-HOSTServ = sys.argv[1]  # La dirección IP de loopback, localhost
-PORTServ = int(sys.argv[2])        # Puerto para escuchar las conexiones entrantes
+HOSTServ = sys.argv[1]  #n La dirección IP de loopback, localhost
+PORTServ = int(sys.argv[2])        # Puerto para escuchar las conexioes entrantes
 HOSTDest = sys.argv[3] 
-PORTDest = int(sys.argv[4])
+PORTDest = int(sys.argv[4]) 
 # HOSTServ = '35.196.99.208' #'0.0.0.0'  # La dirección IP de loopback, localhost
 # PORTServ = 8080       # Puerto para escuchar las conexiones entrantes
 # HOSTDest = '127.0.0.1'
@@ -29,15 +28,17 @@ def servidor():
             print(peticion)
 
             conexion.send("Hola, te saludo desde el servidor".encode())
-            conexion.close()
+            
         except ConnectionAbortedError:
             print("La conexión fue cerrada por el cliente.")
         except KeyboardInterrupt:
             print("Interrupción del servidor. Cerrando...")
-            break
+        except BrokenPipeError:
+                print("Se produjo un error de pipe roto.")
+        finally:
+            conexion.close()
 
     mi_socket.close()
-
 
 
 def conectar():
@@ -59,7 +60,8 @@ def enviar_saludo(socket_cliente):
             socket_cliente.send("Hola desde el cliente".encode())
             respuesta = socket_cliente.recv(1024).decode() #Buffer
             print(respuesta)
-        except (ConnectionResetError, ConnectionAbortedError):
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            print("Se produjo un error de conexión. Reintentando (Cliente)...")
             socket_cliente.close()
             socket_cliente = conectar()  # Usamos una nueva variable para el nuevo socket
             continue
