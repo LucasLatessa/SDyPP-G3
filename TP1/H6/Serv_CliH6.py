@@ -7,12 +7,6 @@ import time
 import sys
 import json
 
-#Funcion para generar el puerto aleatorio
-def puerto_aleatorio():
-    min = 8081
-    max = 8085
-    return random.randint(min,max)
-
 def obtener_ip_publica():
     try:
         # Hacer una solicitud HTTP a ifconfig.me para obtener la dirección IP pública
@@ -26,7 +20,7 @@ def obtener_ip_publica():
         print("Error al ejecutar la solicitud HTTP:", e)
         
 HOSTServ = "0.0.0.0" # Obtener y mostrar la dirección IP pública  # La dirección IP de C
-PORTServ = 8080#puerto_aleatorio()  # Puerto para escuchar las conexiones entrantes con los nodos C
+PORTServ = 8080 # Puerto para escuchar las conexiones entrantes con los nodos C
 #Host y Puerto del nodo D, que vienen como argumento cuando se llama al programa
 HOST_D = sys.argv[1] # La direccion IP de D: 35.196.99.208
 PORT_D = int(sys.argv[2]) # 8086
