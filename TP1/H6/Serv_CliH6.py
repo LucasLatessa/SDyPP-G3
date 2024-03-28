@@ -69,6 +69,9 @@ def conectar(IP,PUERTO):
         print("")
     except KeyboardInterrupt:
         raise
+    except Exception as e:
+    # Manejo de la excepción: muestra el mensaje de error en pantalla
+        print("Se ha producido un error:", e)
 
 #Funcion que le envia el socket al cliente y recibe la lista de contactos donde tiene que enviar peticiones
 def enviar_socket(socket_cliente):
@@ -88,7 +91,7 @@ def enviar_socket(socket_cliente):
         #Por cada contacto, envio una peticion a cada nodo
         for elemento in respuesta:
             ip = elemento["ip"]
-            puerto = elemento["puerto"]
+            puerto = int(elemento["puerto"])
             try:
                 nuevoSocket = conectar(ip,puerto)
                 enviar_saludo(nuevoSocket)
@@ -97,7 +100,10 @@ def enviar_socket(socket_cliente):
                 nuevoSocket.close()
             #Solamente se lleva a cabo si el nodo esta en escucha
             except:
-                print("Servidor "+ ip + ":" + str(puerto) + " caido")
+                print("Servidor "+ ip + ":" + str(puerto) + " caido/fuera de funcionamiento")
+            #except Exception as e:
+                # Manejo de la excepción: muestra el mensaje de error en pantalla
+                #print("Se ha producido un error:", e)
 
 
     except (ConnectionResetError, ConnectionAbortedError):
@@ -135,7 +141,10 @@ if __name__ == "__main__":
         print("Uso: python serv_cli.py <ip_d> <puerto_d>")
         sys.exit(1)
 
-#Ejecucion del servidor en otro hilo
+"""#Ejecucion del servidor en otro hilo
 servidor_thread = threading.Thread(target=servidor)
 servidor_thread.start()
-cliente()
+cliente()"""
+
+#cliente()
+#servidor()
