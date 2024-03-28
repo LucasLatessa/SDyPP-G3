@@ -1,5 +1,6 @@
 import random
 import socket
+import requests
 import threading
 import time
 import sys
@@ -11,11 +12,25 @@ def puerto_aleatorio():
     max = 65534
     return random.randint(min,max)
 
-HOSTServ = "127.0.0.1"  # La dirección IP del servidor D
+def obtener_ip_publica():
+    try:
+        # Hacer una solicitud HTTP a ifconfig.me para obtener la dirección IP pública
+        response = requests.get('https://ifconfig.me')
+        # Verificar si la solicitud fue exitosa
+        if response.status_code == 200:
+            return response.text.strip()  # Devolver la dirección IP obtenida del cuerpo de la respuesta
+        else:
+            print("Error al obtener la dirección IP pública. Código de estado:", response.status_code)
+    except Exception as e:
+        print("Error al ejecutar la solicitud HTTP:", e)
+        
+HOSTServ = "0.0.0.0" # Obtener y mostrar la dirección IP pública  # La dirección IP de C
 PORTServ = puerto_aleatorio()  # Puerto para escuchar las conexiones entrantes con los nodos C
 #Host y Puerto del nodo D, que vienen como argumento cuando se llama al programa
-HOST_D = sys.argv[1]
-PORT_D = int(sys.argv[2])
+HOST_D = sys.argv[1] # La direccion IP de D: 35.196.99.208
+PORT_D = int(sys.argv[2]) # 8086
+
+
 
 #Servidor en escucha
 def servidor():
@@ -64,7 +79,7 @@ def enviar_socket(socket_cliente):
     try:
         #Envio mi socket
         mensaje = {
-            "ip":HOSTServ,
+            "ip":obtener_ip_publica(),
             "puerto":PORTServ,
             }
         socket_cliente.send(json.dumps(mensaje).encode())
@@ -93,6 +108,9 @@ def enviar_socket(socket_cliente):
         socket_cliente.close()
     except KeyboardInterrupt:
         raise
+    except json.decoder.JSONDecodeError as e:
+        #print("Error al decodificar la respuesta JSON:", e)
+        pass
     time.sleep(10)  # Esperar 10 segundos antes de enviar el próximo saludo
 
 #Funcion que envia un mensaje como saludo en forma de JSON a los nodos C
@@ -113,6 +131,8 @@ def cliente():
         mi_socket.close()
     except KeyboardInterrupt:
         print("Interrupción del cliente. Cerrando...")
+
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
