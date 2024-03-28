@@ -17,14 +17,13 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io
 
 sudo usermod -aG docker $USER
 
-docker pull josuegaticaodato/h4
-# docker run --name h4 --rm -p 8084:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8084 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8088 lucaslatessa/h4 &
-# docker run --name h4b --rm -p 8088:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8088 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8084 lucaslatessa/h4 &
-sudo docker run --rm --name h4 -p 8080:8084 josuegaticaodato/h4 0.0.0.0 8084 35.196.99.208 8080 > logfileh4.txt 2>&1
+#Clonar los contenedores
+docker pull lucaslatessa/h4
+docker pull lucaslatessa/h5
 
- docker pull lucaslatessa/h5
-# docker run --name h5 --rm -p 8085:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8085 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8089 lucaslatessa/h5 &
-# docker run --name h5b --rm -p 8089:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8089 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8085 lucaslatessa/h5 &
+#Correr contenedores
+sudo docker run --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.196.99.208 8084  > logfileh4.txt 2>&1 &
+sudo docker run --rm --name h5 -p 8085:8080 lucaslatessa/h5 0.0.0.0 8080 35.196.99.208 8085 > logfileh5.txt 2>&1 &
 
  docker pull lucaslatessa/h6
 # docker run --name h6 --rm -p 8086:8080 lucaslatessa/h6 &

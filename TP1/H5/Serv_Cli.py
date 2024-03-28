@@ -27,12 +27,15 @@ def servidor():
 
             respuesta = {"mensaje": "Hola, te saludo desde el servidor"}
             conexion.send(json.dumps(respuesta).encode())  # Envia respuesta como JSON
-            conexion.close()
+
         except ConnectionAbortedError:
             print("La conexión fue cerrada por el cliente.")
         except KeyboardInterrupt:
             print("Interrupción del servidor. Cerrando...")
-            break
+        except BrokenPipeError:
+            print("Se produjo un error de pipe roto.")
+        finally:
+            conexion.close()
 
     mi_socket.close()
 
@@ -56,12 +59,16 @@ def enviar_saludo(socket_cliente):
             socket_cliente.send(json.dumps(mensaje).encode())  # Envia mensaje como JSON
             respuesta = json.loads(socket_cliente.recv(1024).decode())  # Decodifica respuesta JSON
             print("Respuesta recibida:", respuesta)
-        except (ConnectionResetError, ConnectionAbortedError):
+        except (ConnectionResetError, ConnectionAbortedError,BrokenPipeError):
+            print("Se produjo un error de conexión. Reintentando (Cliente)...")
             socket_cliente.close()
             socket_cliente = conectar()  # Usamos una nueva variable para el nuevo socket
             continue
         except KeyboardInterrupt:
             raise  # Volver a lanzar la excepción para que el bloque principal pueda manejarla
+        except json.decoder.JSONDecodeError as e:
+            #print("Error al decodificar la respuesta JSON:", e)
+            pass
         time.sleep(10)  # Esperar 10 segundos antes de enviar el próximo saludo
 
 def cliente():
