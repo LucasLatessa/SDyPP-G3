@@ -1,4 +1,4 @@
-Hit #3
+# Hit #3
 Modifique el código de B para que si el proceso A cierra la conexión (por ejemplo matando el proceso) siga funcionando
 
 En este caso, el cliente sigue igual que el ejercicio anterior.

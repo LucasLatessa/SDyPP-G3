@@ -1,4 +1,4 @@
-Hit #5
+# Hit #5
 Modifique el programa C de manera tal que los mensajes se envíen en formato JSON, serializar y deserializar los mismos al enviar/recibir. 
 
 En este caso, el cliente y servidor tambien se encuentran unificados en un solo archivo llamado "Serv_Cli.py", que recibe como parametros 4 argumentos:

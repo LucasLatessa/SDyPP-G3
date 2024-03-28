@@ -1,4 +1,4 @@
-<h1>Hit #4</h1>
+# Hit #4
 Refactoriza el código de los programas A y B en un único programa, que funcione simultáneamente como cliente y servidor. Esto significa que al iniciar el programa C, se le deben proporcionar por parámetros la dirección IP y el puerto para escuchar saludos, así como la dirección IP y el puerto de otro nodo C. De esta manera, al tener dos instancias de C en ejecución, cada una configurada con los parámetros del otro, ambas se saludan mutuamente a través de cada canal de comunicación.
 
 En este caso, el cliente y servidor se encuentra unificados en un solo archivo llamado "Serv_Cli.py", que recibe como parametros 4 argumentos:

@@ -1,4 +1,4 @@
-Hit #2
+# Hit #2
 Revise el código de A para implementar una funcionalidad que permita la reconexión y el envío del saludo nuevamente en caso de que el proceso B cierre la conexión, como por ejemplo, al ser terminado abruptamente.
 
 El servidor funciona de igual manera que el ejercicio anterior
