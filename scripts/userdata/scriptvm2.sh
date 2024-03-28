@@ -27,11 +27,11 @@ sudo docker run --rm --name h5 -p 8085:8080 lucaslatessa/h5 0.0.0.0 8080 35.196.
 
  docker pull lucaslatessa/h6
 
-export PUERTO_EXT=$(shuf -i 8080-8085 -n 1)
+export PUERTO_EXT=$(shuf -i 8087-8095 -n 1)
 sudo docker run --rm --name h6 -p $PUERTO_EXT:8080 -e PUERTO_EXT=$PUERTO_EXT lucaslatessa/h6 35.196.99.208 8086
 
 
  docker pull lucaslatessa/h7
-# docker run --name h7 --rm -p 8087:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8087 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8090 lucaslatessa/h6 &
-# docker run --name h7b --rm -p 8090:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8090 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8087 lucaslatessa/h6 &
+#export PUERTO_EXT2=$(shuf -i 8096-8106 -n 1)
+# docker run --name h7 --rm -p $PUERTO_EXT2:8080 -e IP_SERVIDOR_DESTINO=35.185.81.236 -e PUERTO_DESTINO=8087 -e IP_CLIENTE=127.0.0.1 -e PUERTO_CLIENTE=8090 lucaslatessa/h6 &
 

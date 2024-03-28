@@ -11,8 +11,8 @@
 # gcloud compute firewall-rules create allow-ssh --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:22 --source-ranges=0.0.0.0/0
 # gcloud compute firewall-rules create appnode --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:8080 --source-ranges=0.0.0.0/0
 
-#Se agrego una regla extra para correr docker del 8081-8087, permitiendo asi el trafico de los contenedores
-#gcloud compute firewall-rules create docker-8081-8087 --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:8081-8087 --source-ranges=0.0.0.0/0
+#Se agrego una regla extra para correr docker del 8081-9000, permitiendo asi el trafico de los contenedores
+#gcloud compute firewall-rules create docker-8081-9000 --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:8081-9000 --source-ranges=0.0.0.0/0
 
 # PASO 2 - Creacion de la VM 
 gcloud compute instances create vm1     --machine-type=e2-micro     --preemptible     --image-family=ubuntu-2204-lts     --image-project=ubuntu-os-cloud     --tags=http-server     --metadata="ssh-keys=$(cat ./id_rsa_example.pub)"     --metadata-from-file user-data=../userdata/scriptvm1.sh     --zone="us-east1-b"     --address=instance-public-ip
