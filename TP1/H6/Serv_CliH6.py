@@ -141,10 +141,10 @@ if __name__ == "__main__":
         print("Uso: python serv_cli.py <ip_d> <puerto_d>")
         sys.exit(1)
 
-"""#Ejecucion del servidor en otro hilo
+#Ejecucion del servidor en otro hilo
 servidor_thread = threading.Thread(target=servidor)
 servidor_thread.start()
-cliente()"""
+cliente()
 
 #cliente()
 #servidor()
