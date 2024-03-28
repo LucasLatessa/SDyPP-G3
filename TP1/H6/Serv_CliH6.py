@@ -1,3 +1,4 @@
+import os
 import random
 import socket
 import requests
@@ -8,8 +9,8 @@ import json
 
 #Funcion para generar el puerto aleatorio
 def puerto_aleatorio():
-    min = 1024
-    max = 65534
+    min = 8081
+    max = 8085
     return random.randint(min,max)
 
 def obtener_ip_publica():
@@ -25,12 +26,13 @@ def obtener_ip_publica():
         print("Error al ejecutar la solicitud HTTP:", e)
         
 HOSTServ = "0.0.0.0" # Obtener y mostrar la dirección IP pública  # La dirección IP de C
-PORTServ = puerto_aleatorio()  # Puerto para escuchar las conexiones entrantes con los nodos C
+PORTServ = 8080#puerto_aleatorio()  # Puerto para escuchar las conexiones entrantes con los nodos C
 #Host y Puerto del nodo D, que vienen como argumento cuando se llama al programa
 HOST_D = sys.argv[1] # La direccion IP de D: 35.196.99.208
 PORT_D = int(sys.argv[2]) # 8086
 
-
+IPExt = obtener_ip_publica()
+PuertoEXT = os.getenv('PUERTO_EXT')
 
 #Servidor en escucha
 def servidor():
@@ -38,7 +40,7 @@ def servidor():
     mi_socket.bind((HOSTServ, PORTServ))  # Recibe ip y puerto
     mi_socket.listen(5)  # Cantidad de peticiones en cola
 
-    print(f"El servidor está escuchando en {HOSTServ}:{PORTServ}")
+    print(f"El servidor está escuchando en {IPExt}:{PuertoEXT}")
 
     while True:
         try:
@@ -79,8 +81,8 @@ def enviar_socket(socket_cliente):
     try:
         #Envio mi socket
         mensaje = {
-            "ip":obtener_ip_publica(),
-            "puerto":PORTServ,
+            "ip":IPExt,
+            "puerto":PuertoEXT,
             }
         socket_cliente.send(json.dumps(mensaje).encode())
 
@@ -117,8 +119,8 @@ def enviar_socket(socket_cliente):
 def enviar_saludo(socket_cliente):
     mensaje = {
         "mensaje": "Hola, soy un nodo C",
-        "ip":HOSTServ,
-        "puerto":PORTServ
+        "ip":IPExt,
+        "puerto":PuertoEXT
 }
     socket_cliente.send(json.dumps(mensaje).encode())
 
