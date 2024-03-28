@@ -28,15 +28,17 @@ def servidor():
             print(peticion)
 
             conexion.send("Hola, te saludo desde el servidor".encode())
-            conexion.close()
+            
         except ConnectionAbortedError:
             print("La conexión fue cerrada por el cliente.")
         except KeyboardInterrupt:
             print("Interrupción del servidor. Cerrando...")
-            break
+        except BrokenPipeError:
+                print("Se produjo un error de pipe roto.")
+        finally:
+            conexion.close()
 
     mi_socket.close()
-
 
 
 def conectar():
@@ -58,7 +60,8 @@ def enviar_saludo(socket_cliente):
             socket_cliente.send("Hola desde el cliente".encode())
             respuesta = socket_cliente.recv(1024).decode() #Buffer
             print(respuesta)
-        except (ConnectionResetError, ConnectionAbortedError):
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            print("Se produjo un error de conexión. Reintentando (Cliente)...")
             socket_cliente.close()
             socket_cliente = conectar()  # Usamos una nueva variable para el nuevo socket
             continue
