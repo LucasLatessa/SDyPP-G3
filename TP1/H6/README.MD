@@ -16,10 +16,13 @@ Por cada contacto que haya recibido C, este realiza una peticion, este caido o n
 Comando para levantar el nodo D: python .\RegistroContactos.py <br>
 Comando para levantar los nodos C: python .\Serv_CliH6.py 127.0.0.1 65535 (modificar ip local por remota) <br>
 
-VM1 -> sudo docker run --rm --name h6c -p 8086:8080 lucaslatessa/h6contactos<br>
+VM1 -> sudo docker run --rm --name h6contactos -p 8086:8080 lucaslatessa/h6contactos >> logfileh6r.txt 2>&1 &<br>
 
 VM2 -> sudo docker run --rm --name h6 -p 8084:8080 lucaslatessa/h6 35.196.99.208 8086
 crear: export RANDOM_PORT=$(shuf -i 8080-8085 -n 1)
 ver: echo $RANDOM_PORT
 ver todas: env
-sudo docker run --rm --name h6 -p $RANDOM_PORT:8080 lucaslatessa/h6 35.196.99.208 8086
+sudo docker run --rm --name h6 -p $PUERTO_EXT:8080 -e PUERTO_EXT=$PUERTO_EXT lucaslatessa/h6 35.196.99.208 8086 >> logfileh6.txt 2>&1 &
+
+para hardcodear los puertos:
+sudo docker run --rm --name h6 -p 9090:8080 -e PUERTO_EXT=9090 lucaslatessa/h6 35.196.99.208 8086 >> logfileh6b.txt 2>&1 

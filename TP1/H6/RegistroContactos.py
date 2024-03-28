@@ -2,7 +2,7 @@ import socket
 import json
 
 #Host y puerto del servidor D
-HOSTD = "35.196.99.208"
+HOSTD = "0.0.0.0"#"35.196.99.208"
 PORTD = 8080
 
 #Lista de contactos
