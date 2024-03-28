@@ -1,21 +1,31 @@
-import random
+import os
 import socket
+import requests
 import threading
 import time
 import sys
 import json
 
-#Funcion para generar el puerto aleatorio
-def puerto_aleatorio():
-    min = 1024
-    max = 65534
-    return random.randint(min,max)
-
-HOSTServ = "127.0.0.1"  # La dirección IP del servidor D
-PORTServ = puerto_aleatorio()  # Puerto para escuchar las conexiones entrantes con los nodos C
+def obtener_ip_publica():
+    try:
+        # Hacer una solicitud HTTP a ifconfig.me para obtener la dirección IP pública
+        response = requests.get('https://ifconfig.me')
+        # Verificar si la solicitud fue exitosa
+        if response.status_code == 200:
+            return response.text.strip()  # Devolver la dirección IP obtenida del cuerpo de la respuesta
+        else:
+            print("Error al obtener la dirección IP pública. Código de estado:", response.status_code)
+    except Exception as e:
+        print("Error al ejecutar la solicitud HTTP:", e)
+        
+HOSTServ = "0.0.0.0" # Obtener y mostrar la dirección IP pública  # La dirección IP de C
+PORTServ = 8080 # Puerto para escuchar las conexiones entrantes con los nodos C
 #Host y Puerto del nodo D, que vienen como argumento cuando se llama al programa
-HOST_D = sys.argv[1]
-PORT_D = int(sys.argv[2])
+HOST_D = sys.argv[1] # La direccion IP de D: 35.196.99.208
+PORT_D = int(sys.argv[2]) # 8086
+
+IPExt = obtener_ip_publica()
+PuertoEXT = os.getenv('PUERTO_EXT')
 
 #Servidor en escucha
 def servidor():
@@ -23,7 +33,7 @@ def servidor():
     mi_socket.bind((HOSTServ, PORTServ))  # Recibe ip y puerto
     mi_socket.listen(5)  # Cantidad de peticiones en cola
 
-    print(f"El servidor está escuchando en {HOSTServ}:{PORTServ}")
+    print(f"El servidor está escuchando en {IPExt}:{PuertoEXT}")
 
     while True:
         try:
@@ -58,14 +68,17 @@ def conectar(IP,PUERTO):
         print("")
     except KeyboardInterrupt:
         raise
+    except Exception as e:
+    # Manejo de la excepción: muestra el mensaje de error en pantalla
+        print("Se ha producido un error:", e)
 
 #Funcion que le envia el socket al cliente y recibe la lista de contactos donde tiene que enviar peticiones
 def enviar_socket(socket_cliente):
     try:
         #Envio mi socket
         mensaje = {
-            "ip":HOSTServ,
-            "puerto":PORTServ,
+            "ip":IPExt,
+            "puerto":PuertoEXT,
             }
         socket_cliente.send(json.dumps(mensaje).encode())
 
@@ -77,7 +90,7 @@ def enviar_socket(socket_cliente):
         #Por cada contacto, envio una peticion a cada nodo
         for elemento in respuesta:
             ip = elemento["ip"]
-            puerto = elemento["puerto"]
+            puerto = int(elemento["puerto"])
             try:
                 nuevoSocket = conectar(ip,puerto)
                 enviar_saludo(nuevoSocket)
@@ -86,21 +99,27 @@ def enviar_socket(socket_cliente):
                 nuevoSocket.close()
             #Solamente se lleva a cabo si el nodo esta en escucha
             except:
-                print("Servidor "+ ip + ":" + str(puerto) + " caido")
+                print("Servidor "+ ip + ":" + str(puerto) + " caido/fuera de funcionamiento")
+            #except Exception as e:
+                # Manejo de la excepción: muestra el mensaje de error en pantalla
+                #print("Se ha producido un error:", e)
 
 
     except (ConnectionResetError, ConnectionAbortedError):
         socket_cliente.close()
     except KeyboardInterrupt:
         raise
+    except json.decoder.JSONDecodeError as e:
+        #print("Error al decodificar la respuesta JSON:", e)
+        pass
     time.sleep(10)  # Esperar 10 segundos antes de enviar el próximo saludo
 
 #Funcion que envia un mensaje como saludo en forma de JSON a los nodos C
 def enviar_saludo(socket_cliente):
     mensaje = {
         "mensaje": "Hola, soy un nodo C",
-        "ip":HOSTServ,
-        "puerto":PORTServ
+        "ip":IPExt,
+        "puerto":PuertoEXT
 }
     socket_cliente.send(json.dumps(mensaje).encode())
 
