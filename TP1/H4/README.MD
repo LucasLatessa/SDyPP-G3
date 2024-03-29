@@ -20,6 +20,6 @@ Comandos ejecutados en la mv de google cloud: <br>
 docker login (en ambas maquinas) <br>
 docker pull lucaslatessa/h4  (en ambas maquinas) <br>
 <br>
-VM1 -> sudo docker run --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.185.81.236 8084<br>
+VM1 -> sudo docker run -it --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.185.81.236 8084<br>
 
-VM2 -> sudo docker run --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.196.99.208 8084
+VM2 -> sudo docker run -it --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.196.99.208 8084

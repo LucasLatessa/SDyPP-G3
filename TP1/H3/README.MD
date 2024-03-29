@@ -13,4 +13,4 @@ docker push lucaslatessa/sdpp/h3 <br>
 Comandos ejecutados en la mv de google cloud: <br>
 docker login <br>
 docker pull lucaslatessa/h3 <br>
-docker run --name h3 --rm -p 8083:8080 lucaslatessa/h3 <br>
+sudo docker run -it --rm --name h3  -p 8083:8080 lucaslatessa/h3 >> logfileh3.txt 2>&1 & <br>

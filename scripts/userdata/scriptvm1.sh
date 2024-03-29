@@ -44,7 +44,6 @@ sudo docker run -it --rm --name h6 -p $PUERTO_EXT:8080 -e PUERTO_EXT=$PUERTO_EXT
 
 #H7
 #Contactos
-#ATENCION LUCAS!!! MODIFICAR EL DE JOSU POR EL DE LUCAS UNA VEZ QUE ESTE HECHO
 sudo docker run -it --rm --name h7contactos -p 8087:8080 josuegaticaodato/h7contactos >> logfileh7r.txt 2>&1 &
 #ServCli.py
 export PUERTO_EXT=$(shuf -i 8088-8095 -n 1)

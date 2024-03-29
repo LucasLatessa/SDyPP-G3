@@ -26,8 +26,8 @@ docker pull lucaslatessa/h7contactos
 docker pull lucaslatessa/h7
 
 #Correr contenedores
-sudo docker run --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.196.99.208 8084  > logfileh4.txt 2>&1 &
-sudo docker run --rm --name h5 -p 8085:8080 lucaslatessa/h5 0.0.0.0 8080 35.196.99.208 8085 > logfileh5.txt 2>&1 &
+sudo docker run -it --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.196.99.208 8084  > logfileh4.txt 2>&1 &
+sudo docker run -it --rm --name h5 -p 8085:8080 lucaslatessa/h5 0.0.0.0 8080 35.196.99.208 8085 > logfileh5.txt 2>&1 &
 
 #H6
 #ServCli.py

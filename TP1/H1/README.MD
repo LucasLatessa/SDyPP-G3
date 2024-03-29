@@ -16,4 +16,4 @@ docker push lucaslatessa/h1 <br>
 Comandos ejecutados en la mv de google cloud: <br>
 docker login <br>
 docker pull lucaslatessa/h1 <br>
-docker run --name h1 --rm -p 8081:8080 lucaslatessa/h1 <br>
+sudo docker run -it --rm --name h1  -p 8081:8080 lucaslatessa/h1 >> logfileh1.txt 2>&1 & <br>
