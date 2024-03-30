@@ -1,3 +1,4 @@
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import os
 import socket
 import requests
@@ -6,6 +7,7 @@ import time
 import sys
 import json
 
+#Necesito la direccion IP para poder mandarsela al nodo D
 def obtener_ip_publica():
     try:
         # Hacer una solicitud HTTP a ifconfig.me para obtener la dirección IP pública
@@ -19,13 +21,52 @@ def obtener_ip_publica():
         print("Error al ejecutar la solicitud HTTP:", e)
         
 HOSTServ = "0.0.0.0" # Obtener y mostrar la dirección IP pública  # La dirección IP de C
-PORTServ = 8080 # Puerto para escuchar las conexiones entrantes con los nodos C
 #Host y Puerto del nodo D, que vienen como argumento cuando se llama al programa
 HOST_D = sys.argv[1] # La direccion IP de D: 35.196.99.208
-PORT_D = int(sys.argv[2]) # 8086
+PORT_D = int(sys.argv[2]) # 8088
+PORT_STATUS = 10006 # Puerto status
+
+# ------------------------------------------------------------------------------
+#                                ENDPOINT
+# ------------------------------------------------------------------------------
+
+status = True
+
+#Creamos la ruta
+class StatusHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/status':
+            #Devuelvo un codigo 200 y un mensaje diciendo que el server funciona
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            status_json = json.dumps({
+                "key":"h6",
+                "status": "Servidor en funcionamiento"})
+            self.wfile.write(status_json.encode())
+        else:
+            #Si es otro path dice que en endpoint no existe(404)
+            self.send_response(404)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write("Endpoint no encontrado".encode())
+
+
+def statusRun(server_class=HTTPServer, handler_class=StatusHandler):
+    #Crea el socket, y deja corriendo /status
+    server_address = (HOSTServ, PORT_STATUS)
+    httpd = server_class(server_address, handler_class)
+    print("Status corriendo!")
+    while status:
+        httpd.serve_forever() #Maneja solicitudes
+
+# ------------------------------------------------------------------------------
+#                                APLICACION
+# ------------------------------------------------------------------------------
 
 IPExt = obtener_ip_publica()
 PuertoEXT = os.getenv('PUERTO_EXT')
+PORTServ = int(PuertoEXT) # Puerto para escuchar las conexiones entrantes con los nodos C
 
 #Servidor en escucha
 def servidor():
@@ -143,6 +184,8 @@ if __name__ == "__main__":
 #Ejecucion del servidor en otro hilo
 servidor_thread = threading.Thread(target=servidor)
 servidor_thread.start()
+# Ejecutar el servidor HTTP en un hilo separado
+threading.Thread(target=statusRun, daemon=True).start()
 cliente()
 
 #cliente()

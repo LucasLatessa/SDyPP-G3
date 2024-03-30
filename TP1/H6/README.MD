@@ -13,21 +13,32 @@ Cada vez que el Nodo C envia una peticion a el Nodo D (que se encuentra en escuc
 
 Por cada contacto que haya recibido C, este realiza una peticion, este caido o no el servidor <br>
 
-Comando para levantar el nodo D: python .\RegistroContactos.py <br>
-Comando para levantar los nodos C: python .\Serv_CliH6.py 127.0.0.1 65535 (modificar ip local por remota) <br>
+<h2>Creando contenedor en docker  </h2> <br>
+(Serv_Cly): <br>
+docker build . -t h6 -f H6/h6.dockerfile <br>
+docker login <br>
+docker tag h6 lucaslatessa/h6 <br>
+docker push lucaslatessa/h6 <br>
 
+(RegistroContactos): <br>
+docker build . -t h6contactos -f H6/h6contactos.dockerfile <br>
+docker login <br>
+docker tag h6contactos lucaslatessa/h6contactos <br>
+docker push lucaslatessa/h6contactos <br>
+
+<h2>Comandos ejecutados en la mv de google cloud:  </h2> <br>
+sudo docker login (en ambas maquinas) <br>
+sudo docker pull lucaslatessa/h6  (en ambas maquinas) <br>
+sudo docker pull lucaslatessa/h6contactos  (en V1) <br>
 
 VM1:<br>
 Contactos:<br>
-sudo docker run -it --rm --name h6contactos -p 8086:8080 lucaslatessa/h6contactos >> logfileh6r.txt 2>&1 &<br>
+sudo docker run -it --rm --name h6contactos -p 8088:8088 -p 10008:10008 lucaslatessa/h6contactos >> logfileh6r.txt 2>&1 &<br>
 
+VM1 y VM2 <br>
 Serv_Cli.py:<br>
-export PUERTO_EXT=$(shuf -i 8087-8095 -n 1)<br>
-sudo docker run -it --rm --name h6 -p $PUERTO_EXT:8080 -e PUERTO_EXT=$PUERTO_EXT lucaslatessa/h6 35.196.99.208 8086 >> logfileh6.txt 2>&1 &<br>
+export PUERTO_EXT=$(shuf -i 8087-8095 -n 1)
+sudo docker run -it --rm --name h6 -p $PUERTO_EXT:$PUERTO_EXT -p 10006:10006 -e PUERTO_EXT=$PUERTO_EXT lucaslatessa/h6 35.196.99.208 8088 >> logfileh6.txt 2>&1 &<br>
 <br>
 
-VM2: <br>
-export PUERTO_EXT=$(shuf -i 8087-8095 -n 1) <br>
-sudo docker run -it --rm --name h6 -p $PUERTO_EXT:8080 -e PUERTO_EXT=$PUERTO_EXT lucaslatessa/h6 35.196.99.208 8086 >> logfileh6.txt 2>&1 & <br>
-<br>
 En el caso de no querer crear puertos aleatorios se modifica la variable de entorno $PUERTO_EXT por un puerto determinado <br>
