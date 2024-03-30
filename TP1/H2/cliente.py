@@ -10,7 +10,7 @@ def conectar():
         try:
             mi_socket.connect((HOST, PORT))
             return mi_socket
-        except ConnectionRefusedError:
+        except (ConnectionRefusedError, TimeoutError):
             print("La conexión fue rechazada. Intentando de nuevo...")
             time.sleep(5)  # Esperar 5 segundos antes de intentar de nuevo      
             continue
@@ -24,6 +24,7 @@ def enviar_saludo(socket_cliente):
             respuesta = socket_cliente.recv(1024).decode() #Buffer
             print(respuesta)
         except (ConnectionResetError, ConnectionAbortedError):
+            #Intenta reconectar
             socket_cliente.close()
             socket_cliente = conectar()  # Usamos una nueva variable para el nuevo socket
             continue

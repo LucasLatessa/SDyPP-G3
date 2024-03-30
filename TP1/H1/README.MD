@@ -4,7 +4,11 @@ Elabore un código de cliente TCP para A que se conecte con B y lo salude. <br>
 
 El archivo server.py representar a el nodo B, mientras que el archivo cliente.py representara al nodo A. <br>
 Se levanta el servidor desde la terminal usando docker, utilizando el comando "python server.py", con el host 0.0.0.0 (cualquiera) y el puerto 8081 <br>
-Se realiza una peticion con el cliente (desde nuestra PC) usando "python cliente.py", donde este enviara el mensaje al servidor y recibira una respuesta. <br>
+Se realiza una peticion con el cliente (desde nuestra PC) usando
+
+    python cliente.py
+    
+donde este enviara el mensaje al servidor y recibira una respuesta. <br>
 
 <h2>Comando para contenedores y gcloud</h2> <br>
 Creando contenedor en docker: <br> 
