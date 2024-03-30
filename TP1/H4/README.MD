@@ -24,3 +24,6 @@ sudo docker pull josuegaticaodato/h4  (en ambas maquinas) <br>
 VM1 -> sudo docker run -it --rm --name h4 -p 8084:8084 -p 10004:10004 josuegaticaodato/h4 0.0.0.0 8084 35.185.81.236 8084 <br>
 
 VM2 -> sudo docker run -it --rm --name h4 -p 8084:8084 -p 10004:10004 josuegaticaodato/h4 0.0.0.0 8084 35.196.99.208 8084
+
+<h2> Video explicativo </h2>
+https://youtu.be/ZDkjU9cPaZY
