@@ -19,3 +19,6 @@ sudo docker pull lucaslatessa/h1 <br>
 
 Para visualizar el contenido en consola: sudo docker run -it --rm --name h1 -p 8081:8081 -p 10001:10001 lucaslatessa/h1 <br>
 Para guarda en .txt: sudo docker run --rm --name h1 -p 8081:8081 -p 10001:10001 lucaslatessa/h1 >> logfileh1.txt 2>&1 & <br>
+
+<h2> Video explicativo </h2>
+https://youtu.be/sz1YGw73vQ0
