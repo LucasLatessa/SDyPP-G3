@@ -4,6 +4,7 @@
 
 # Asociar la region 
 #gcloud compute addresses create instance-public-ip --region=us-east1
+#gcloud compute addresses create instance-public-ip3 --region=us-east1
 
 # Creacion de las reglas de firewall para permitir el trafico en el puerto 80 y 20. Se agrego una regla extra para el
 # 8080, permitiendo asi la aplicacion de Node
@@ -18,10 +19,13 @@
 gcloud compute instances create vm1     --machine-type=e2-micro     --preemptible     --image-family=ubuntu-2204-lts     --image-project=ubuntu-os-cloud     --tags=http-server     --metadata="ssh-keys=$(cat ./id_rsa_example.pub)"     --metadata-from-file user-data=../userdata/scriptvm1.sh     --zone="us-east1-b"     --address=instance-public-ip
 #crear otra vm con otra ip creada llamada instance-public-ip2
 gcloud compute instances create vm2     --machine-type=e2-micro     --preemptible     --image-family=ubuntu-2204-lts     --image-project=ubuntu-os-cloud     --tags=http-server     --metadata="ssh-keys=$(cat ./id_rsa_example.pub)"     --metadata-from-file user-data=../userdata/scriptvm2.sh     --zone="us-east1-b"     --address=instance-public-ip2
+#maquina 3
+gcloud compute instances create vm3     --machine-type=e2-micro     --preemptible     --image-family=ubuntu-2204-lts     --image-project=ubuntu-os-cloud     --tags=http-server     --metadata="ssh-keys=$(cat ./id_rsa_example.pub)"     --metadata-from-file user-data=../userdata/scriptvm2.sh     --zone="us-east1-b"     --address=instance-public-ip3
 
 # PASO 3 - Conexion SSH a la instancia VM1 de GCloud 
 gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example
 #gcloud compute ssh vm2 --zone=us-east1-b --ssh-key-file=./id_rsa_example
+#gcloud compute ssh vm3 --zone=us-east1-b --ssh-key-file=./id_rsa_example
 #gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example --command "cat /var/log/cloud-init-output.log"
 
 # Realizo la conexion SSH ejecutando el comando para correr el contenedor

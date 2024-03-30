@@ -12,9 +12,11 @@
     <li>H5: http://35.196.99.208:10005/status</li>
     <li>H5VM2: http://35.185.81.236:10005/status</li>
     <li>H6 Contactos: http://35.196.99.208:10008/status</li>
-    <li>H6 VM1: http://35.196.99.208:10006/status</li>
+    <li>H6 VM1: http://35.196.99.208:10006/status</li> 
     <li>H6 VM2: http://35.185.81.236:10006/status</li>
+    <li>H6 VM3: http://35.227.127.166:10006/status</li>
     <li>H7 Contactos: http://35.196.99.208:10009/status</li>
     <li>H7 VM1: http://35.196.99.208:10007/status</li>
     <li>H7 VM2: http://35.185.81.236:10007/status</li>
+    <li>H7 VM3: http://35.227.127.166:10007/status</li>
 </ul>

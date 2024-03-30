@@ -23,17 +23,20 @@ docker push josuegaticaodato/h7contactos <br>
 
 <h2>Comandos ejecutados en la mv de google cloud:  </h2> <br>
 sudo docker login (en ambas maquinas) <br>
-sudo docker pull josuegaticaodato/h7  (en ambas maquinas) <br>
+sudo docker pull josuegaticaodato/h7  (en todas las maquinas) <br>
 sudo docker pull josuegaticaodato/h7contactos  (en V1) <br>
 
 VM1:<br>
 Contactos:<br>
 sudo docker run -it --rm --name h7contactos -p 8089:8089 -p 10009:10009 josuegaticaodato/h7contactos >> logfileh7r.txt 2>&1 &<br>
 
-VM1 y VM2 <br>
+VM1,VM2 y VM3 <br>
 Serv_Cli.py:<br>
 export PUERTO_EXT=$(shuf -i 8087-8095 -n 1)
 sudo docker run -it --rm --name h7 -p $PUERTO_EXT:$PUERTO_EXT -p 10007:10007 -e PUERTO_EXT=$PUERTO_EXT josuegaticaodato/h7 35.196.99.208 8089 >> logfileh7.txt 2>&1 &<br>
 <br>
 
 En el caso de no querer crear puertos aleatorios se modifica la variable de entorno $PUERTO_EXT por un puerto determinado <br>
+
+<h2> Video explicativo </h2>
+https://youtu.be/d-Gujuci2q4

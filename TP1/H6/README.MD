@@ -28,17 +28,20 @@ docker push lucaslatessa/h6contactos <br>
 
 <h2>Comandos ejecutados en la mv de google cloud:  </h2> <br>
 sudo docker login (en ambas maquinas) <br>
-sudo docker pull lucaslatessa/h6  (en ambas maquinas) <br>
+sudo docker pull lucaslatessa/h6  (en todas las maquinas) <br>
 sudo docker pull lucaslatessa/h6contactos  (en V1) <br>
 
 VM1:<br>
 Contactos:<br>
 sudo docker run -it --rm --name h6contactos -p 8088:8088 -p 10008:10008 lucaslatessa/h6contactos >> logfileh6r.txt 2>&1 &<br>
 
-VM1 y VM2 <br>
+VM1,VM2 y VM3 <br>
 Serv_Cli.py:<br>
 export PUERTO_EXT=$(shuf -i 8087-8095 -n 1)
 sudo docker run -it --rm --name h6 -p $PUERTO_EXT:$PUERTO_EXT -p 10006:10006 -e PUERTO_EXT=$PUERTO_EXT lucaslatessa/h6 35.196.99.208 8088 >> logfileh6.txt 2>&1 &<br>
 <br>
 
 En el caso de no querer crear puertos aleatorios se modifica la variable de entorno $PUERTO_EXT por un puerto determinado <br>
+
+<h2> Video explicativo </h2>
+https://youtu.be/7hYRQj4XRuo
