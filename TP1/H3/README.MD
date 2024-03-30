@@ -4,13 +4,15 @@ Modifique el código de B para que si el proceso A cierra la conexión (por ejem
 En este caso, el cliente sigue igual que el ejercicio anterior. <br>
 El servidor tiene que mantener abierto luego de terminar la conexion con cualquier nodo A, y esto se realiza aplicando un ciclo infinito para la apertura, peticion y cierre de la conexion <br>
 
-Creando contenedor en docker: <br>
+<h2>Comando para contenedores y gcloud</h2> <br>
 docker build . -t h3 -f H3/h3.dockerfile <br>
 docker login <br>
-docker tag h3 lucaslatessa/sdpp/h3 <br>
-docker push lucaslatessa/sdpp/h3 <br>
+docker tag h3 josuegaticaodato/h3 <br>
+docker push josuegaticaodato/h3 <br>
 
-Comandos ejecutados en la mv de google cloud: <br>
-docker login <br>
-docker pull lucaslatessa/h3 <br>
-sudo docker run -it --rm --name h3  -p 8083:8080 lucaslatessa/h3 >> logfileh3.txt 2>&1 & <br>
+<h2>Comandos ejecutados en la mv de google cloud:</h2><br>
+sudo docker login <br>
+sudo docker pull josuegaticaodato/h3 <br>
+
+Para visualziar el contenido en consola: sudo docker run -it --rm --name h3 -p 8083:8083 -p 10003:10003 josuegaticaodato/h3 <br>
+Para guarda en .txt: sudo docker run --rm --name h3 -p 8083:8083 -p 10003:10003 josuegaticaodato/h3  >> logfileh3.txt 2>&1 & <br>

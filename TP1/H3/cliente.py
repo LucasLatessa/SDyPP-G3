@@ -1,7 +1,7 @@
 import socket
 import time
 
-HOST = '35.185.81.236'
+HOST = '35.196.99.208'
 PORT = 8083 
 
 def conectar():
@@ -18,22 +18,21 @@ def conectar():
             raise  # Volver a lanzar la excepción para que el bloque principal pueda manejarla
 
 def enviar_saludo(socket_cliente):
+    socket_cliente.send("Hola desde el cliente".encode())
+    respuesta = socket_cliente.recv(1024).decode() #Buffer
+    print(respuesta)
+
+def cliente():
     while True:
         try:
-            socket_cliente.send("Hola desde el cliente".encode())
-            respuesta = socket_cliente.recv(1024).decode() #Buffer
-            print(respuesta)
+            mi_socket = conectar()
+            enviar_saludo(mi_socket)
+            mi_socket.close()
+            time.sleep(10)  # Esperar 10 segundos para reconecatar
         except (ConnectionResetError, ConnectionAbortedError):
             socket_cliente.close()
             socket_cliente = conectar()  # Usamos una nueva variable para el nuevo socket
-            continue
         except KeyboardInterrupt:
             raise  # Volver a lanzar la excepción para que el bloque principal pueda manejarla
-        time.sleep(10)  # Esperar 10 segundos antes de enviar el próximo saludo
 
-try:
-    mi_socket = conectar()
-    enviar_saludo(mi_socket)
-    mi_socket.close()
-except KeyboardInterrupt:
-    print("Interrupción del cliente. Cerrando...")
+cliente()
