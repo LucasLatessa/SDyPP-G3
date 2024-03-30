@@ -187,6 +187,3 @@ servidor_thread.start()
 # Ejecutar el servidor HTTP en un hilo separado
 threading.Thread(target=statusRun, daemon=True).start()
 cliente()
-
-#cliente()
-#servidor()
