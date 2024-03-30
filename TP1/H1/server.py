@@ -4,7 +4,8 @@ import socket
 import threading
 
 HOST = '0.0.0.0'  # La dirección IP de loopback, localhost
-PORT = 8080        # Puerto para escuchar las conexiones entrantes
+PORT = 8081        # Puerto para escuchar las conexiones entrantes
+PORT_STATUS = 10001 # Puerto status
 
 # ------------------------------------------------------------------------------
 #                                ENDPOINT
@@ -32,9 +33,9 @@ class StatusHandler(BaseHTTPRequestHandler):
             self.wfile.write("Endpoint no encontrado".encode())
 
 
-def statusRun(server_class=HTTPServer, handler_class=StatusHandler, puerto=10001):
-    #Crea el socket, y define las peticiones co
-    server_address = (HOST, puerto)
+def statusRun(server_class=HTTPServer, handler_class=StatusHandler):
+    #Crea el socket, y deja corriendo /status
+    server_address = (HOST, PORT_STATUS)
     httpd = server_class(server_address, handler_class)
     print("Status corriendo!")
     while status:

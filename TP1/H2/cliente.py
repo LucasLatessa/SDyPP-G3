@@ -1,7 +1,7 @@
 import socket
 import time
 
-HOST = '35.185.81.236'
+HOST = '35.196.99.208'
 PORT = 8082 
 
 def conectar():
