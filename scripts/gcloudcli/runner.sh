@@ -21,6 +21,7 @@ gcloud compute instances create vm2     --machine-type=e2-micro     --preemptibl
 
 # PASO 3 - Conexion SSH a la instancia VM1 de GCloud 
 gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example
+#gcloud compute ssh vm2 --zone=us-east1-b --ssh-key-file=./id_rsa_example
 #gcloud compute ssh vm1 --zone=us-east1-b --ssh-key-file=./id_rsa_example --command "cat /var/log/cloud-init-output.log"
 
 # Realizo la conexion SSH ejecutando el comando para correr el contenedor

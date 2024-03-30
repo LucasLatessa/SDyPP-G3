@@ -10,16 +10,17 @@ Es necesario ejecutar en la terminal 2 veces el comando con las ips y puertos co
 
 
 COMANDOS PARA CORRER DOCKER CON ARGS: corriendo los docker en nuestra maquina <br>
-Creando contenedor en docker: <br>
+<h2>Creando contenedor en docker: </h2> <br>
 docker build . -t h4 -f H4/h4.dockerfile <br>
 docker login <br>
-docker tag h4 lucaslatessa/h4 <br>
-docker push lucaslatessa/h4 <br>
+docker tag h4 josuegaticaodato/h4 <br>
+docker push josuegaticaodato/h4 <br>
 
-Comandos ejecutados en la mv de google cloud: <br>
-docker login (en ambas maquinas) <br>
-docker pull lucaslatessa/h4  (en ambas maquinas) <br>
+<h2>Comandos ejecutados en la mv de google cloud:  </h2> <br>
+sudo docker login (en ambas maquinas) <br>
+sudo docker pull josuegaticaodato/h4  (en ambas maquinas) <br>
 <br>
-VM1 -> sudo docker run -it --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.185.81.236 8084<br>
 
-VM2 -> sudo docker run -it --rm --name h4 -p 8084:8080 lucaslatessa/h4 0.0.0.0 8080 35.196.99.208 8084
+VM1 -> sudo docker run -it --rm --name h4 -p 8084:8084 -p 10004:10004 josuegaticaodato/h4 0.0.0.0 8084 35.185.81.236 8084 <br>
+
+VM2 -> sudo docker run -it --rm --name h4 -p 8084:8084 -p 10004:10004 josuegaticaodato/h4 0.0.0.0 8084 35.196.99.208 8084
