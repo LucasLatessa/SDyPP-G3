@@ -2,7 +2,7 @@ package com.tp2.servidorweb.dto;
 
 
 public class RequestTareaRemota {
-    private String imagendocker;
+    private String imagen;
     private String operador;
     private int n1;
     private int n2;
@@ -10,19 +10,19 @@ public class RequestTareaRemota {
     public RequestTareaRemota() {
     }
 
-    public RequestTareaRemota(String imagendocker, String operador, int n1, int n2) {
-        this.imagendocker = imagendocker;
+    public RequestTareaRemota(String imagen, String operador, int n1, int n2) {
+        this.imagen = imagen;
         this.operador = operador;
         this.n1 = n1;
         this.n2 = n2;
     }
 
-    public String getImagendocker() {
-        return imagendocker;
+    public String getImagen() {
+        return imagen;
     }
 
-    public void setImagendocker(String imagendocker) {
-        this.imagendocker = imagendocker;
+    public void setImagen(String imagen) {
+        this.imagen = imagen;
     }
 
     public String getOperador() {
