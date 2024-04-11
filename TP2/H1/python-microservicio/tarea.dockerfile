@@ -9,4 +9,4 @@ ADD tarea.py /usr/local/src/H2/tarea.py
 EXPOSE 5000
 WORKDIR /usr/local/src/H2
 ENV FLASK_APP=tarea.py    
-CMD ["flask", "run", "--host", "0.0.0.0"]
+CMD ["python", "tarea.py"]
