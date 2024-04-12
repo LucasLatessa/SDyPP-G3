@@ -60,9 +60,6 @@ def status():
     return data
 def obtener_ip_contenedor(nombre_cont,client, red):
     info_red=client.networks.get(red).attrs
-    """ for i in info_red['Containers']:
-        if i == nombre_cont:
-            return info_red['Containers'][i]['IPv4Address'] """
     return info_red['Containers'][nombre_cont]['IPv4Address']
 
 #Ejecucion
