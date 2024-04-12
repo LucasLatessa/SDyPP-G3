@@ -1,6 +1,6 @@
 comando
 docker build . -t josuegaticaodato/servidorweb -f servidor.dockerfile
 
-docker run --network=prueba --rm --name spweb -v /var/run/docker.sock:/var/run/docker.sock -p 8080:8080 josuegaticaodato/servidorpythonweb
+docker run --network=prueba --rm --name spweb -v /var/run/docker.sock:/var/run/docker.sock -p 8080:8080 josuegaticaodato/servidorweb
 
 docker stop $(docker ps -a -q)
