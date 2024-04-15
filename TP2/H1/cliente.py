@@ -9,9 +9,9 @@ IMAGEN = "josuegaticaodato/tarea"
 #JSON con los datos enviar 
 datosTarea = {
     "imagen": IMAGEN,
-    "operador": "/",
-    "n1": 50,
-    "n2": 10
+    "operador": "*",
+    "n1": 5000000000,
+    "n2": 1000
 }
 
 #Creamos el json y el header de la peticion

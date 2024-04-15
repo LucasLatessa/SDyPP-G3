@@ -1,4 +1,4 @@
-# Hit #2
+# Hit #2 (preguntas a responder)
 Después de completar el ejercicio y considerar el contenido teórico y práctico de los sistemas distribuidos vistos en clase, les solicitamos responder a los siguientes  siguientes enunciados. Para ello, deben enfocarse en proporcionar respuestas concisas y orientadas a la implementación para aplicar en los siguientes Trabajos Prácticos que abordaremos en la asignatura ☀️.
 Relevancia y Utilidad del Servicio:
 ●	¿En qué escenarios específicos sería crucial y absolutamente necesario disponer de servicios como el desarrollado en este ejercicio?
