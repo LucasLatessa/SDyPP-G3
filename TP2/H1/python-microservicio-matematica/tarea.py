@@ -1,5 +1,6 @@
 import operator
 from flask import Flask, jsonify, request
+import os
 
 app = Flask(__name__)
 
@@ -47,4 +48,6 @@ def operacionesMatematica(operador,n1,n2):
     return resultado
 
 if __name__ == '__main__':
-   app.run(host='0.0.0.0') 
+    port = int(os.environ.get("PORT", 5000))  # Obtener el puerto de la variable de entorno PORT
+
+    app.run(debug=True, host='0.0.0.0', port=port)

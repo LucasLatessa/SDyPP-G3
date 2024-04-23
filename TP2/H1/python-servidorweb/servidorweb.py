@@ -1,4 +1,5 @@
 import json
+import random
 import time
 import docker
 import requests
@@ -21,13 +22,17 @@ def ejecutarTareaRemota():
     #Paso a json los datos y agrego encabezados
     json_string = json.dumps(datosTarea)
     headers = {'Content-Type': 'application/json'}
+
+    #Asigno un puerto random
+    numero_puerto = random.randint(5000,6000)
     
     #Usando la API de docker para python, hago un pull de la imagen que me mando el usuario y levanto el contenedor
     client = docker.from_env()
     client.images.pull(imagen)
     container = client.containers.run(
         imagen,
-        ports={'5000/tcp': 5000},
+        environment={"PORT": str(numero_puerto)},  # Pasar el número de puerto como variable de entorno
+        ports={f'{numero_puerto}/tcp': numero_puerto},
         network='prueba',
         detach=True)
 
@@ -41,7 +46,7 @@ def ejecutarTareaRemota():
     #res = requests.get('http://0.0.0.0:5000/status')
 
     #Envio POST al servidor de tarea
-    res = requests.post(f'http://{container_ip}:5000/ejecutarTarea', data=json_string, headers=headers).json()
+    res = requests.post(f'http://{container_ip}:{numero_puerto}/ejecutarTarea', data=json_string, headers=headers).json()
 
     # Doy de baja el contenedor
     container.stop()
