@@ -24,5 +24,26 @@ docker run --network=prueba --rm --name spweb -v /var/run/docker.sock:/var/run/d
 Para matar todos los contenedores<br>
 docker stop $(docker ps -a -q)
 
+<h2> Direccion para realizar peticiones: 35.196.99.208:8080</h2>
+
+Datos JSON a enviar 
+
+{
+    "imagen":imagen de docker a levantar para realizar la tarea, en nuestro caso "josuegaticaodato/tarea",
+    "operador": Simbolo de un operador matematico, puede ser: +, -, * o /,
+    "n1":numero entero a operar,
+    "n2":numero entero a operar
+}
+
+Ejemplo:
+
+{
+    "imagen":"josuegaticaodato/tarea",
+    "operador": "*",
+    "n1":50,
+    "n2":100000
+}
+
+
 <h2> Video explicativo </h2>
 https://youtu.be/_GMM6e_9xYk
