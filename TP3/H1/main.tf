@@ -11,7 +11,7 @@ resource "google_compute_instance" "ejemplo" {
   count        = var.numero_instancias
   name         = "instancia-${count.index + 1}"
   machine_type = "n1-standard-1"
-  zone         = " us-east1-b"
+  zone         = "us-east1-b"
 
   boot_disk {
     initialize_params {
