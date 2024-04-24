@@ -1,2 +1,7 @@
+#Credenciales
 id_rsa*
+
+#Terraform
 **/.terraform/*
+*.tfstate
+*.tfstate.*
