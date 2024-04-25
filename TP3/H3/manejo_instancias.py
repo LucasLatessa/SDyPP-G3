@@ -14,13 +14,14 @@ def crear_instancia(nombre,zone, project_id, instancia_cliente):
         ],
         "network_interfaces": [
             {
-                "network": "global/networks/default"
+                "network": "global/networks/default",
+                "access_configs": [{}]
             }
         ]
     }
 
     # Crear la instancia
-    operation = instancia_cliente.insert(project=project_id, zone=zone, instance_resource=instance_body)
+    operation = instancia_cliente.insert(project=project_id, zone=zone, instance_resource=instance_body,)
 
     print("Creando la instancia...")
     operation.result()
