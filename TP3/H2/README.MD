@@ -2,7 +2,7 @@
 
 1. Utilice #user_data para instalar paquetes (wget, htop, etc) en sus servidores Linux como defecto.
 
-`Esto lo realizaremos mediante la ejecucion de un script "paquetes.sh"`
+## Esto lo realizaremos mediante la ejecucion de un script "paquetes.sh"
 
 ```
 #paquetes.sh
