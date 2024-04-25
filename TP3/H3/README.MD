@@ -1,17 +1,20 @@
 # Hit #3
-Cree un mini programa con SDK (python, node, por ejemplo) que liste (terminal) de forma simple y muestre el estado de las instancias (máquinas virtuales) existentes.
 
-[id] instancia id 1 | prendida
-[id] instancia id 2 | en pausa
-[id] instancia id 3 | terminada
+#### Cree un mini programa con SDK (python, node, por ejemplo) que liste (terminal) de forma simple y muestre el estado de las instancias (máquinas virtuales) existentes.
 
-Que permita que 1 instancia se:
-    Inicie, 
-    Pause, 
-    Reinicie
-    Termine (eliminar) su Instancia (*)
+##### - [id] instancia id 1 | prendida
+##### - [id] instancia id 2 | en pausa
+##### - [id] instancia id 3 | terminada
 
-¿Qué pasa con el estado de terraform si hago terminate?
+#### Que permita que 1 instancia se:
+##### - Inicie, 
+##### - Pause, 
+##### - Reinicie
+##### - Termine (eliminar) su Instancia (*)
+
+#### ¿Qué pasa con el estado de terraform si hago terminate?
+
+#### Hacer un dibujo explicativo de lo sucedido.
 
 Primero creamos 3 instancias usando terraform.
 
@@ -32,4 +35,4 @@ Luego, ejecuto el terraform apply para proceder con la aplicacion de los cambios
 
 En nuestro ejemplo, terraform se percata de que la instancia 2 no existe dentro de la infraestructura, generando el plan de accion para crearla nuevamente.
 
-Hacer un dibujo explicativo de lo sucedido.
+
