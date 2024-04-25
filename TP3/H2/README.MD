@@ -22,6 +22,8 @@ Wget de un archivo grande (ISO de ubuntu):
 gcloud compute ssh instancia-1 --command="wget https://releases.ubuntu.com/jammy/ubuntu-22.04.2-desktop-amd64.iso"
 gcloud compute ssh instancia-1 --command="wget -P /tmp https://releases.ubuntu.com/22.04.4/ubuntu-22.04.4-desktop-amd64.iso?_gl=1*x2gb7b*_gcl_au*MTU0MjgwMTg3OC4xNzEzODk2Njk2&_ga=2.3701936.1611293198.1713896696-400394319.1713896696"
 
-scp Lucas@104.196.53.160:/archivo.txt .
-scp ./prueba.txt Lucas@104.196.53.160:/home/lucas/prueba.txt
+# Copia de Maquina virtual a maquina local
+gcloud compute scp --recurse instancia-1:/home/Leone/prueba.txt .
 
+# Copia de Maquina local a maquina virtual
+gcloud compute scp ./prueba.txt instancia-1:/home/Leone
