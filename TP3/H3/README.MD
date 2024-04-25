@@ -6,8 +6,8 @@ Cree un mini programa con SDK (python, node, por ejemplo) que liste (terminal) d
 [id] instancia id 3 | terminada
 
 Que permita que 1 instancia se:
-    Inicie,  X
-    Pause,  
+    Inicie, 
+    Pause, 
     Reinicie
     Termine (eliminar) su Instancia (*)
 

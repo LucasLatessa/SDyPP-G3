@@ -37,8 +37,20 @@ def listar_instancias(zone, project_id, instancia_cliente):
         print(f" {count} | ID: {instancia.id} | Nombre: {instancia.name} | Estado: {instancia.status}")
         count += 1
 
-def pausar_instancias(zone,project_id, nombre, instancia_cliente):
+def pausar_instancia(nombre,zone, project_id, instancia_cliente):
     # Detener la instancia
     instancia_cliente.stop(project=project_id, zone=zone, instance=nombre)
 
     print(f"Instancia '{nombre}' pausada correctamente.")
+
+def reiniciar_instancia(nombre,zone, project_id, instancia_cliente):
+    # Reiniciar la instancia
+    instancia_cliente.reset(project=project_id, zone=zone, instance=nombre)
+
+    print(f"Instancia '{nombre}' reiniciada correctamente.")
+
+def eliminar_instancia(nombre,zone, project_id, instancia_cliente):
+    # Eliminar la instancia
+    instancia_cliente.delete(project=project_id, zone=zone, instance=nombre)
+
+    print(f"Instancia '{nombre}' eliminada correctamente.")
