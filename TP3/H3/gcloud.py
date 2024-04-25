@@ -8,6 +8,7 @@ instancia_cliente = compute_v1.InstancesClient()
 project_id = "organic-premise-416700"
 zone = "us-east1-b"
 
+#Menu interactivo
 menu = True
 while (menu):
     print("Que quiere hacer con las instancias:")
@@ -19,6 +20,7 @@ while (menu):
     print("")
     print("0 - Salir")
 
+    #Switch
     opcion = int(input("Eliga una opcion: "))
     if(opcion == 1):
         listar_instancias(zone,project_id,instancia_cliente)

@@ -1,3 +1,4 @@
+#Crear instancia
 def crear_instancia(nombre,zone, project_id, instancia_cliente):
     # Definir la configuración de la instancia
     instance_body = {
@@ -27,6 +28,7 @@ def crear_instancia(nombre,zone, project_id, instancia_cliente):
     operation.result()
     print("Instancia creada exitosamente.")
 
+#Listar instancias
 def listar_instancias(zone, project_id, instancia_cliente):
     #Obtengo la lista de instancias
     lista_instancias = instancia_cliente.list(project=project_id, zone=zone)
@@ -37,18 +39,21 @@ def listar_instancias(zone, project_id, instancia_cliente):
         print(f" {count} | ID: {instancia.id} | Nombre: {instancia.name} | Estado: {instancia.status}")
         count += 1
 
+#Pausar instancia
 def pausar_instancia(nombre,zone, project_id, instancia_cliente):
     # Detener la instancia
     instancia_cliente.stop(project=project_id, zone=zone, instance=nombre)
 
     print(f"Instancia '{nombre}' pausada correctamente.")
 
+#Reiniciar instancia
 def reiniciar_instancia(nombre,zone, project_id, instancia_cliente):
     # Reiniciar la instancia
     instancia_cliente.reset(project=project_id, zone=zone, instance=nombre)
 
     print(f"Instancia '{nombre}' reiniciada correctamente.")
 
+#Eliminar instancia
 def eliminar_instancia(nombre,zone, project_id, instancia_cliente):
     # Eliminar la instancia
     instancia_cliente.delete(project=project_id, zone=zone, instance=nombre)
