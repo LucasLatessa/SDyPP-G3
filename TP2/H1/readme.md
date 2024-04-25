@@ -6,44 +6,64 @@ Nuestro servidor tiene el metodo ejecutarTareaRemota(), vinculado al endpoint /g
 Este recibe el json enviado por el cliente, separando la imagen de los datos en si de la tarea a realizar, para poder crear el contenedor encargado de realizar la tarea, que sera nuestro tarea.py, encargado de realizar una tarea generica, en nuestro caso, una operacion matematica basica.
 Una vez levantado el contenedor y escuchando en el puerto 5000 del contenedor, el servidor le envia la peticion para obtener como resultado la respuesta a la tarea y devolverla al cliente.
 
-<h2>Comando para contenedores y gcloud</h2> <br>
-Creando contenedor en docker: <br> 
+## Comando para contenedores y gcloud
+
+Creando contenedor en docker:
+
+``` 
 docker build . -t josuegaticaodato/servidorweb -f servidor.dockerfile
+```
 
-<h2>Comandos ejecutados en la mv de google cloud:</h2><br>
-Pull al servidor web: <br>
+
+## Comandos ejecutados en la mv de google cloud:
+
+Pull al servidor web:
+
+```
 docker pull josuegaticaodato/servidorweb
-<br>
+```
 
-Creacion de la red para comunicar los contenedores: <br>
+Creacion de la red para comunicar los contenedores
+
+```
 docker network create --attachable prueba
+```
 
-Ejecucion del servidor web <br>
+Ejecucion del servidor web
+
+```
 docker run --network=prueba --rm --name spweb -v /var/run/docker.sock:/var/run/docker.sock -p 8080:8080 josuegaticaodato/servidorweb
+```
 
-Para matar todos los contenedores<br>
+Para matar todos los contenedores
+
+```
 docker stop $(docker ps -a -q)
+```
 
-<h2> Direccion para realizar peticiones: 35.196.99.208:8080</h2>
+## Direccion para realizar peticiones: 35.196.99.208:8080
 
 Datos JSON a enviar 
 
+```
 {
     "imagen":imagen de docker a levantar para realizar la tarea, en nuestro caso "josuegaticaodato/tarea",
     "operador": Simbolo de un operador matematico, puede ser: +, -, * o /,
     "n1":numero entero a operar,
     "n2":numero entero a operar
 }
+```
 
 Ejemplo:
 
+```
 {
     "imagen":"josuegaticaodato/tarea",
     "operador": "*",
     "n1":50,
     "n2":100000
 }
+```
 
-
-<h2> Video explicativo </h2>
+## Video explicativo
 https://youtu.be/_GMM6e_9xYk
