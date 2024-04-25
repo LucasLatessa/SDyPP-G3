@@ -1,12 +1,6 @@
-from google.cloud import compute_v1
-
-
 # Crear instancia
 def crear_instancia(nombre, zone, project_id, instancia_cliente):
     # Definir la configuración de la instancia
-    access = compute_v1.AccessConfig()
-    access.type_ = compute_v1.AccessConfig.Type.ONE_TO_ONE_NAT.name
-    access.name = "External NAT"
 
     instance_body = {
         "name": f"{nombre}",
@@ -50,7 +44,7 @@ def listar_instancias(zone, project_id, instancia_cliente):
     count = 1
     for instancia in lista_instancias:
         print(
-            f" {count} | ID: {instancia.id} | Nombre: {instancia.name} | Estado: {instancia.status}"
+            f" {count} | Nombre: {instancia.name} | Estado: {instancia.status}"
         )
         count += 1
 
