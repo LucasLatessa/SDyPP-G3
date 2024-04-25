@@ -18,6 +18,7 @@ Que estara como variable a la hora de crear la instancia
 
 ```
 #variables.tf
+
 variable "metadata_startup_script" {
     type= string
     default= "paquetes.sh"
@@ -26,6 +27,7 @@ variable "metadata_startup_script" {
 
 ```
 #main.tf
+
 resource "google_compute_instance" "ejemplo" {
   ...
   metadata_startup_script = file(var.metadata_startup_script)
@@ -39,6 +41,7 @@ Las variables de firewall sera un nuevo resource
 
 ```
 #main.tf
+
 resource "google_compute_firewall" "allow-http-https" {
   name    = "permitir-http-https"
   network = "default"
@@ -68,6 +71,8 @@ resource "google_compute_firewall" "ssh" {
 Creamos un nuevo archivo terraform, que cree una clave privada SSH usando TLS y la guarde en un archivo
 
 ```
+#main.tf
+
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -83,6 +88,8 @@ resource "local_file" "ssh_private_key_pem" {
 Esto se agrega al main.tf
 
 ```
+#main.tf
+
 resource "google_compute_instance" "ejemplo" {
     ...
   metadata = {
