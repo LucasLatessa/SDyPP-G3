@@ -2,13 +2,13 @@
 
 ### Cree un mini programa con SDK (python, node, por ejemplo) que liste (terminal) de forma simple y muestre el estado de las instancias (máquinas virtuales) existentes.
 
-### - [id] instancia id 1 | prendida
-### - [id] instancia id 2 | en pausa
-### - [id] instancia id 3 | terminada
+#### - [id] instancia id 1 | prendida
+#### - [id] instancia id 2 | en pausa
+#### - [id] instancia id 3 | terminada
 
 ### Que permita que 1 instancia se:
-### - Inicie, 
-### - Pause, 
+#### - Inicie, 
+#### - Pause, 
 #### - Reinicie
 #### - Termine (eliminar) su Instancia (*)
 
