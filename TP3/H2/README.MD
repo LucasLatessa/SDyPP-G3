@@ -2,7 +2,7 @@
 
 1. Utilice #user_data para instalar paquetes (wget, htop, etc) en sus servidores Linux como defecto.
 
-## Esto lo realizaremos mediante la ejecucion de un script "paquetes.sh"
+Esto lo realizaremos mediante la ejecucion de un script "paquetes.sh"
 
 ```
 #paquetes.sh
@@ -14,7 +14,7 @@ sudo apt install -y nginx
 sudo apt-get install -y wget htop
 ```
 
-`Que estara como variable a la hora de crear la instancia`
+Que estara como variable a la hora de crear la instancia
 
 ```
 #variables.tf
@@ -35,7 +35,7 @@ resource "google_compute_instance" "ejemplo" {
 
 2. Cree reglas de seguridad para acceder a puertos necesarios en las instancias (ssh 22, http 80, https 443)
 
-`Las variables de firewall sera un nuevo resource`
+Las variables de firewall sera un nuevo resource
 
 ```
 #main.tf
@@ -65,7 +65,7 @@ resource "google_compute_firewall" "ssh" {
 
 3. Configure SSH para poder acceder al servidor.
 
-`Creamos un nuevo archivo terraform, que cree una clave privada SSH usando TLS y la guarde en un archivo`
+Creamos un nuevo archivo terraform, que cree una clave privada SSH usando TLS y la guarde en un archivo
 
 ```
 resource "tls_private_key" "ssh" {
@@ -80,7 +80,7 @@ resource "local_file" "ssh_private_key_pem" {
 }
 ```
 
-`Esto se agrega al main.tf`
+Esto se agrega al main.tf
 
 ```
 resource "google_compute_instance" "ejemplo" {
@@ -101,13 +101,13 @@ Esta notable diferencia se debe a un factor principal que es la alta velocidad a
 
 5. Copie un archivo desde / hacia una Instancia (scp).
 
-`Copia de Maquina virtual a maquina local`
+Copia de Maquina virtual a maquina local
 
 ```
 gcloud compute scp --recurse instancia-1:/home/Leone/prueba.txt .
 ```
 
-`Copia de Maquina local a maquina virtual`
+Copia de Maquina local a maquina virtual
 
 ```
 gcloud compute scp ./prueba.txt instancia-1:/home/Leone
