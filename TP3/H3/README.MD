@@ -22,6 +22,10 @@ Primero creamos 3 instancias usando terraform.
 
 Luego, ejecutamos el programa python para borrar la instancia 2
 
+```
+python gcloud.py
+```
+
 ![Paso2](https://github.com/LucasLatessa/SDyPP-G3/assets/63746351/114a1144-a1fe-4d5a-b97d-f302e29a8aa6)
 
 Cuando hago "terminate" desde el programa y quiero hacer "terraform show" para ver el estado actual de los recursos gestionar, Terraform no tendra conocimiento de que la instancia fue eliminada, haciendo que no pueda gestionarla de forma eficiente, ya que Terraform gestiona los recursos de la infraestructura manteniendo un estado interno que rastrea el estado actual del recurso. 
