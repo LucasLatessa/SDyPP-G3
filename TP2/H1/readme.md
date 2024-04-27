@@ -14,6 +14,12 @@ Creando contenedor en docker:
 docker build . -t josuegaticaodato/servidorweb -f servidor.dockerfile
 ```
 
+Pusheando servidor web a docker hub:
+
+``` 
+docker push josuegaticaodato/servidorweb
+```
+
 
 ## Comandos ejecutados en la mv de google cloud:
 

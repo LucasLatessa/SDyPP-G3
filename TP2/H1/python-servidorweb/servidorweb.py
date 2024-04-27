@@ -13,14 +13,9 @@ def ejecutarTareaRemota():
     #Obtengo la imagen y armo los datos para realizar la tarea
     imagen = request.json["imagen"]
 
-    datosTarea = {
-        "operador" : request.json["operador"],
-        "n1" : int(request.json["n1"]),
-        "n2" : int(request.json["n2"])
-    }
-
     #Paso a json los datos y agrego encabezados
-    json_string = json.dumps(datosTarea)
+    request_data = request.json
+    json_string = json.dumps(request_data)
     headers = {'Content-Type': 'application/json'}
 
     #Asigno un puerto random
