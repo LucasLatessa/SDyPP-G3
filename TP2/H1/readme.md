@@ -94,4 +94,4 @@ Ejemplo:
 
 ## Video explicativo
 https://youtu.be/_GMM6e_9xYk <br/>
-https://youtu.be/e_KLwT-kzpU (actualizado)
+https://youtu.be/Lyg6VM_Iemg (Actualizado en base a correcciones)
