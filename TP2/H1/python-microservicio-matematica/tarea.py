@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 #Endpoint donde llevaran las peticiones del servidor web
-@app.route(rule="/ejecutarTarea",methods=["POST"])
+@app.route(rule="/tarea",methods=["POST"])
 def ejecutarTarea():
     #Obtengo los datos de la tarea
     operador = request.json["operador"]

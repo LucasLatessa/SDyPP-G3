@@ -13,6 +13,10 @@ def ejecutarTareaRemota():
     #Obtengo la imagen y armo los datos para realizar la tarea
     imagen = request.json["imagen"]
 
+    #Obtengo el nombre de la imagen, que va a ser igual que el endpoint
+    partes = imagen.split('/')
+    endpoint = partes[-1]
+
     #Paso a json los datos y agrego encabezados
     request_data = request.json
     json_string = json.dumps(request_data)
@@ -43,7 +47,7 @@ def ejecutarTareaRemota():
         #res = requests.get('http://0.0.0.0:5000/status')
 
         #Envio POST al servidor de tarea
-        res = requests.post(f'http://{container_ip}:{numero_puerto}/ejecutarTarea', data=json_string, headers=headers).json()
+        res = requests.post(f'http://{container_ip}:{numero_puerto}/{endpoint}', data=json_string, headers=headers).json()
 
         # Doy de baja el contenedor
         container.stop()

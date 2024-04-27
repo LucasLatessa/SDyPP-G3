@@ -47,11 +47,9 @@ Para matar todos los contenedores
 docker stop $(docker ps -a -q)
 ```
 
-## Direccion para realizar peticiones:
+## Direccion para realizar peticiones -> 35.196.99.208:8080
 
-### 35.196.99.208:8080
-
-Datos JSON a enviar 
+### Operaciones matematicas
 
 ```
 {
@@ -70,6 +68,27 @@ Ejemplo:
     "operador": "*",
     "n1":50,
     "n2":100000
+}
+```
+### Conversor de unidades
+
+```
+{
+    "imagen":"josuegaticaodato/conversor" (imagen a utilizar),
+    "valor": Valor a convertir
+    "unidad_origen": Unidad origen, en la que se se encuentra el valor (Unidades disponibles: metros, pies, kilometros)
+    "unidad_destino": Unidad destino, a la que quiero convertir (Unidades disponibles: metros, pies, kilometros)
+}
+```
+
+Ejemplo: 
+
+```
+{
+    "imagen":"josuegaticaodato/conversor",
+    "valor":10,
+    "unidad_origen":"pies",
+    "unidad_destino":"metros"
 }
 ```
 
