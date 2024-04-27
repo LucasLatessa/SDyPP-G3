@@ -31,21 +31,25 @@ def ejecutarTareaRemota():
         network='prueba',
         detach=True)
 
-    #Hago una espera de 5 segundos para que el contenedor se levante bien
-    time.sleep(5) 
-
-    container_ip=obtener_ip_contenedor(container.id,client,'prueba')
-    container_ip=(container_ip[:-3])#truncamos los digitos de la ip
-    # Envio POST al servidor de tarea utilizando la dirección IP del contenedor
     
-    #res = requests.get('http://0.0.0.0:5000/status')
+    try:
+        #Hago una espera de 5 segundos para que el contenedor se levante bien
+        time.sleep(5) 
 
-    #Envio POST al servidor de tarea
-    res = requests.post(f'http://{container_ip}:{numero_puerto}/ejecutarTarea', data=json_string, headers=headers).json()
+        container_ip=obtener_ip_contenedor(container.id,client,'prueba')
+        container_ip=(container_ip[:-3])#truncamos los digitos de la ip
+        # Envio POST al servidor de tarea utilizando la dirección IP del contenedor
+        
+        #res = requests.get('http://0.0.0.0:5000/status')
 
-    # Doy de baja el contenedor
-    container.stop()
-    container.remove()
+        #Envio POST al servidor de tarea
+        res = requests.post(f'http://{container_ip}:{numero_puerto}/ejecutarTarea', data=json_string, headers=headers).json()
+
+        # Doy de baja el contenedor
+        container.stop()
+        container.remove()
+    except Exception:
+        res = "El servidor no pudo resolver la tarea"
 
     #Devuelvo el resultado de la tare
     return res
