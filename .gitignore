@@ -5,3 +5,5 @@ id_rsa*
 **/.terraform/*
 *.tfstate
 *.tfstate.*
+*/.ssh
+credentials.json
