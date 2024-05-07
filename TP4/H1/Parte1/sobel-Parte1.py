@@ -1,6 +1,4 @@
-# INSTALACION DE LIBRERIAS:
-# PIP INSTALL OPENCV-PYTHON NUMPY
-
+import os
 import cv2 # Biblioteca para el procesamiento de imagenes
 import numpy as np #Biblioteca para la computacion cientifica en Python, que permite realizar operaciones matematicas eficientes en matrices y matrices mutldimiensionales.
 import sys
@@ -32,10 +30,13 @@ if __name__ == "__main__":
     ruta_img = sys.argv[1]
     imagen = cv2.imread(ruta_img)
 
+    # Obtener el nombre del archivo sin la extensión
+    nombre_archivo = os.path.splitext(os.path.basename(ruta_img))[0]
+
     #Aplico Sobel
     imagen_sobel = sobel(imagen)
 
     #Guardo la imagen}
-    cv2.imwrite(ruta_img + "_sobel.jpg", imagen_sobel )
+    cv2.imwrite(nombre_archivo + "_sobel.jpg", imagen_sobel )
 
     print("Imagen filtrada!")
