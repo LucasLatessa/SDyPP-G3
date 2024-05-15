@@ -9,10 +9,10 @@ app = Flask(__name__)
 @app.route(rule="/sobel",methods=["POST"])
 def aplicar_sobel():
 
-    imagen = request.json["imagenes"][0]
+    imagen = request.json["imagenes"]
     #print(imagen)
     #print("SEPARADOR")
-    imagen_np = np.array(list(imagen.values()),dtype=np.uint8)
+    imagen_np = np.array(imagen,dtype=np.uint8)
     imagen_np = np.squeeze(imagen_np)
     print(imagen_np)
     print(type(imagen_np))

@@ -29,9 +29,5 @@ def particionar_imagen(image):
             particion = image[y_start:y_end, x_start:x_end]
             particiones.append(particion)
 
-            # Guarda la partición en un archivo
-            cv2.imwrite(f'particion{i}_{j}.jpg', particion)
-
-    print("Imagen particionada!")
-
+    #print("Imagen particionada!")
     return particiones

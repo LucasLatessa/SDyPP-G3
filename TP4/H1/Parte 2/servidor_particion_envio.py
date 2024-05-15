@@ -1,3 +1,4 @@
+import os
 from particionador import particionar_imagen
 import sys
 import cv2
@@ -6,51 +7,74 @@ import json
 import numpy as np
 from matplotlib import pyplot as plt
 
+#Encargado de unir todas las imagenes (POR AHORA IMAGENES 2X2)
+def unir_particiones(particiones_sobel):
+    imagen_unida_horizontalmente = np.hstack(particiones_sobel[:2])
+    imagen_unida_verticalmente = np.vstack([imagen_unida_horizontalmente, np.hstack(particiones_sobel[2:])])
+    return imagen_unida_verticalmente
+
+#Envia las particiones a los workers para que apliquen el filtro de sobel
 def particionar_enviar_imagen(imagenes):
     HOST = "127.0.0.1"
     PORT = 9999
 
-    # Convertir todas las imágenes a una lista de diccionarios JSON
-    imagenes_json = [{"imagen": imagen.tolist()} for imagen in imagenes]
+    particiones_sobel = []
 
-    # Crear el objeto JSON para enviar
-    json_data = {"imagenes": imagenes_json}
+    #Por cada porcion de imagen, envio un request al Worker para que le aplique ese filtro
+    for imagen_particionada in imagenes:
+        number = 0
+        
+        # Crear el objeto JSON para enviar
+        json_data = {
+            "id": number,
+            "imagenes": imagen_particionada.tolist()
+        }
 
-    # Convertir el objeto JSON a una cadena JSON
-    json_string = json.dumps(json_data)
+        number += 1
 
-    # Especificar los encabezados de la solicitud HTTP
-    headers = {'Content-Type': 'application/json'}
+        # Convertir el objeto JSON a una cadena JSON
+        json_string = json.dumps(json_data)
 
-    try:
-        # Enviar la solicitud POST al servidor
-        response = requests.post(f'http://{HOST}:{PORT}/sobel', data=json_string, headers=headers)
-        #response.raise_for_status()  # Lanzar una excepción si la respuesta indica un error
-        print("Solicitud enviada correctamente")
-        imagen_filtrada = response.json()["imagen"]
-        #print(imagen_filtrada)
+        # Especificar los encabezados de la solicitud HTTP
+        headers = {'Content-Type': 'application/json'}
 
-        imagen_np = np.array(imagen_filtrada,dtype=np.uint8)
-        imagen_np = np.squeeze(imagen_np)
-        print(imagen_np)
+        try:
+            # Enviar la solicitud POST al Worker
+            response = requests.post(f'http://{HOST}:{PORT}/sobel', data=json_string, headers=headers)
 
-        # Mostrar la imagen utilizando OpenCV o matplotlib
-        plt.imshow(imagen_np, cmap='gray')
-        plt.title('Imagen Sobel')
-        plt.show()
+            #Obtengo la imagen filtrada y la guardo en un arreglo
+            imagen_filtrada = response.json()["imagen"]
+            imagen_np = np.array(imagen_filtrada,dtype=np.uint8)
+            imagen_np = np.squeeze(imagen_np)
+            particiones_sobel.append(imagen_np)
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error al enviar la solicitud: {e}")
+        #Manejo de errores
+        except requests.exceptions.RequestException as e:
+            print(f"Error al enviar la solicitud: {e}")
+
+    return particiones_sobel
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print("Como usar el programa: python particionador.py (ruta-imagen)")
+        print("Como usar el programa: python servidor_particion_envio.py (ruta-imagen)")
         sys.exit(1)
 
     # Obtengo la ruta y cargo la imagen
     ruta_img = sys.argv[1]
     imagen = cv2.imread(ruta_img)
 
+    # Obtener el nombre del archivo sin la extensión
+    nombre_archivo = os.path.splitext(os.path.basename(ruta_img))[0]
+
+    #Particiono las imagenes
     particiones = particionar_imagen(imagen)
 
-    particionar_enviar_imagen(particiones)
+    #Envio todas las particiones para que los workers apliquen sobel, y la guardo en un arreglo
+    particiones_sobel = particionar_enviar_imagen(particiones)
+
+    #Uno las particiones y guardo la imagen
+    mi_imagen = unir_particiones(particiones_sobel)
+
+    #Guardo la imagen
+    cv2.imwrite(nombre_archivo + "_sobel.jpg", mi_imagen)
+    print("Imagen filtrada!")
