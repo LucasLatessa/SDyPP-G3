@@ -3,7 +3,8 @@ import sys
 import cv2
 import requests
 import json
-
+import numpy as np
+from matplotlib import pyplot as plt
 
 def particionar_enviar_imagen(imagenes):
     HOST = "127.0.0.1"
@@ -24,12 +25,22 @@ def particionar_enviar_imagen(imagenes):
     try:
         # Enviar la solicitud POST al servidor
         response = requests.post(f'http://{HOST}:{PORT}/sobel', data=json_string, headers=headers)
-        response.raise_for_status()  # Lanzar una excepción si la respuesta indica un error
+        #response.raise_for_status()  # Lanzar una excepción si la respuesta indica un error
         print("Solicitud enviada correctamente")
+        imagen_filtrada = response.json()["imagen"]
+        #print(imagen_filtrada)
+
+        imagen_np = np.array(imagen_filtrada,dtype=np.uint8)
+        imagen_np = np.squeeze(imagen_np)
+        print(imagen_np)
+
+        # Mostrar la imagen utilizando OpenCV o matplotlib
+        plt.imshow(imagen_np, cmap='gray')
+        plt.title('Imagen Sobel')
+        plt.show()
+
     except requests.exceptions.RequestException as e:
         print(f"Error al enviar la solicitud: {e}")
-
-
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -43,4 +54,3 @@ if __name__ == '__main__':
     particiones = particionar_imagen(imagen)
 
     particionar_enviar_imagen(particiones)
-    

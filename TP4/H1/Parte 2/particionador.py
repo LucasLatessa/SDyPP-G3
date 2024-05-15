@@ -32,6 +32,6 @@ def particionar_imagen(image):
             # Guarda la partición en un archivo
             cv2.imwrite(f'particion{i}_{j}.jpg', particion)
 
-    print("Imagen filtrada!")
+    print("Imagen particionada!")
 
     return particiones

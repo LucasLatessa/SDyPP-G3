@@ -10,15 +10,25 @@ app = Flask(__name__)
 def aplicar_sobel():
 
     imagen = request.json["imagenes"][0]
-    imagen_np = np.array(list(imagen.values()))
+    #print(imagen)
+    #print("SEPARADOR")
+    imagen_np = np.array(list(imagen.values()),dtype=np.uint8)
+    imagen_np = np.squeeze(imagen_np)
+    print(imagen_np)
+    print(type(imagen_np))
 
     imagen_sobel = sobel(imagen_np)
 
-    imagen_sobel = {
-        "imagen" : imagen_sobel
+    # Convertir todas las imágenes a una lista de diccionarios JSON
+    imagenes_json = [{"imagen": imagen.tolist()} for imagen in imagen_sobel]
+
+    imagen_sobel_json = {
+        "imagen" : imagen_sobel.tolist()
     }
     
-    return jsonify(imagen_sobel)
+    return jsonify(imagen_sobel_json)
+    
+    #return "hola"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 9999))  # Obtener el puerto de la variable de entorno PORT

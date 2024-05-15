@@ -4,7 +4,7 @@ import numpy as np #Biblioteca para la computacion cientifica en Python, que per
 import sys
 
 def sobel(imagen):
-
+    #print(imagen)
     #Primero convierto la imagen a escala de grises
     gris = cv2.cvtColor(imagen,cv2.COLOR_BGR2GRAY)
 
@@ -19,6 +19,5 @@ def sobel(imagen):
     magnitud = cv2.normalize(magnitud, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U) 
     #De esta forma, los valores estan en el rango de 0 a 255
 
-    print(magenitud)
     #Retorno la imagen con el filtro (bordes resaltados)
     return magnitud
