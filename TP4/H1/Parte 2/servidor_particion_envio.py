@@ -1,17 +1,10 @@
 import os
-from particionador import particionar_imagen
+from funciones import particionar_imagen, unir_particiones
 import sys
 import cv2
 import requests
 import json
 import numpy as np
-from matplotlib import pyplot as plt
-
-#Encargado de unir todas las imagenes (POR AHORA IMAGENES 2X2)
-def unir_particiones(particiones_sobel):
-    imagen_unida_horizontalmente = np.hstack(particiones_sobel[:2])
-    imagen_unida_verticalmente = np.vstack([imagen_unida_horizontalmente, np.hstack(particiones_sobel[2:])])
-    return imagen_unida_verticalmente
 
 #Envia las particiones a los workers para que apliquen el filtro de sobel
 def particionar_enviar_imagen(imagenes):
@@ -76,7 +69,7 @@ if __name__ == '__main__':
     nombre_archivo = os.path.splitext(os.path.basename(ruta_img))[0]
 
     #Particiono las imagenes
-    particiones = particionar_imagen(imagen)
+    particiones = particionar_imagen(imagen, 3, 3) #Cantidad de particiones en X y Y
 
     #Envio todas las particiones para que los workers apliquen sobel, y la guardo en un arreglo
     particiones_sobel = particionar_enviar_imagen(particiones)

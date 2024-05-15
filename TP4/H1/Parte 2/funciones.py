@@ -1,13 +1,8 @@
-import cv2
-import sys
+import numpy as np
 
-def particionar_imagen(image):
+def particionar_imagen(image, num_particiones_x, num_particiones_y):
     # Obtén las dimensiones de la imagen
     height, width, _ = image.shape
-
-    # Define el número de particiones deseadas
-    num_particiones_x = 2
-    num_particiones_y = 2
 
     # Calcula el tamaño de cada partición
     part_height = height // num_particiones_y
@@ -31,3 +26,20 @@ def particionar_imagen(image):
 
     #print("Imagen particionada!")
     return particiones
+
+#Encargado de unir todas las imagenes (POR AHORA IMAGENES 2X2)
+def unir_particiones(particiones_sobel):
+    # Calculo el tamaño (número de particiones en x y en y)
+    n = int(len(particiones_sobel) ** 0.5)
+
+    # Uno las particiones horizontales
+    particiones_unidas = []
+    for i in range(0, len(particiones_sobel), n):
+        grupo = particiones_sobel[i:i+n]
+        particiones_unidas.append(np.hstack(grupo))
+
+    # Ahora uno de forma vertical
+    imagen_unida = np.vstack(particiones_unidas)
+
+    #Devuelvo la imagen completa
+    return imagen_unida
