@@ -1,4 +1,5 @@
-# Parte1 - Desarrollar un proceso centralizado que tome una imagen, aplique la máscara, y genere un nuevo archivo con el resultado. 
+# Parte 1 
+Desarrollar un proceso centralizado que tome una imagen, aplique la máscara, y genere un nuevo archivo con el resultado. 
 
 ## Instrucciones para aplicar el filtro de sobel
 
