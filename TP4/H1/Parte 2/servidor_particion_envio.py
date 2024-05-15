@@ -57,19 +57,22 @@ def particionar_enviar_imagen(imagenes):
     return particiones_sobel
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Como usar el programa: python servidor_particion_envio.py (ruta-imagen)")
+    if len(sys.argv) != 4:
+        print("Como usar el programa: python servidor_particion_envio.py (ruta-imagen) (cantidad_particiones_x) (cantidad_particiones_y)")
         sys.exit(1)
 
     # Obtengo la ruta y cargo la imagen
     ruta_img = sys.argv[1]
     imagen = cv2.imread(ruta_img)
 
+    cantidad_particiones_x = int(sys.argv[2])
+    cantidad_particiones_y = int(sys.argv[3])
+
     # Obtener el nombre del archivo sin la extensión
     nombre_archivo = os.path.splitext(os.path.basename(ruta_img))[0]
 
     #Particiono las imagenes
-    particiones = particionar_imagen(imagen, 3, 3) #Cantidad de particiones en X y Y
+    particiones = particionar_imagen(imagen, cantidad_particiones_x, cantidad_particiones_y) #Cantidad de particiones en X y Y
 
     #Envio todas las particiones para que los workers apliquen sobel, y la guardo en un arreglo
     particiones_sobel = particionar_enviar_imagen(particiones)

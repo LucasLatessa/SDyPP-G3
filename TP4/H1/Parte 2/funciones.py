@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 
 def particionar_imagen(image, num_particiones_x, num_particiones_y):
@@ -23,6 +24,9 @@ def particionar_imagen(image, num_particiones_x, num_particiones_y):
             # Extrae la partición
             particion = image[y_start:y_end, x_start:x_end]
             particiones.append(particion)
+
+            # Solo para mostrar como quedan las particiones
+            #cv2.imwrite(f'particion{i}_{j}.jpg', particion)
 
     #print("Imagen particionada!")
     return particiones
