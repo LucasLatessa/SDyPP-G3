@@ -40,3 +40,7 @@ def sobel(imagen):
 
     #Retorno la imagen con el filtro (bordes resaltados)
     return magnitud
+
+if __name__ == '__main__':
+
+    app.run(debug=True, host='0.0.0.0')

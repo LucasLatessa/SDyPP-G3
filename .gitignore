@@ -7,3 +7,4 @@ id_rsa*
 *.tfstate.*
 **/.ssh/*
 credentials.json
+*.terraform.lock.hcl
