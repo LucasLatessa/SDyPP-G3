@@ -4,7 +4,7 @@ import cv2
 import requests
 import json
 import numpy as np
-from python_terraform import Terraform
+from dda_python_terraform import *
 from google.cloud import compute_v1
 
 
@@ -150,9 +150,9 @@ def crear_instancias(numero_instancias):
         print("Error durante el init:", stderr)
 
     # Ejecuta "terraform plan"
-    return_code, stdout, stderr = tf.plan(var={'numero_instancias': numero_instancias})
-    if return_code != 0:
-        print("Error durante el plan:", stderr)
+    #return_code, stdout, stderr = tf.plan(no_color=IsFlagged,var={'numero_instancias': numero_instancias})
+    #if return_code != 0:
+    #    print("Error durante el plan:", stderr)
 
     # Ejecuta 'terraform apply'
     return_code, stdout, stderr = tf.apply(
@@ -211,7 +211,7 @@ if __name__ == "__main__":
     print("Imagen filtrada con exito!")
 
     # Terminado el trabajo, borro las maquians
-    return_code, stdout, stderr = tf.destroy(auto_approve=True)
-    if return_code != 0:
-        print("Error durante terraform destroy:", stderr)
-        exit(1)
+    #return_code, stdout, stderr = tf.destroy()
+    #if return_code != 0:
+    #    print("Error durante terraform destroy:", stderr)
+    #    exit(1)

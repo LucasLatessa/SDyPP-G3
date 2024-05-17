@@ -15,6 +15,8 @@ El objetivo de este ejercicio es que ustedes puedan construir una arquitectura e
 
 ```
 pip install -r requirements.txt
+pip install dda-python-terraform
+
 ```
 
 2. Ejecutar cliente
