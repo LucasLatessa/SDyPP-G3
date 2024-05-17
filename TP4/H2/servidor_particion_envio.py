@@ -11,7 +11,7 @@ from google.cloud import compute_v1
 # Envia las particiones a los workers para que apliquen el filtro de sobel
 def particionar_enviar_imagen(workers, imagenes):
     HOST = workers
-    PORT = 9999  # Puertos donde estaran los workers
+    PORT = 5000  # Puertos donde estaran los workers
 
     # Aqui se guardan las particiones que envien los workers
     particiones_sobel = []
@@ -36,6 +36,7 @@ def particionar_enviar_imagen(workers, imagenes):
         # Este While true es para pasarle una parte de la iamgen a un worker si o si
         while True:
             try:
+                print(f"Envio a {HOST[ip_worker]}:{PORT}")
                 # Enviar la solicitud POST al Worker
                 response = requests.post(
                     f"http://{HOST[ip_worker]}:{PORT}/sobel",
@@ -51,6 +52,7 @@ def particionar_enviar_imagen(workers, imagenes):
 
                 # Si se le aplico el filtro, salgo del bucle
                 if response.status_code == 200:
+                    print("Lo resolvio :)")
                     ip_worker = (ip_worker + 1) % len(
                         HOST
                     )  # Voy al worker siguiente, ya que el actual estara trabajando
@@ -58,6 +60,7 @@ def particionar_enviar_imagen(workers, imagenes):
 
             # Si el worker esta caido
             except requests.exceptions.RequestException as e:
+                print("Cambio de worker :(")
                 ip_worker = (ip_worker + 1) % len(HOST)  # Voy al worker siguiente
                 # print(f"Error al enviar la solicitud: {e}")
 
@@ -170,8 +173,11 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
+    cantidad_particiones_x = int(sys.argv[2])
+    cantidad_particiones_y = int(sys.argv[3])
+    
     # Cantidad de instancias
-    numero_instancias = 3
+    numero_instancias = cantidad_particiones_x + cantidad_particiones_y
 
     # Creo y levanto las maquinas
     tf = crear_instancias(numero_instancias)
@@ -179,9 +185,6 @@ if __name__ == "__main__":
     # Obtengo la ruta y cargo la imagen
     ruta_img = sys.argv[1]
     imagen = cv2.imread(ruta_img)
-
-    cantidad_particiones_x = int(sys.argv[2])
-    cantidad_particiones_y = int(sys.argv[3])
 
     # Obtener el nombre del archivo sin la extensión
     nombre_archivo = os.path.splitext(os.path.basename(ruta_img))[0]

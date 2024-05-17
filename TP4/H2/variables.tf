@@ -30,6 +30,6 @@ variable "region" {
 
 variable "imagen" {
   type    = string
-  default = "debian-cloud/debian-10"
+  default = "ubuntu-2204-jammy-v20240515"
 }
 

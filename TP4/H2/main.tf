@@ -54,3 +54,15 @@ resource "google_compute_firewall" "ssh" {
   source_ranges = ["0.0.0.0/0"]
 }
 
+resource "google_compute_firewall" "flask" {
+  name    = "permitir-flask"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["5000"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+}
+
