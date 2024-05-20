@@ -67,7 +67,6 @@ def particionar_enviar_imagen(workers, imagenes):
     # Devuelvo el arreglo de particiones
     return particiones_sobel
 
-
 # Funcion encargada de particionar imagenes en X y Y
 def particionar_imagen(image, num_particiones_x, num_particiones_y):
     # Obtén las dimensiones de la imagen
@@ -99,7 +98,6 @@ def particionar_imagen(image, num_particiones_x, num_particiones_y):
     # print("Imagen particionada!")
     return particiones
 
-
 # Encargado de unir todas las imagenes
 def unir_particiones(particiones_sobel):
     # Calculo el tamaño (número de particiones en x y en y)
@@ -116,7 +114,6 @@ def unir_particiones(particiones_sobel):
 
     # Devuelvo la imagen completa
     return imagen_unida
-
 
 # Obtengo una lista con las IP de cada instancia
 def lista_instancias(proyecto, zona):
@@ -135,7 +132,6 @@ def lista_instancias(proyecto, zona):
                     lista.append(config.nat_i_p)
 
     return lista
-
 
 # Creador de instancias con terraform
 def crear_instancias(numero_instancias):

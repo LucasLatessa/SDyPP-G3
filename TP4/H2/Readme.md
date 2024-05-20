@@ -33,4 +33,9 @@ python servidor_particion_envio.py ./GASPI.png 2 3
 
 ## Funcionamiento
 
-1. El 
+1. Una vez recibida la imagen y la cantidad de particiones en X e Y a aplicarse, se crean las instancias necesarias usando terraform, encargadas de aplicar el filtro de sobel a cada particion
+
+2. Luego, se realiza la particion de la imagen y se procede a enviarle cada pedazo a un worker, que estaran levantandos corriendo un contenedor Docker que tenga el filtro de sobel (endpoint: /sobel)
+    Cada vez que un worker no pudo resolver la solicitud, ya sea porque se vencio el tiempo de espera o esta caido, el ws procede a enviarle la misma peticiom a otro worker
+
+3. Recibidas todas las partes, se procede a unir todos los fragmentos y guardar la imagen en la maquina.
