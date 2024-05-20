@@ -20,7 +20,7 @@ metadata:
   labels:
     app: sobel
 spec:
-  replicas: 2
+  replicas: 6
   selector:
     matchLabels:
       app: sobel
@@ -34,3 +34,7 @@ spec:
           image: josuegaticaodato/servidor_sobel
           ports:
             - containerPort: 5000
+        tolerations:
+        - key: "instance_type"
+          operator: "Equal"
+          value: "app-pool"
