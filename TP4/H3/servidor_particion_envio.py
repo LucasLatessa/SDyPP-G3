@@ -9,15 +9,12 @@ from google.cloud import compute_v1
 
 
 # Envia las particiones a los workers para que apliquen el filtro de sobel
-def particionar_enviar_imagen(workers, imagenes):
-    HOST = workers
+def particionar_enviar_imagen(ipCluster, imagenes):
+    HOST = ipCluster
     PORT = 5000  # Puertos donde estaran los workers
 
     # Aqui se guardan las particiones que envien los workers
     particiones_sobel = []
-
-    # Manejo de workers en circulo, en el caso de que un worker este caido va a la siguinete
-    ip_worker = 0
 
     # Por cada porcion de imagen, envio un request al Worker para que le aplique ese filtro
     for i in range(0, len(imagenes)):
@@ -36,10 +33,10 @@ def particionar_enviar_imagen(workers, imagenes):
         # Este While true es para pasarle una parte de la iamgen a un worker si o si
         while True:
             try:
-                print(f"Envio a {HOST[ip_worker]}:{PORT}")
+                print(f"Envio a {HOST}:{PORT}")
                 # Enviar la solicitud POST al Worker
                 response = requests.post(
-                    f"http://{HOST[ip_worker]}:{PORT}/sobel",
+                    f"http://{HOST}:{PORT}/sobel",
                     data=json_string,
                     headers=headers,
                 )
@@ -53,16 +50,11 @@ def particionar_enviar_imagen(workers, imagenes):
                 # Si se le aplico el filtro, salgo del bucle
                 if response.status_code == 200:
                     print("Lo resolvio :)")
-                    ip_worker = (ip_worker + 1) % len(
-                        HOST
-                    )  # Voy al worker siguiente, ya que el actual estara trabajando
                     break
 
             # Si el worker esta caido
             except requests.exceptions.RequestException as e:
-                print("Cambio de worker :(")
-                ip_worker = (ip_worker + 1) % len(HOST)  # Voy al worker siguiente
-                # print(f"Error al enviar la solicitud: {e}")
+                print(f"Error al enviar la solicitud: {e}")
 
     # Devuelvo el arreglo de particiones
     return particiones_sobel
@@ -117,59 +109,10 @@ def unir_particiones(particiones_sobel):
     # Devuelvo la imagen completa
     return imagen_unida
 
-
-# Obtengo una lista con las IP de cada instancia
-def lista_instancias(proyecto, zona):
-    lista = []
-
-    instancia_cliente = compute_v1.InstancesClient()
-    request = compute_v1.ListInstancesRequest(project=proyecto, zone=zona)
-
-    # LLamo a la API
-    response = instancia_cliente.list(request=request)
-
-    for instance in response:
-        for interface in instance.network_interfaces:
-            if interface.access_configs:
-                for config in interface.access_configs:
-                    lista.append(config.nat_i_p)
-
-    return lista
-
-
-# Creador de instancias con terraform
-def crear_instancias(numero_instancias):
-    working_dir = r"C:\Universidad\2024\Sistemas Distribuidos y Programacion Paralela\SDyPP-G3\TP4\H3\terraform"
-
-    # Inicializo el terraform
-    tf = Terraform(working_dir=working_dir)
-
-    # Ejecuta "terraform init"
-    return_code, stdout, stderr = tf.init()
-    if return_code != 0:
-        print("Error durante el init:", stderr)
-
-    # Ejecuta "terraform plan"
-    #return_code, stdout, stderr = tf.plan(no_color=IsFlagged,var={'numero_instancias': numero_instancias})
-    #if return_code != 0:
-    #    print("Error durante el plan:", stderr)
-
-    # Ejecuta 'terraform apply'
-    return_code, stdout, stderr = tf.apply(
-        skip_plan=True, var={"numero_instancias": numero_instancias}
-    )
-    if return_code != 0:
-        print("Error durante el apply:", stderr)
-
-    print("Terraform apply ejecutado exitosamente.")
-
-    return tf
-
-
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print(
-            "Como usar el programa: python servidor_particion_envio.py (ruta-imagen) (cantidad_particiones_x) (cantidad_particiones_y)"
+            "Como usar el programa: python servidor_particion_envio.py (ruta-imagen) (cantidad_particiones_x) (cantidad_particiones_y) ip-Cluster"
         )
         sys.exit(1)
 
@@ -178,9 +121,6 @@ if __name__ == "__main__":
     
     # Cantidad de instancias
     numero_instancias = cantidad_particiones_x + cantidad_particiones_y
-
-    # Creo y levanto las maquinas
-    tf = crear_instancias(numero_instancias)
 
     # Obtengo la ruta y cargo la imagen
     ruta_img = sys.argv[1]
@@ -192,16 +132,10 @@ if __name__ == "__main__":
     # Particiono las imagenes
     particiones = particionar_imagen(
         imagen, cantidad_particiones_x, cantidad_particiones_y
-    )  # Cantidad de particiones en X y Y
-
-    # Obtengo las IP de cada instancia y se la paso al encargado de enviar las peticiones
-    proyecto = "sdypp-2024"
-    zona = "us-east4-a"
-
-    # Envio todas las particiones para que los workers apliquen sobel, y la guardo en un arreglo
-    particiones_sobel = particionar_enviar_imagen(
-        lista_instancias(proyecto, zona), particiones
     )
+
+    #Aplico filtro
+    particiones_sobel = particionar_enviar_imagen(sys.argv[4],particiones)
 
     # Uno las particiones y guardo la imagen
     mi_imagen = unir_particiones(particiones_sobel)
@@ -209,9 +143,3 @@ if __name__ == "__main__":
     # Guardo la imagen
     cv2.imwrite(nombre_archivo + "_sobel.jpg", mi_imagen)
     print("Imagen filtrada con exito!")
-
-    # Terminado el trabajo, borro las maquians
-    #return_code, stdout, stderr = tf.destroy()
-    #if return_code != 0:
-    #    print("Error durante terraform destroy:", stderr)
-    #    exit(1)
