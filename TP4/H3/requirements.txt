@@ -1,0 +1,4 @@
+flask==3.0.2
+opencv-python
+numpy==1.26.4
+dda_python_terraform
