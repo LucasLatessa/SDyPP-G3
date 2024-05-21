@@ -20,7 +20,6 @@ def aplicar_sobel(imagen):
 
     return imagen_sobel
 
-
 # Funcion que aplica sobel
 def sobel(imagen):
     # print(imagen)
@@ -41,10 +40,8 @@ def sobel(imagen):
     # Retorno la imagen con el filtro (bordes resaltados)
     return magnitud
 
-
 host = "localhost"
 nombre_queue = "image_parts"
-nombre_queue_resultados = "image_parts_resultados"
 
 # Me conecto con rabbit
 connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
@@ -54,14 +51,14 @@ channel = connection.channel()
 channel.queue_declare(queue=nombre_queue, durable=True)
 print(" Esperando mensajes. Toque CTRL+C para salir")
 
-
 # Funcion que se ejecuta cada vez que recibo un mensaje
 def callback(ch, method, properties, body):
-    # print(body)
-    
 
-    # Decodifico el identificador del encabezado
+    # Decodifico el identificador y el nombre de la imagen
     identificador = properties.headers.get("identificador")
+    # Decodifico el identificador del encabezado
+    nombre_imagen = properties.headers.get("nombre")
+    queues_resultado = nombre_queue + "_result_" + nombre_imagen
 
     print(f" Imagen recibida! ID:{identificador} ")
 
@@ -74,10 +71,10 @@ def callback(ch, method, properties, body):
     # Codifico la imagen a bytes
     _, buffer = cv2.imencode(".jpg", imagen_sobel)
     mensaje = buffer.tobytes()
-    channel.queue_declare(queue=nombre_queue_resultados, durable=True)
+    channel.queue_declare(queue=queues_resultado, durable=True)
     channel.basic_publish(
         exchange="",
-        routing_key=nombre_queue_resultados,
+        routing_key=queues_resultado,
         body=mensaje,
         properties=pika.BasicProperties(
             headers={"identificador": identificador}  # Identificador para cada parte

@@ -15,6 +15,7 @@ def sobelwebServer():
 
     # Obtengo la imagen y la divido
     imagen_file = request.files["imagen"]
+    nombreImagen = imagen_file.filename
     imagen_bytes = np.frombuffer(imagen_file.read(), np.uint8)
     imagencv2 = cv2.imdecode(imagen_bytes, cv2.IMREAD_COLOR)
 
@@ -38,19 +39,20 @@ def sobelwebServer():
     #print(particiones)
 
     #Envio las partes a los workers, usando rabbit
-    enviar_partes(particiones)
+    enviar_partes(nombreImagen,particiones)
 
     #Habilito la cola para recibir resultados
     cantPartes = partX * partY
-    particiones_sobel = recibir_resultados(cantPartes)
+    particiones_sobel = recibir_resultados(nombreImagen,cantPartes)
 
     #Uno la imagen y tengo el resultado
     imagen_resultado = unir_particiones(particiones_sobel)
     #print(imagen_resultado)
 
-    cv2.imshow("Imagen Sobel", imagen_resultado)
-    cv2.waitKey(0)  # Esperar hasta que se presione una tecla
-    cv2.destroyAllWindows()  # Cerrar todas las ventanas abiertas po
+    cv2.imwrite(nombreImagen + "_sobel.jpg", imagen_resultado )
+    #cv2.imshow("Imagen Sobel", imagen_resultado)
+    #cv2.waitKey(0)  # Esperar hasta que se presione una tecla
+    #cv2.destroyAllWindows()  # Cerrar todas las ventanas abiertas po
 
     return jsonify({"imagen": imagen_a_base64(imagen_resultado)})
 
@@ -110,7 +112,7 @@ def unir_particiones(particiones_sobel):
     return imagen_unida
 
 # Funcion que envia todas las partes a la cola de Rabbit
-def enviar_partes(particiones, nombre_queue="image_parts", host="localhost"):
+def enviar_partes(nombreImagen, particiones, nombre_queue="image_parts", host="localhost"):
     # Me conecto a rabbit
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
     channel = connection.channel()
@@ -127,16 +129,17 @@ def enviar_partes(particiones, nombre_queue="image_parts", host="localhost"):
         #print(mensaje)
         #print("-------------------------------------------------------")
         channel.basic_publish(exchange="", routing_key=nombre_queue, body=mensaje,properties=pika.BasicProperties(
-            headers={"identificador": str(i)}  # Identificador para cada parte
+            headers={"identificador": str(i), "nombre": nombreImagen}  # Identificador para cada parte
         ))
 
     #Cierro la conexion
     connection.close()
 
 #Funcion que recibe los resultados de los workers
-def recibir_resultados(cantPartes, nombre_queue="image_parts_resultados", host="localhost"):
+def recibir_resultados(nombreImagen,cantPartes, host="localhost"):
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
     channel = connection.channel()
+    nombre_queue = "image_parts_result_" + nombreImagen
 
     cant_imagenes_procesadas = 0
 
