@@ -24,7 +24,6 @@ def sobel(imagen):
     # Retorno la imagen con el filtro (bordes resaltados)
     return magnitud
 
-
 # Configuracion Reddis y Rabit
 host = "localhost"
 nombre_queue = "image_parts"
@@ -37,7 +36,6 @@ channel = connection.channel()
 # Creo la cola en el caso de que no exista
 channel.queue_declare(queue=nombre_queue, durable=True)
 print(" Esperando mensajes. Toque CTRL+C para salir")
-
 
 # Funcion que se ejecuta cada vez que recibo un mensaje
 def callback(ch, method, properties, body):
@@ -68,7 +66,6 @@ def callback(ch, method, properties, body):
     ch.basic_ack(
         delivery_tag=method.delivery_tag
     )  # Tengo ACK, de esta forma si se da de baja un workers no pierdo los mensajes.
-
 
 channel.basic_qos(
     prefetch_count=1
