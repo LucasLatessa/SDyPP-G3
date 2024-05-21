@@ -2,23 +2,7 @@ import cv2  # Biblioteca para el procesamiento de imagenes
 import numpy as np  # Biblioteca para la computacion cientifica en Python, que permite realizar operaciones matematicas eficientes en matrices y matrices mutldimiensionales.
 from flask import Flask, jsonify, request
 import pika
-
-
-# Funcion que aplica sobel
-def aplicar_sobel(imagen):
-    # La convierto a nparray para poder aplicarle Sobel
-    imagen_bytes = np.frombuffer(imagen, np.uint8)
-    imagen_np = cv2.imdecode(imagen_bytes, cv2.IMREAD_COLOR)
-
-    # Le aplico sobel
-    imagen_sobel = sobel(imagen_np)
-
-    # Mostrar la imagen resultante
-    # cv2.imshow("Imagen Sobel", imagen_sobel)
-    # cv2.waitKey(0)  # Esperar hasta que se presione una tecla
-    # cv2.destroyAllWindows()  # Cerrar todas las ventanas abiertas por OpenCV
-
-    return imagen_sobel
+import redis
 
 # Funcion que aplica sobel
 def sobel(imagen):
@@ -40,8 +24,11 @@ def sobel(imagen):
     # Retorno la imagen con el filtro (bordes resaltados)
     return magnitud
 
+
+# Configuracion Reddis y Rabit
 host = "localhost"
 nombre_queue = "image_parts"
+r = redis.Redis(host="localhost", port=6379, decode_responses=False)
 
 # Me conecto con rabbit
 connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
@@ -51,35 +38,32 @@ channel = connection.channel()
 channel.queue_declare(queue=nombre_queue, durable=True)
 print(" Esperando mensajes. Toque CTRL+C para salir")
 
+
 # Funcion que se ejecuta cada vez que recibo un mensaje
 def callback(ch, method, properties, body):
 
     # Decodifico el identificador y el nombre de la imagen
     identificador = properties.headers.get("identificador")
-    # Decodifico el identificador del encabezado
     nombre_imagen = properties.headers.get("nombre")
-    queues_resultado = nombre_queue + "_result_" + nombre_imagen
 
-    print(f" Imagen recibida! ID:{identificador} ")
+    print(f" Imagen recibida! Imagen: {nombre_imagen} - ID:{identificador} ")
 
-    imagen_sobel = aplicar_sobel(body)
-    # print(imagen_sobel)
+    # La convierto a nparray para poder aplicarle Sobel
+    imagen_bytes = np.frombuffer(body, np.uint8)
+    imagen_np = cv2.imdecode(imagen_bytes, cv2.IMREAD_COLOR)
+    imagen_sobel = sobel(imagen_np)
 
-    print(" Filtro aplicado! ")
+    print(" Filtro sobel aplicado! ")
 
-    # Envío la imagen procesada a la cola de resultados
     # Codifico la imagen a bytes
     _, buffer = cv2.imencode(".jpg", imagen_sobel)
-    mensaje = buffer.tobytes()
-    channel.queue_declare(queue=queues_resultado, durable=True)
-    channel.basic_publish(
-        exchange="",
-        routing_key=queues_resultado,
-        body=mensaje,
-        properties=pika.BasicProperties(
-            headers={"identificador": identificador}  # Identificador para cada parte
-        ),
-    )
+    imagen_redis = buffer.tobytes()
+
+    # Envío la imagen procesada a Redis
+    redis_key = f"{nombre_imagen}_{identificador}"
+    r.set(redis_key, imagen_redis)
+
+    print(f"Imagen procesada y almacenada en Redis. Clave: {redis_key}")
 
     ch.basic_ack(
         delivery_tag=method.delivery_tag
