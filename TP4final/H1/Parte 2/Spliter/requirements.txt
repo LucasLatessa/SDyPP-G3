@@ -1,0 +1,4 @@
+flask
+pika
+opencv-python
+numpy
