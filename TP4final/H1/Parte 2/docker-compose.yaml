@@ -22,6 +22,33 @@ services:
     networks:
       - network-grupo3
 
+  worker-1:
+    image: josuegaticaodato/worker
+    container_name: worker1
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - network-grupo3
+
+  worker-2:
+    image: josuegaticaodato/worker
+    container_name: worker2
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - network-grupo3
+
+  worker-3:
+    image: josuegaticaodato/worker
+    container_name: worker3
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - network-grupo3
+
   webserver:
     image: josuegaticaodato/webserver
     container_name: webserver
@@ -52,32 +79,5 @@ services:
       - worker-1
       - worker-2
       - worker-3
-    networks:
-      - network-grupo3
-
-  worker-1:
-    image: josuegaticaodato/worker
-    container_name: worker1
-    depends_on:
-      - redis
-      - rabbitmq
-    networks:
-      - network-grupo3
-
-  worker-2:
-    image: josuegaticaodato/worker
-    container_name: worker2
-    depends_on:
-      - redis
-      - rabbitmq
-    networks:
-      - network-grupo3
-
-  worker-3:
-    image: josuegaticaodato/worker
-    container_name: worker3
-    depends_on:
-      - redis
-      - rabbitmq
     networks:
       - network-grupo3

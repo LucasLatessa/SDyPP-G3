@@ -53,7 +53,7 @@ def sobelWS():
     id = uuid.uuid4()
 
     response = requests.post(
-        f"http://split:5001/split",
+        f"http://spliter:5001/split",
         files={"imagen": imagen_file},
         data={"particion-x": partX, "particion-y": partY, "id": id},
     )

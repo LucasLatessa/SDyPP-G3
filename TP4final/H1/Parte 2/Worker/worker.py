@@ -1,7 +1,22 @@
+import time
 import cv2  # Biblioteca para el procesamiento de imagenes
 import numpy as np  # Biblioteca para la computacion cientifica en Python, que permite realizar operaciones matematicas eficientes en matrices y matrices mutldimiensionales.
 import pika
 import redis
+
+# Conectandome al rabbit
+def connect_to_rabbitmq(host, delay=5):
+    conectado = True
+    while conectado:
+        try:
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host))
+            conectado = False
+            return connection
+        except pika.exceptions.AMQPConnectionError as e:
+            print(f"Connection failed: {e}. Retrying in {delay} seconds...")
+            time.sleep(delay)
+    raise Exception("Could not connect to RabbitMQ after several retries.")
+
 
 # Funcion que aplica sobel
 def sobel(imagen):
@@ -28,13 +43,12 @@ r = redis.Redis(host='redis', port=6379, decode_responses=False)
 
 # Me conecto con rabbit
 nombre_queue = "image_parts"
-connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+connection = connect_to_rabbitmq('rabbitmq')
 channel = connection.channel()
 
 # Creo la cola en el caso de que no exista
 channel.queue_declare(queue=nombre_queue, durable=True)
 print(" Esperando mensajes. Toque CTRL+C para salir")
-
 
 # Funcion que se ejecuta cada vez que recibo un mensaje
 def callback(ch, method, properties, body):
@@ -66,7 +80,6 @@ def callback(ch, method, properties, body):
     ch.basic_ack(
         delivery_tag=method.delivery_tag
     )  # Tengo ACK, de esta forma si se da de baja un workers no pierdo los mensajes.
-
 
 channel.basic_qos(
     prefetch_count=1
