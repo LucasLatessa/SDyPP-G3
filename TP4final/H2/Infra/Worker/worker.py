@@ -40,8 +40,7 @@ def sobel(imagen):
 
 # Configuracion Reddis
 ip = os.getenv('IP')
-password = os.getenv('PASSWORD')
-r = redis.StrictRedis(host=ip, port=6379,password=password, decode_responses=False)
+r = redis.Redis(host=ip, port=6379, decode_responses=False)
 
 # Me conecto con rabbit
 nombre_queue = "image_parts"
