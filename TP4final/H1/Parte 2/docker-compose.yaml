@@ -1,0 +1,83 @@
+version: '3.8'
+
+networks:
+  network-grupo3:
+    driver: bridge
+
+services:
+  redis:
+    image: "redis:latest"
+    container_name: "redis"
+    ports:
+      - "6379:6379"
+    networks:
+      - network-grupo3
+
+  rabbitmq:
+    image: "rabbitmq:management"
+    container_name: "rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - network-grupo3
+
+  webserver:
+    image: josuegaticaodato/webserver
+    container_name: webserver
+    ports:
+      - "5000:5000"
+    depends_on:
+      - joiner
+      - spliter
+    networks:
+      - network-grupo3
+
+  joiner:
+    image: josuegaticaodato/joiner
+    container_name: joiner
+    ports:
+      - "5002:5002"
+    depends_on:
+      - spliter
+    networks:
+      - network-grupo3
+
+  spliter:
+    image: josuegaticaodato/spliter 
+    container_name: spliter
+    ports:
+      - "5001:5001"
+    depends_on:
+      - worker-1
+      - worker-2
+      - worker-3
+    networks:
+      - network-grupo3
+
+  worker-1:
+    image: josuegaticaodato/worker
+    container_name: worker1
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - network-grupo3
+
+  worker-2:
+    image: josuegaticaodato/worker
+    container_name: worker2
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - network-grupo3
+
+  worker-3:
+    image: josuegaticaodato/worker
+    container_name: worker3
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - network-grupo3

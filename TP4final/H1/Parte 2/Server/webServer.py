@@ -53,7 +53,7 @@ def sobelWS():
     id = uuid.uuid4()
 
     response = requests.post(
-        f"http://{split}:5001/split",
+        f"http://split:5001/split",
         files={"imagen": imagen_file},
         data={"particion-x": partX, "particion-y": partY, "id": id},
     )
@@ -67,7 +67,7 @@ def sobelWS():
 
 @app.route(rule="/imagen/<id>", methods=["GET"])
 def consultarImagen(id):
-    url = f'http://{joiner}:5002/imagen?id=' + id
+    url = f'http://joiner:5002/imagen?id=' + id
     response = requests.get(url)
 
     if response.status_code != 200:
@@ -92,6 +92,4 @@ def status():
 
 
 if __name__ == '__main__':
-    split = "localhost"
-    joiner = "localhost"
     app.run(host='0.0.0.0', port=5000)

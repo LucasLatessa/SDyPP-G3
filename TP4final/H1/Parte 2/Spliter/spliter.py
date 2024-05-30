@@ -7,8 +7,7 @@ import redis
 app = Flask(__name__)
 
 # Configuracion Reddis
-host_redis = "localhost"
-r = redis.Redis(host=host_redis, port=6379, decode_responses=False)
+r = redis.Redis(host='redis', port=6379, decode_responses=False)
 
 
 # Encargado de particionar las imagenes en x e y
@@ -45,10 +44,10 @@ def particionar_imagen(image, num_particiones_x, num_particiones_y):
 
 # Manda a encolar en rabbitMQ todas las particiones
 def encolar(
-    nombreImagen, particiones, id, nombre_queue="image_parts", host="localhost"
+    nombreImagen, particiones, id, nombre_queue="image_parts"
 ):
     # Me conecto a rabbit
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
+    connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq', heartbeat=0))
     channel = connection.channel()
 
     # Creo la cola en el caso de que no exista

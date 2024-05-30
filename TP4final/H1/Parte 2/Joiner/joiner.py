@@ -101,6 +101,5 @@ def status():
     return data
     
 if __name__ == '__main__':
-    host_redis = "localhost"
-    r = redis.Redis(host=host_redis, port=6379, decode_responses=False)
+    r = redis.Redis(host='redis', port=6379, decode_responses=False)
     app.run(host='0.0.0.0', port=5002)

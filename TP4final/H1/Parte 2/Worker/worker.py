@@ -24,13 +24,11 @@ def sobel(imagen):
     return magnitud
 
 # Configuracion Reddis
-host_redis = "localhost"
-r = redis.Redis(host=host_redis, port=6379, decode_responses=False)
+r = redis.Redis(host='redis', port=6379, decode_responses=False)
 
 # Me conecto con rabbit
-host_rabit = "localhost"
 nombre_queue = "image_parts"
-connection = pika.BlockingConnection(pika.ConnectionParameters(host=host_rabit))
+connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
 channel = connection.channel()
 
 # Creo la cola en el caso de que no exista
