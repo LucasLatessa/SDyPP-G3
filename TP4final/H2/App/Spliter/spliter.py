@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 # Configuracion Reddis
 password = os.getenv('PASSWORD')
-r = redis.Redis(host='redis', port=6379, password=password, decode_responses=False)
+r = redis.Redis(host='redis', port=6379, decode_responses=False)
 
 # Encargado de particionar las imagenes en x e y
 def particionar_imagen(image, num_particiones_x, num_particiones_y):

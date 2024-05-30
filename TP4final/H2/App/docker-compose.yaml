@@ -12,7 +12,6 @@ services:
       - "6379:6379"
     networks:
       - network-grupo3
-    command: /bin/sh -c "redis-server --requirepass grupo3"
 
   rabbitmq:
     image: "rabbitmq:management"
@@ -37,7 +36,7 @@ services:
       - network-grupo3
 
   joiner:
-    image: josuegaticaodato/joiner-h2
+    image: josuegaticaodato/joiner
     container_name: joiner
     ports:
       - "5002:5002"
@@ -49,7 +48,7 @@ services:
       PASSWORD: grupo3
 
   spliter:
-    image: josuegaticaodato/spliter-h2
+    image: josuegaticaodato/spliter
     container_name: spliter
     ports:
       - "5001:5001"
