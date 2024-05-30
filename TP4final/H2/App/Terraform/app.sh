@@ -19,5 +19,5 @@ sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin dock
 
 # Clono el repo y hago el docker compose
 git clone https://github.com/LucasLatessa/SDyPP-G3.git
-cd SDyPP-G3/TP4Final/H2/App
+cd SDyPP-G3/TP4final/H2/App
 sudo docker compose up -d

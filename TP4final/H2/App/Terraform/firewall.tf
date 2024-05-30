@@ -39,7 +39,7 @@ resource "google_compute_firewall" "allow-rabbit-redis" {
 
     allow {
         protocol = "tcp"
-        ports    = ["5672", "6379", "5000"]
+        ports    = ["5672", "6379", "5000", "5001","5002","15672"]
     }
 
     source_ranges = ["0.0.0.0/0"]
