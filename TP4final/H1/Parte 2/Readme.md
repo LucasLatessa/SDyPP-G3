@@ -15,7 +15,7 @@ Para dar de baja todo
 docker-compose down
 ```
 
-3. Realizar una peticion al Web server, siguiendo esta estructura:
+2. Realizar una peticion al Web server, siguiendo esta estructura:
 
 ```
 POST localhost:5000/sobel
@@ -51,6 +51,12 @@ Utilizaremos este ID para consultar al mismo servidor si la imagen ya fue proces
 ```
 POST localhost:5000/imagen/bf6ad473-cf76-49c5-adcd-9ed134af0749
 ```
+
+# Diagrama
+
+![DiagramaSDyPP drawio](https://github.com/LucasLatessa/SDyPP-G3/assets/63746351/89f8796d-af0d-4c54-97cf-d234435ca569)
+
+Lo que se logra en este HIT es levantar todos los servicios utilizando docker compose, teniendo diferentes funcionales separadas para evitar el acoplamiento y que c/u trabaje de forma independiente.
 
 # Parte 3
 Mejore la aplicación del punto anterior para que, en caso de que un proceso distribuido (al que se le asignó parte de la imagen a procesar - WORKER) se caiga y no responda, el proceso principal detecte esta situación y pida este cálculo a otro proceso.
