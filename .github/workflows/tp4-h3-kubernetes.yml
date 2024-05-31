@@ -130,6 +130,8 @@ jobs:
 
                 terraform init --reconfigure
 
+                terraform plan
+
                 terraform destroy -lock=false --auto-approve
 
 
