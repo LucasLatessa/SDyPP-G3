@@ -1,3 +1,4 @@
+import os
 import time
 import cv2  # Biblioteca para el procesamiento de imagenes
 import numpy as np  # Biblioteca para la computacion cientifica en Python, que permite realizar operaciones matematicas eficientes en matrices y matrices mutldimiensionales.
@@ -39,11 +40,16 @@ def sobel(imagen):
     return magnitud
 
 # Configuracion Reddis
-r = redis.Redis(host='redis', port=6379, decode_responses=False)
+#Manipulacion de variables de entorno
+redis_ip = os.environ.get('REDIS_IP')
+r = redis.Redis(host=redis_ip, port=6379, decode_responses=False)
 
 # Me conecto con rabbit
 nombre_queue = "image_parts"
-connection = connect_to_rabbitmq('rabbitmq')
+
+#Manipulacion de variables de entorno
+rabbit_ip = os.environ.get('RABBITMQ_IP')
+connection = connect_to_rabbitmq(rabbit_ip)
 channel = connection.channel()
 
 # Creo la cola en el caso de que no exista
