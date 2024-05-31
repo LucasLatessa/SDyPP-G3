@@ -1,0 +1,33 @@
+aipVersion: apps/v1
+kind: Deployment
+metadata:
+  name: joiner
+  labels:
+    app: joiner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: joiner
+  template:
+    metadata:
+      labels:
+        app: joiner
+    sepc:
+      containers:
+        - name: joiner
+          image: josuegaticaodato/joiner
+          ports:
+            - containerPort: 5002
+
+---
+apiVersion: v1
+kind: Services
+metadata:
+  name: joiner
+spec:
+  ports:
+    - port: 5002
+  selector:
+    app: joiner
+  type: ClusterIP

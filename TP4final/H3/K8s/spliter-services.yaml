@@ -1,0 +1,33 @@
+aipVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spliter
+  labels:
+    app: spliter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spliter
+  template:
+    metadata:
+      labels:
+        app: spliter
+    sepc:
+      containers:
+        - name: spliter
+          image: josuegaticaodato/spliter
+          ports:
+            - containerPort: 5001
+
+---
+apiVersion: v1
+kind: Services
+metadata:
+  name: spliter
+spec:
+  ports:
+    - port: 5001
+  selector:
+    app: spliter
+  type: ClusterIP

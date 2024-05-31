@@ -1,0 +1,33 @@
+aipVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webserver
+  labels:
+    app: webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webserver
+  template:
+    metadata:
+      labels:
+        app: webserver
+    sepc:
+      containers:
+        - name: webserver
+          image: josuegaticaodato/webserver
+          ports:
+            - containerPort: 5000
+
+---
+apiVersion: v1
+kind: Services
+metadata:
+  name: webserver
+spec:
+  ports:
+    - port: 5000
+  selector:
+    app: webserver
+  type: LoadBalancer
