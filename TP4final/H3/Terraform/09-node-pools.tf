@@ -21,7 +21,7 @@ resource "google_container_node_pool" "infra" {
 
   node_config {
     preemptible  = false
-    machine_type = "e2-small"
+    machine_type = var.tipo_maquina
 
     labels = {
       role = "infra"
@@ -53,7 +53,7 @@ resource "google_container_node_pool" "app" {
 
   node_config {
     preemptible  = true
-    machine_type = "e2-small"
+    machine_type = var.tipo_maquina
 
     labels = {
       team = "app"

@@ -1,4 +1,4 @@
-aipVersion: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: joiner
@@ -13,7 +13,7 @@ spec:
     metadata:
       labels:
         app: joiner
-    sepc:
+    spec:
       containers:
         - name: joiner
           image: josuegaticaodato/joiner
@@ -22,7 +22,7 @@ spec:
 
 ---
 apiVersion: v1
-kind: Services
+kind: Service
 metadata:
   name: joiner
 spec:

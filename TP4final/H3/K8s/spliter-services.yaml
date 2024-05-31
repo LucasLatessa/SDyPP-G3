@@ -1,4 +1,4 @@
-aipVersion: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spliter
@@ -13,7 +13,7 @@ spec:
     metadata:
       labels:
         app: spliter
-    sepc:
+    spec:
       containers:
         - name: spliter
           image: josuegaticaodato/spliter
@@ -22,7 +22,7 @@ spec:
 
 ---
 apiVersion: v1
-kind: Services
+kind: Service
 metadata:
   name: spliter
 spec:

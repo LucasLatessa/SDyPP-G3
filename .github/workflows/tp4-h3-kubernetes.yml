@@ -1,0 +1,114 @@
+name: K8s actions github
+
+on:
+    push:
+        branches: ['main']
+        paths: ['TP4final/H3/**']
+
+jobs:
+    # build-images:
+    #     name: Build y Push de imagenes Docker (Spliter-WS-Joiner)
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         - name: Checkout repository
+    #           uses: actions/checkout@v4
+
+    #         - name: Login en Docker Hub
+    #           uses: docker/login-action@v3
+    #           with:
+    #               username: ${{ secrets.DOCKER_HUB_USERNAME }}
+    #               password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    #         - name: Build-push spliter
+    #           uses: docker/build-push-action@v5
+    #           with:
+    #             context: ./TP4final/H3/Contenedores/Spliter
+    #             push: true
+    #             tags: ${{ secrets.DOCKER_HUB_USERNAME }}/spliter:latest
+
+    #         - name: Build-push joiner
+    #           uses: docker/build-push-action@v5
+    #           with:
+    #               context: ./TP4final/H3/Contenedores/Joiner
+    #               push: true
+    #               tags: ${{ secrets.DOCKER_HUB_USERNAME }}/joiner:latest
+
+    #         - name: Build-push web server
+    #           uses: docker/build-push-action@v5
+    #           with:
+    #                 context: ./TP4final/H3/Contenedores/Server
+    #                 push: true
+    #                 tags: ${{ secrets.DOCKER_HUB_USERNAME }}/webserver:latest
+    infra:
+        name: Build K8S infra
+        if: startsWith(github.event.head_commit.message, '(go)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Ckeckout
+              uses: actions/checkout@v4
+
+            #Instalo Terraform
+            - name: Terraform setup
+              uses: hashicorp/setup-terraform@v3
+
+            #Creacion del Cluster
+            - name: Terraform init
+              working-directory: ./TP4final/H3/Terraform
+              env:
+                GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+              run: |
+                echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
+
+                ls -lah
+
+                terraform init --reconfigure
+
+                terraform validate
+
+                terraform plan -lock=false
+
+                terraform apply -lock=false --auto-approve
+
+    deploy-apps:
+        name: Despliegue de servicios y aplicaciones
+        needs: infra
+        if: startsWith(github.event.head_commit.message, '(go)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            # Conf GCloud
+            - name: Google Cloud authentication
+              uses: google-github-actions/auth@v2
+              with:
+                  credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+
+            - name: Google Cloud kubectl plugin
+              uses: google-github-actions/setup-gcloud@v2
+              with:
+                  version: '>= 363.0.0'
+                  install_components: 'kubectl'
+            
+            - name: GCloud Kubectl credentials
+              run: |
+                    REGION="us-east4-b"
+                    gcloud info
+                    gcloud components list
+                    gcloud container clusters get-credentials primary --region=${REGION}
+
+            - name: Deploy y Services app
+              working-directory: ./TP4final/H3/K8s
+              run: |
+                kubectl apply -f joiner-services.yaml
+                kubectl apply -f rabbit-services.yaml
+                kubectl apply -f redis-services.yaml
+                kubectl apply -f spliter-services.yaml
+                kubectl apply -f webserver-services.yaml
+
+
+                
+
+            
+            
+              
