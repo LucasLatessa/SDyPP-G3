@@ -1,3 +1,4 @@
+import threading
 import cv2
 from flask import Flask, request
 import numpy as np
@@ -79,15 +80,7 @@ def subirCantidadPartes(id, cantPartes):
     redis_key = f"{id}"
     r.set(redis_key, cantPartes)
 
-
-# Encargado de partir la imagen en n pedazos y mandarla a la cola de Rabbit
-@app.route("/split", methods=["POST"])
-def splitImagen():
-    imagen = request.files["imagen"]
-    partX = int(request.form["particion-x"])
-    partY = int(request.form["particion-y"])
-    id = request.form["id"]
-
+def procesar_imagen(imagen, partX, partY, id):
     # Paso a numpy para que pueda ser trabajada
     imagen_bytes = np.frombuffer(imagen.read(), np.uint8)
     imagencv2 = cv2.imdecode(imagen_bytes, cv2.IMREAD_COLOR)
@@ -101,6 +94,18 @@ def splitImagen():
     # Envio a redis la cantidad de partes que tengo de mi imagen
     cantidadPartes = partX * partY
     subirCantidadPartes(id, cantidadPartes)
+
+# Encargado de partir la imagen en n pedazos y mandarla a la cola de Rabbit
+@app.route("/split", methods=["POST"])
+def splitImagen():
+    imagen = request.files["imagen"]
+    partX = int(request.form["particion-x"])
+    partY = int(request.form["particion-y"])
+    id = request.form["id"]
+
+    # Crear y empezar un nuevo hilo para procesar la imagen
+    hilo = threading.Thread(target=procesar_imagen, args=(imagen, partX, partY, id))
+    hilo.start()
 
     return "Imagen particionada y encolada en rabbit", 200
 

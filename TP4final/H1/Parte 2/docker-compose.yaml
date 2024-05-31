@@ -71,7 +71,7 @@ services:
       - network-grupo3
 
   spliter:
-    image: josuegaticaodato/spliter 
+    image: josuegaticaodato/spliter-h2
     container_name: spliter
     ports:
       - "5001:5001"

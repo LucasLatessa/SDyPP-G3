@@ -49,7 +49,7 @@ services:
 
   spliter:
     image: josuegaticaodato/spliter
-    container_name: spliter
+    container_name: spliter-h2
     ports:
       - "5001:5001"
     networks:
