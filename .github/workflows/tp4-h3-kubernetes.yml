@@ -105,6 +105,33 @@ jobs:
                 kubectl apply -f redis-services.yaml
                 kubectl apply -f spliter-services.yaml
                 kubectl apply -f webserver-services.yaml
+    
+    infra-down:
+        name: Eliminar K8s Infra
+        if: startsWith(github.event.head_commit.message, '(down)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Ckeckout
+              uses: actions/checkout@v4
+
+            #Instalo Terraform
+            - name: Terraform setup
+              uses: hashicorp/setup-terraform@v3
+
+            #Creacion del Cluster
+            - name: Terraform init
+              working-directory: ./TP4final/H3/Terraform
+              env:
+                GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+              run: |
+                echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
+
+                ls -lah
+
+                terraform init --reconfigure
+
+                terraform destroy -lock=false --auto-approve
+
 
 
                 
