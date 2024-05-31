@@ -1,0 +1,107 @@
+name: Workers actions github
+
+on:
+    push:
+        branches: ['main']
+        paths: ['TP4final/H3/**']
+
+jobs:
+    infra:
+        name: Build Workers infra
+        if: startsWith(github.event.head_commit.message, '(go)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Ckeckout
+              uses: actions/checkout@v4
+
+            # Conf GCloud
+            - name: Google Cloud authentication
+              uses: google-github-actions/auth@v2
+              with:
+                  credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+                  
+            - name: Google Cloud kubectl plugin
+              uses: google-github-actions/setup-gcloud@v2
+              with:
+                    version: '>= 363.0.0'
+                    install_components: 'kubectl'
+
+            - name: Esperar a que el cluster este levantado
+              run: |
+                  REGION="us-east4-b"
+                  until [ "$(gcloud container clusters describe primary --region=${REGION} --format='value(status)')" = "RUNNING" ]; do
+                    echo "Esperar a que el cluster este levantado..."
+                    sleep 10
+                  done
+
+            - name: GCloud Kubectl credentials
+              run: |
+                    REGION="us-east4-b"
+                    gcloud info
+                    gcloud components list
+                    gcloud container clusters get-credentials primary --region=${REGION}
+            
+            - name: Esperar a Rabbit que se levante
+              run: |
+                while [[ $(kubectl get svc rabbitmq -n rabbitmq-namespace -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') == "" ]]; do
+                    echo "Waiting for RabbitMQ service to be ready..."
+                    sleep 10
+                done    
+
+            - name: Agregar IP Rabbit y Redis a worker.sh
+              working-directory: ./TP4final/H3/Terraform-worker
+              run: |
+                RABBITMQ_IP=$(kubectl get svc rabbitmq -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+                REDIS_IP=$(kubectl get svc redis -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+                cat <<EOL > ./worker.sh
+                sudo docker run --name worker -e RABBITMQ_IP=${RABBITMQ_IP} -e REDIS_IP=${REDIS_IP} josuegaticaodato/worker-h3
+                EOL
+
+            #Instalo Terraform
+            - name: Terraform setup
+              uses: hashicorp/setup-terraform@v3
+
+            #Creacion de los workers
+            - name: Terraform init
+              working-directory: ./TP4final/H3/Terraform-worker
+              env:
+                GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+              run: |
+                echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
+
+                ls -lah
+
+                terraform init --reconfigure
+
+                terraform validate
+
+                terraform plan -lock=false
+
+                terraform apply -lock=false --auto-approve
+
+    infra-down:
+        name: Eliminar workers Infra
+        if: startsWith(github.event.head_commit.message, '(down)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Ckeckout
+              uses: actions/checkout@v4
+
+            #Instalo Terraform
+            - name: Terraform setup
+              uses: hashicorp/setup-terraform@v3
+
+            #Creacion del Cluster
+            - name: Terraform init
+              working-directory: ./TP4final/H3/Terraform-worker
+              env: 
+                GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+              run: |
+                echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
+
+                ls -lah
+
+                terraform init --reconfigure
+
+                terraform destroy -lock=false --auto-approve
