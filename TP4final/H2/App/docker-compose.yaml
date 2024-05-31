@@ -48,8 +48,8 @@ services:
       PASSWORD: grupo3
 
   spliter:
-    image: josuegaticaodato/spliter
-    container_name: spliter-h2
+    image: josuegaticaodato/spliter-h2
+    container_name: spliter
     ports:
       - "5001:5001"
     networks:

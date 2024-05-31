@@ -18,4 +18,4 @@ sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 
 # Ejecuto el worker dentro de la VM
-docker run -e IP=34.48.24.224 josuegaticaodato/worker-h2
+docker run -e IP=35.199.17.181 josuegaticaodato/worker-h2
