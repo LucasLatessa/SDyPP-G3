@@ -6,10 +6,11 @@ networks:
 
 services:
   redis:
-    image: "redis:latest"
+    image: "redis/redis-stack:latest"
     container_name: "redis"
     ports:
       - "6379:6379"
+      - "8001:8001"
     networks:
       - network-grupo3
 
@@ -71,7 +72,7 @@ services:
       - network-grupo3
 
   spliter:
-    image: josuegaticaodato/spliter-h2
+    image: josuegaticaodato/spliter
     container_name: spliter
     ports:
       - "5001:5001"

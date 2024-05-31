@@ -1,6 +1,5 @@
 # Configuracion Reddis
 import io
-import os
 import time
 import cv2
 import numpy as np
@@ -35,7 +34,7 @@ def recibir_resultados(id,cantPartes):
             completo = False
         
     #Devuelvo la lista con todas las particiones
-    return particiones
+    return particiones, completo
 
 #Si ya estan todas las partes, borro la imagen de reddis
 def borrar_partes(id,cantPartes):
@@ -78,9 +77,9 @@ def procesarImagen():
     except:
         return "La imagen no existe", 500 #MEJORAR CODIGOS
 
-    particiones = recibir_resultados(id,cant_partes)
+    particiones, completo = recibir_resultados(id,cant_partes)
 
-    if (cant_partes != len(particiones)):
+    if (not completo):
         return "La imagen todavia esta siendo procesada", 500
     else:
         #Borro todas las partes que me quedaron en redis
@@ -102,7 +101,5 @@ def status():
     return data
     
 if __name__ == '__main__':
-    password = os.getenv('PASSWORD')
-    r = redis.Redis(host='redis', port=6379, password=password, decode_responses=False)
-    print("Redis :)")
+    r = redis.Redis(host='redis', port=6379, decode_responses=False)
     app.run(host='0.0.0.0', port=5002)

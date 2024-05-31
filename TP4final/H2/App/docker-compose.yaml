@@ -6,10 +6,11 @@ networks:
 
 services:
   redis:
-    image: "redis:latest"
+    image: "redis/redis-stack:latest"
     container_name: "redis"
     ports:
       - "6379:6379"
+      - "8001:8001"
     networks:
       - network-grupo3
 
@@ -21,11 +22,9 @@ services:
       - "15672:15672"
     networks:
       - network-grupo3
-    volumes:
-      - /rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
 
   webserver:
-    image: josuegaticaodato/webserver-h2
+    image: josuegaticaodato/webserver
     container_name: webserver
     ports:
       - "5000:5000"
@@ -44,15 +43,11 @@ services:
       - spliter
     networks:
       - network-grupo3
-    environment:
-      PASSWORD: grupo3
 
   spliter:
-    image: josuegaticaodato/spliter-h2
+    image: josuegaticaodato/spliter
     container_name: spliter
     ports:
       - "5001:5001"
     networks:
       - network-grupo3
-    environment:
-      PASSWORD: grupo3
