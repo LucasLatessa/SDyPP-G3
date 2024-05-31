@@ -1,24 +1,43 @@
-# Parte 2
-Desarrolle este proceso de manera distribuida donde se debe partir la imagen en n pedazos, y asignar la tarea de aplicar la máscara a N procesos distribuidos. Después deberá unificar los resultados.
+# HIT 2 - Sobel con offloading en la nube ;) para construir una base elástica (elástica):
+Mismo objetivo de calcular sobel, pero ahora vamos a usar Terraform para construir nodos de trabajo cuando se requiera procesar tareas y eliminarlos al terminar. Recuerde que será necesario:
+●	Instalar con #user_data las herramientas necesarias (java, docker, tools, docker).
+●	Copiar ejecutable (jar, py, etc) o descargar imagen Docker (hub).
+●	Poner a correr la aplicación e integrarse al cluster de trabajo.
+
+El objetivo de este ejercicio es que ustedes puedan construir una arquitectura escalable (tipo 1, inicial) HÍBRIDA. Debe presentar el diagrama de arquitectura y comentar su decisión de desarrollar cada servicio y donde lo “coloca”.
 
 ## Instrucciones 
 
-1. Correr docker-compose.yaml (me tengo que posicioanr primero en la carpeta donde esta ubicado):
+1. Correr el terraform correspondiente a la app (tendra Redis, Rabbit, Joiner, Spliter y WS)
 
 ```
-docker-compose up
+terraform init
+terraform plan
+terraform apply -auto-aprove
 ```
 
-Para dar de baja todo
+Cuando se levanta la maquina, esta hara el docker compose de todos los servicios
+
+2. Con la direccion IP que tienen la maquina app, se levanta los workers utilizando el terraform de Infra
 
 ```
-docker-compose down
+terraform init
+terraform plan
+terraform apply -auto-aprove
 ```
 
-3. Realizar una peticion al Web server, siguiendo esta estructura:
+Es necesario que el worker tenga esa direccion IP para que pueda suscribirse a la cola de mensajes de rabbit y conectarse a redis
+
+3. En el caso de querer tener tu worker local, ejecuta worker.py, que esta en testWorkerLocal
 
 ```
-POST localhost:5000/sobel
+python worker.py [IP-APP]
+```
+
+4. Realizar peticiones a la direccon IP para aplicar el filtro sobel
+
+```
+POST [IP-APP]:5000/sobel
 {
     "imagen": Imagen a aplicar el filtro
     "particion-x": Cantidad de particiones en X
@@ -29,7 +48,7 @@ POST localhost:5000/sobel
 Ejemplo
 
 ```
-POST localhost:5000/sobel
+POST [IP-APP]:5000/sobel
 {
     "imagen": Mirtha.jpg
     "particion-x": 3
@@ -49,18 +68,5 @@ Enviada la peticion, el servidor web devolvera un ID para consultar por el estad
 Utilizaremos este ID para consultar al mismo servidor si la imagen ya fue procesada
 
 ```
-POST localhost:5000/imagen/bf6ad473-cf76-49c5-adcd-9ed134af0749
+POST [IP-APP]:5000/imagen/bf6ad473-cf76-49c5-adcd-9ed134af0749
 ```
-
-# Parte 3
-Mejore la aplicación del punto anterior para que, en caso de que un proceso distribuido (al que se le asignó parte de la imagen a procesar - WORKER) se caiga y no responda, el proceso principal detecte esta situación y pida este cálculo a otro proceso.
-
-Esta situacion se soluciona modificando uno de los parametros del worker a la hora de suscribirse a las colas (ya esta agregado en la parte 2). Esa configuracion es la siguiente:
-
-```
-    ch.basic_ack(
-        delivery_tag=method.delivery_tag
-    )  # Tengo ACK, de esta forma si se da de baja un workers no pierdo los mensajes.
-```
-
-Si un worker toma una parte de la imagen de la cola pero no envia el ack, esto me dice que el worker no pudo aplicar el filtro/no esta en funcionando, entonces otro worker se encarga de realizar ese trabajo.
