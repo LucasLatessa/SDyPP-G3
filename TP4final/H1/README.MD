@@ -1,0 +1,1 @@
+# HIT 1 - El operador de Sobel

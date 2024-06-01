@@ -54,7 +54,7 @@ POST localhost:5000/imagen/bf6ad473-cf76-49c5-adcd-9ed134af0749
 
 # Diagrama
 
-![DiagramaSDyPP drawio](https://github.com/LucasLatessa/SDyPP-G3/assets/63746351/89f8796d-af0d-4c54-97cf-d234435ca569)
+![DiagramaSDyPP drawio](https://github.com/LucasLatessa/SDyPP-G3/assets/63746351/9fb4ad67-4dc2-4b60-b1f4-0d6ccec37d2e)
 
 Lo que se logra en este HIT es levantar todos los servicios utilizando docker compose, teniendo diferentes funcionales separadas para evitar el acoplamiento y que c/u trabaje de forma independiente.
 
