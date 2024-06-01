@@ -19,4 +19,4 @@ gcloud compute addresses delete nat --region=us-east4 --project=sdypp-2024
 # addresses
 gcloud compute addresses list
 
-xx
+x
