@@ -8,7 +8,7 @@ on:
 jobs:
     infra:
         name: Build Workers infra
-        if: startsWith(github.event.head_commit.message, '(go)')
+        if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(worker)')
         runs-on: ubuntu-latest
         steps:
             - name: Ckeckout
