@@ -84,29 +84,27 @@ jobs:
                 terraform apply -lock=false --auto-approve
 
     infra-down:
-        name: Eliminar workers Infra
-        if: startsWith(github.event.head_commit.message, '(down)') || startsWith(github.event.head_commit.message, '(worker-down)')
-        runs-on: ubuntu-latest
-        steps:
-            - name: Ckeckout
-              uses: actions/checkout@v4
-
-            #Instalo Terraform
-            - name: Terraform setup
-              uses: hashicorp/setup-terraform@v3
-
-            #Creacion del Cluster
-            - name: Terraform init
-              working-directory: ./TP4final/H3/Terraform-worker
-              env: 
-                GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
-              run: |
-                echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
-
-                ls -lah
-
-                terraform init --reconfigure
-
-                terraform plan
-
-                terraform destroy -lock=false --auto-approve
+      name: Eliminar workers Infra
+      if: startsWith(github.event.head_commit.message, '(down)') || startsWith(github.event.head_commit.message, '(worker-down)')
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+    
+        # Instalo Terraform
+        - name: Terraform setup
+          uses: hashicorp/setup-terraform@v3
+    
+        # Terraform destroy
+        - name: Terraform init and destroy
+          working-directory: ./TP4final/H3/Terraform-worker
+          env: 
+            GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+          run: |
+            echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
+    
+            terraform init --reconfigure
+    
+            terraform plan
+    
+            terraform destroy -lock=false --auto-approve
