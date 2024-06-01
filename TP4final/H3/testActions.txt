@@ -15,3 +15,6 @@ gcloud compute networks delete main --project=sdypp-2024
 
 # Eliminar la dirección nat
 gcloud compute addresses delete nat --region=us-east4 --project=sdypp-2024
+
+# addresses
+gcloud compute addresses list
