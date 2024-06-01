@@ -1,1 +1,17 @@
-x
+# Listar routers en la región us-east4
+gcloud compute routers list --filter="region:(us-east4)" --project=sdypp-2024
+
+#Lista de networks subnets
+gcloud compute networks subnets list --filter="region:(us-east4)" --project=sdypp-2024
+
+# Eliminar el router identificado
+gcloud compute routers delete router --region=us-east4 --project=sdypp-2024
+
+#Eliminar subnets
+gcloud compute networks subnets delete private --region=us-east4 --project=sdypp-2024
+
+# Eliminar la red main
+gcloud compute networks delete main --project=sdypp-2024
+
+# Eliminar la dirección nat
+gcloud compute addresses delete nat --region=us-east4 --project=sdypp-2024
