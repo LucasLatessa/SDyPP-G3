@@ -43,7 +43,7 @@ jobs:
             
             - name: Esperar a Rabbit que se levante
               run: |
-                while [[ $(kubectl get svc rabbitmq -n rabbitmq-namespace -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') == "" ]]; do
+                while [[ $(kubectl get svc rabbitmq -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') == "" ]]; do
                     echo "Waiting for RabbitMQ service to be ready..."
                     sleep 10
                 done    
