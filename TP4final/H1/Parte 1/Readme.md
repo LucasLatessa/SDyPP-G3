@@ -12,7 +12,7 @@ pip install opencv-python numpy
 2. Ejecutar el programa
 
 ```
-python sobel-Parte1.py "ruta-de-la-imagen"
+python sobel.py "ruta-de-la-imagen"
 ```
 
 Ej.

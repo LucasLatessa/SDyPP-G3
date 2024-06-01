@@ -71,3 +71,5 @@ Utilizaremos este ID para consultar al mismo servidor si la imagen ya fue proces
 ```
 POST [IP Actual]:5000/imagen/bf6ad473-cf76-49c5-adcd-9ed134af0749
 ```
+
+Video explicativo: https://youtu.be/ETla4Bj4cwU
