@@ -12,13 +12,6 @@ resource "google_compute_instance" "worker" {
     ssh-keys = "${split("@", data.google_client_openid_userinfo.me.email)[0]}:${tls_private_key.ssh.public_key_openssh}"
   }
 
-  scheduling {
-      preemptible                 = true
-      automatic_restart           = false
-      provisioning_model          = "SPOT"
-      instance_termination_action = "TERMINATE"
-  }
-
   boot_disk {
     initialize_params {
       image = var.imagen
