@@ -54,9 +54,12 @@ jobs:
                 RABBITMQ_IP=$(kubectl get svc rabbitmq -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
                 REDIS_IP=$(kubectl get svc redis -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-                cat <<EOL > ./worker.sh
+                cat <<EOL >> ./worker.sh
                 sudo docker run --name worker -e RABBITMQ_IP=${RABBITMQ_IP} -e REDIS_IP=${REDIS_IP} josuegaticaodato/worker-h3
                 EOL
+
+                cat ./worker.sh
+
 
             #Instalo Terraform
             - name: Terraform setup
@@ -82,7 +85,7 @@ jobs:
 
     infra-down:
         name: Eliminar workers Infra
-        if: startsWith(github.event.head_commit.message, '(down)')
+        if: startsWith(github.event.head_commit.message, '(down)') || startsWith(github.event.head_commit.message, '(worker-down)')
         runs-on: ubuntu-latest
         steps:
             - name: Ckeckout
