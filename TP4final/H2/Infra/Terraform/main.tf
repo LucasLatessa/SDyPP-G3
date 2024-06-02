@@ -10,7 +10,7 @@ provider "google" {
 # Recurso de instancia de Google Compute Engine
 resource "google_compute_instance" "worker" {
   count        = var.numero_instancias
-  name         = "worker-${count.index + 1}"
+  name         = "worker-h2-${count.index + 1}"
   machine_type = var.tipo_maquina
   zone         = var.zona
   metadata_startup_script = file(var.startup_worker)
