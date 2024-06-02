@@ -78,3 +78,6 @@ POST [IP-APP]:5000/imagen/bf6ad473-cf76-49c5-adcd-9ed134af0749
 En este caso, tendremos dos tipos de maquinas corriendo en GCloud, una sera la que contendra todo lo que seria la aplicacion en si: recibir, particionar, encolar, unir y devolver, mientras que las otras maquinas seran los workers encargandos de aplicar el filtro sobel y guardar en Redis.
 
 Este punto tiene la particular de poder meter Workers locales, que corren en mi maquina, solamente utilizando la IP de la maquina que contiene las aplicaciones. De esta forma, podemos aprovechar el procesamiento, no solamente de CPU sino de GPU, que puede tener una computadora.
+
+## Video explicativo: 
+https://youtu.be/NaSJdeYGcnI
