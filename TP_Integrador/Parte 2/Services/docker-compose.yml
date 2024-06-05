@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    environment:
+      - REDIS_PASSWORD=grupo03
+    ports:
+      - "6378:6379"    # Redis port
+      - "8001:8001"    # Web interface port
+
+  rabbitmq:
+    image: "rabbitmq:management"
+    container_name: "rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "grupo03"
+      RABBITMQ_DEFAULT_PASS: "grupo03"
+      RABBITMQ_DEFAULT_VHOST: "/"
