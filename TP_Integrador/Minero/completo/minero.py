@@ -13,7 +13,7 @@ def ejecutar_minero(from_val, to_val, prefix, hash_val):
         print(compile_process.stderr)
         return
     
-    # Comando para ejecutar el programa minero
+
     execute_command = ['./minero', str(from_val), str(to_val), prefix, hash_val]
 
     # Ejecutar el comando de ejecución
