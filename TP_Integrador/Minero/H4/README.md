@@ -1,2 +1,3 @@
 # HIT 4
-En el codigo proporcionado
+./md5 hola 
+modifica la cadena a gusto
