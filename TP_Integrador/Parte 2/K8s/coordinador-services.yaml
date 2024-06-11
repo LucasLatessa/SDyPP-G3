@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coordinador
+  labels:
+    app: coordinador
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coordinador
+  template:
+    metadata:
+      labels:
+        app: coordinador
+    spec:
+      containers:
+        - name: coordinador
+          image: josuegaticaodato/coordinador
+          ports:
+            - containerPort: 5000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coordinador
+spec:
+  ports:
+    - port: 5000
+  selector:
+    app: coordinador
+  type: LoadBalancer

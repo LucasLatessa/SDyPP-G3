@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis/redis-stack:latest
+        ports:
+        - containerPort: 6379
+          name: redis
+        - containerPort: 8001
+          name: redis-interface
+        command: ["redis-server", "--requirepass", "grupo03"]
+        env:
+        - name: REDIS_PASSWORD
+          value: grupo03
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  - port: 8001
+    targetPort: 8001
+    name: redis-interface
+  selector:
+    app: redis
