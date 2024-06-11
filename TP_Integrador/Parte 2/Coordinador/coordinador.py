@@ -106,6 +106,7 @@ def procesar_paquetes():
             else:
                 break  # No hay más mensajes disponibles, salir del bucle
 
+        print(paquete)
         if paquete:
             # Añadir metadatos al paquete del bloque
             tail_elements = (
@@ -121,7 +122,7 @@ def procesar_paquetes():
             bloque = {
                 "id": idBloque,
                 "transaccion": paquete,
-                "prefix": "000",  # Dificulta de tres 0 -> Buscar el quiebre
+                "prefix": "0",  # Dificulta de tres 0 -> Buscar el quiebre
                 "base_string_chain": "papa", #Es lo que concateno para el hash, que tiene que arrancar con el prefijo
                 "blockchain_content": (
                     last_element["blockchain_content"] if last_element else "[]"
@@ -135,6 +136,7 @@ def procesar_paquetes():
                 routing_key="blocks",
                 body=json.dumps(bloque),
             )
+            
             print(f"Paquete con Bloque ID {idBloque} enviado a Topic de Rabbit")
 
         # time.sleep(60) #Se ejecuta cada 1 minuto
@@ -168,6 +170,8 @@ def agregar_transaccion():
         exchange="", routing_key="transacciones", body=json.dumps(data)
     )
 
+    #procesar_paquetes()
+
     return "Transaccion recibida y encolada en Rabbit", 200
 
 
@@ -175,7 +179,8 @@ def agregar_transaccion():
 @app.route("/tarea_worker", methods=["POST"])
 def tarea_worker():
     data = request.get_json()
-
+    print(data)
+    return "Tarea recibida", 200
     #FALTA TERMINAR
 
 
@@ -185,4 +190,12 @@ def status():
     return jsonify({"status": "funcionando :D"})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    try:
+        app.run(host="0.0.0.0", debug=True)
+    except KeyboardInterrupt:
+        # Definir una bandera para detener el hilo
+        stop_event = threading.Event()
+        # Solicitar detener el hilo
+        stop_event.set()
+        print("Servidor parado")
+    
