@@ -1,3 +1,4 @@
+import hashlib
 import random
 import threading
 import time
@@ -88,6 +89,11 @@ def calcular_hash(data):
         ) & 0xFFFFFFFF  # Realiza otra rotación de bits: desplaza el valor 5 bits a la izquierda o 27 bits a la derecha, y aplica una operación AND para asegurar que el resultado esté dentro de 32 bits
     return hash_val  # Retorna el valor final del hash
 
+def calcular_hash_v2(data):
+    hash = hashlib.sha256()
+    hash.update(data.encode('utf-8'))
+    return hash.hexdigest()
+
 # Funcion para tomar los paquetes que estan en la cola y mandarlo al Topic de Rabbit, asi los workers pueden resolver el desafio
 def procesar_paquetes():
     while True:
@@ -106,6 +112,7 @@ def procesar_paquetes():
             else:
                 break  # No hay más mensajes disponibles, salir del bucle
 
+        print(paquete)
         if paquete:
             # Añadir metadatos al paquete del bloque
             tail_elements = (
@@ -121,7 +128,7 @@ def procesar_paquetes():
             bloque = {
                 "id": idBloque,
                 "transaccion": paquete,
-                "prefix": "000",  # Dificulta de tres 0 -> Buscar el quiebre
+                "prefix": "0",  # Dificulta de tres 0 -> Buscar el quiebre
                 "base_string_chain": "papa", #Es lo que concateno para el hash, que tiene que arrancar con el prefijo
                 "blockchain_content": (
                     last_element["blockchain_content"] if last_element else "[]"
@@ -135,6 +142,7 @@ def procesar_paquetes():
                 routing_key="blocks",
                 body=json.dumps(bloque),
             )
+            
             print(f"Paquete con Bloque ID {idBloque} enviado a Topic de Rabbit")
 
         # time.sleep(60) #Se ejecuta cada 1 minuto
@@ -168,6 +176,8 @@ def agregar_transaccion():
         exchange="", routing_key="transacciones", body=json.dumps(data)
     )
 
+    #procesar_paquetes()
+
     return "Transaccion recibida y encolada en Rabbit", 200
 
 
@@ -176,7 +186,55 @@ def agregar_transaccion():
 def tarea_worker():
     data = request.get_json()
 
-    #FALTA TERMINAR
+    datos = f"{data["numero"]}{data["base_string_chain"]}{data["blockchain_content"]}"
+    hash = calcular_hash_v2(datos)
+    timestamp = time.time()
+
+    print("--------------")
+    print("Bloque recibido por parte del worker!!")
+    print(f"Hash recibidos: {data["hash"]}")
+    print(f"Hash calculado de forma local: {hash}")
+
+    if data["hash"] == hash:
+        print("Coinciden :)")
+        print("--------------")
+        #Verifico si existe un bloque igual en redis
+        if redis.exists_id(data['id']):
+            return jsonify({'mensaje':'Ya existe ese bloque en redis, queda descartado!'}), 200
+        else:
+            print("Vamos a agregar el bloque a la cadena")
+            print(f"Hash:  {data["hash"]}")
+            print(f"Contenido del bloque anterior: {data["blockchain_content"]}")
+
+            #Le calculo el hash 
+            blockchain_data = f"{data["base_string_chain"]}{data["hash"]}"
+            blockchain_content = calcular_hash_v2(blockchain_data)
+
+            #Obtengo el bloque anterior para conectar, si no hay quiere decir que este es el origen
+            try:
+                bloque_previo = redis.get_ultimo()
+            except:
+                bloque_previo = "Null"
+
+            if bloque_previo != None:
+                print(f"Hash del bloque previo:  {bloque_previo["hash"]}")
+                data["previous_block"] = bloque_previo["hash"]
+            else:
+                print(f"Hash del bloque previo: NULL")
+                data["previous_block"] = "None"
+            
+            data['timestamp'] = timestamp
+            data['blockchain_content'] = blockchain_content
+
+            print("Bloque final")
+            print(data)
+
+            redis.publicar(data)
+
+            return jsonify({"mensaje":"Bloque validado y añadido a la blockchain"}),201
+        
+    else:
+        return jsonify({"mensaje":"Los hash no coinciden, paquete descartado!"}),400   
 
 
 # Endpoint del estado del servidor
@@ -185,4 +243,12 @@ def status():
     return jsonify({"status": "funcionando :D"})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    try:
+        app.run(host="0.0.0.0", debug=True)
+    except KeyboardInterrupt:
+        # Definir una bandera para detener el hilo
+        stop_event = threading.Event()
+        # Solicitar detener el hilo
+        stop_event.set()
+        print("Servidor parado")
+    
