@@ -1,7 +1,5 @@
-// cuda_md5.cu
-
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdio.h>
 
 __device__ uint32_t shifts[] = {  7, 12, 17, 22,  5,  9, 14, 20,  4, 11, 16, 23,  6, 10, 15, 21 };
 __device__ uint32_t sines[]  = { 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
@@ -26,11 +24,6 @@ __device__ void cuda_md5(const uint8_t* initial_msg, size_t initial_len, uint8_t
     h2 = 0x98badcfe;
     h3 = 0x10325476;
 
-    // Pre-processing:
-    // append "1" bit to message    
-    // append "0" bits until message length in bits ≡ 448 (mod 512)
-    // append length mod (2^64) to message
-
     int new_len = ((((initial_len + 8) / 64) + 1) * 64) - 8;
 
     uint8_t* msg = (uint8_t*)malloc(new_len + 64);
@@ -40,26 +33,14 @@ __device__ void cuda_md5(const uint8_t* initial_msg, size_t initial_len, uint8_t
         msg[i] = 0; // append "0" bits
     }
 
-    // append the len in bits at the end of the buffer.
-    uint64_t bits_len = 8 * initial_len; // note, we append the len in bits
+    uint64_t bits_len = 8 * initial_len;
     memcpy(msg + new_len, &bits_len, 8); // in little-endian
 
-    // Process the message in successive 512-bit chunks:
-    // for each 512-bit chunk of message:
     for (int offset = 0; offset < new_len; offset += 64) {
-
-        // break chunk into sixteen 32-bit words w[j], 0 ≤ j ≤ 15
         uint32_t* w = (uint32_t*)(msg + offset);
+        uint32_t a = h0, b = h1, c = h2, d = h3;
 
-        // Initialize hash value for this chunk:
-        uint32_t a = h0;
-        uint32_t b = h1;
-        uint32_t c = h2;
-        uint32_t d = h3;
-
-        // Main loop:
         for (int i = 0; i < 64; i++) {
-
             uint32_t f, g;
 
             if (i < 16) {
@@ -81,21 +62,16 @@ __device__ void cuda_md5(const uint8_t* initial_msg, size_t initial_len, uint8_t
             c = b;
             b = b + left_rotate((a + f + sines[i] + w[g]), shifts[(i / 16) * 4 + (i % 4)]);
             a = temp;
-
         }
 
-        // Add this chunk's hash to result so far:
         h0 += a;
         h1 += b;
         h2 += c;
         h3 += d;
-
     }
 
-    // cleanup
     free(msg);
 
-    // Output the final hash:
     ((uint32_t*)digest)[0] = h0;
     ((uint32_t*)digest)[1] = h1;
     ((uint32_t*)digest)[2] = h2;

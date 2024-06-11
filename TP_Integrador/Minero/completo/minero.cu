@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 	int nonce = 0;
 	cudaMemcpy(dev_nonce, &nonce, sizeof(int), cudaMemcpyHostToDevice);
 	
-	int threads = 8;
+	int threads = 16;
 	int blocks  = (to - from + threads - 1) / threads; // Ensure all threads are covered
 
 	// Launch the CUDA kernel
