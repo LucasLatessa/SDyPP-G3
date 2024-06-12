@@ -76,8 +76,8 @@ __device__ void byte_to_hex_div(const unsigned char* byte_array, char* hex_strin
 }
 
 __global__
-void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8_t* result) {
-    int _nonce = blockIdx.x * blockDim.x + threadIdx.x;
+void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8_t* result, int from) {
+    int _nonce = from + blockIdx.x * blockDim.x + threadIdx.x;
     char _nonce_num_str[64];
     size_t buffer_len = num_digits(_nonce) ;
     int suma = (input_len + buffer_len);
@@ -119,13 +119,16 @@ void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8
 
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
+    if (argc != 5) {
         fprintf(stderr, "Uso: %s <cadena>\n", argv[0]);
         return 1;
     }
 
-    const char* prefix = argv[1];
-    const char* input = argv[2];
+    int from = atoi(argv[1]);
+	int to = atoi(argv[2]);
+
+    const char* prefix = argv[3];
+    const char* input = argv[4];
     
     size_t input_len = strlen(input);
     size_t prefix_len = strlen(prefix);
@@ -142,9 +145,9 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(d_input,input, input_len * sizeof(char), cudaMemcpyHostToDevice);
     cudaMemcpy(d_prefix,prefix, prefix_len * sizeof(char), cudaMemcpyHostToDevice);
 
-    int threads = 128;
-    int blocks  = 32;
-    calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result);
+    int threads = 16;
+    int blocks  = (to - from + threads - 1) / threads;;
+    calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result, from);
 
     cudaDeviceSynchronize();
     cudaError_t error = cudaGetLastError();
