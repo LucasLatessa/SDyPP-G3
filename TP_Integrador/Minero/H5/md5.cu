@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cstdlib>
 #include "cuda_md5.cu"
 
 __device__ size_t num_digits(int num) {
@@ -56,14 +57,13 @@ __device__ void int_to_str(int num, char *str) {
 }
 
 __device__ bool starts_with(const uint8_t* hash, const uint8_t* prefix, int prefix_len) {  
-    printf("hash: %s prefix: %s len: %d\n", hash, prefix, prefix_len); 
+    //printf("hash: %s prefix: %s len: %d\n", hash, prefix, prefix_len);
 	for (int i = 0; i < prefix_len; ++i) {
+        __syncthreads();
 		if ((char)hash[i] != (char)prefix[i])
 			return false;
-	}
-    
+	}   
 	return true;
-
 }
 
 __device__ void byte_to_hex_div(const unsigned char* byte_array, char* hex_string, size_t length) {
@@ -90,7 +90,7 @@ void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8
     memcpy(concatenated_str + buffer_len, input, input_len);
 
     concatenated_str[suma + 1] = '\0';
-    printf("%s\n",concatenated_str);
+    //printf("%s\n",concatenated_str);
 
 
     uint8_t *input_uint8 = reinterpret_cast<uint8_t*>(concatenated_str);
@@ -103,9 +103,17 @@ void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8
     byte_to_hex_div(resultado,hex_result,16);
     uint8_t *resultado_uint8 = reinterpret_cast<uint8_t*>(hex_result);
 
+
     if (starts_with(resultado_uint8, prefix_uint8, prefix_len)){
-        atomicCAS(nonce, -1, _nonce);
+        //printf("%s\n", resultado_uint8);
         memcpy(result, resultado_uint8, 32 * sizeof(uint8_t));
+        //printf("%s\n", result);
+        memcpy(result + 32, _nonce_num_str, buffer_len * sizeof(uint8_t));
+        //printf("%s\n", result);
+        result[32 + buffer_len] = '\0'; 
+        //printf("%s\n", result);
+        //printf("%d\n", _nonce);
+
     }
 }
 
@@ -125,7 +133,7 @@ int main(int argc, char *argv[]) {
     size_t input_len = strlen(input);
     size_t prefix_len = strlen(prefix);
 
-    unsigned char result[16]; // MD5 produce un hash de 16 bytes
+    unsigned char result[64]; // MD5 produce un hash de 16 bytes
 
     char* d_input;
     char* d_prefix;
@@ -135,7 +143,7 @@ int main(int argc, char *argv[]) {
 
     cudaMalloc(&d_input, input_len * sizeof(unsigned char));
     cudaMalloc(&d_prefix, prefix_len * sizeof(unsigned char));
-    cudaMalloc(&d_result, 32 * sizeof(unsigned char));
+    cudaMalloc(&d_result, 64 * sizeof(unsigned char));
     cudaMalloc((void**)&dev_nonce, sizeof(int));
     cudaMemcpy(dev_nonce, &nonce, sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_input,input, input_len * sizeof(char), cudaMemcpyHostToDevice);
@@ -152,15 +160,23 @@ int main(int argc, char *argv[]) {
         printf("{ error: true, cuda: %s }", cudaGetErrorString(error));
         return 1;
     }
-    cudaMemcpy(&nonce, dev_nonce, sizeof(int), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&result, d_result, 32 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
-    printf("Prefijo agregado: %d\n", nonce);
+    //cudaMemcpy(&nonce, dev_nonce, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&result, d_result, 64 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+    //printf("Prefijo agregado: %d\n", nonce);
+    char hash_md5_result[33];
+    strncpy(hash_md5_result, reinterpret_cast<const char*>(result), 32);
+    char* remaining_chars = reinterpret_cast<char*>(result) + 32;
+    hash_md5_result[32] = '\0';
+    int numero = atoi(remaining_chars);
 
-    printf("Hash MD5 de '%d%s': %s\n", nonce, input, result);
 
+    printf("Hash MD5 de '%d%s': %.32s\n", numero, input, hash_md5_result);
+    FILE *json_file = fopen("json_output.txt", "w");
+    fprintf(json_file, "{\"numero\": %d, \"hash_md5_result\": \"%s\"}", numero, hash_md5_result);
+    
     cudaFree(d_input);
     cudaFree(d_result);
     
 
-    return nonce;
+    return 0;
 }
