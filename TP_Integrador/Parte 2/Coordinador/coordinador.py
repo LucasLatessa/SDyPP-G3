@@ -90,7 +90,7 @@ def calcular_hash(data):
     return hash_val  # Retorna el valor final del hash
 
 def calcular_hash_v2(data):
-    hash = hashlib.sha256()
+    hash = hashlib.md5()
     hash.update(data.encode('utf-8'))
     return hash.hexdigest()
 
@@ -186,7 +186,7 @@ def agregar_transaccion():
 def tarea_worker():
     data = request.get_json()
 
-    datos = f"{data["numero"]}{data["base_string_chain"]}{data["blockchain_content"]}"
+    datos = f"{data["numero"]}{data["base_string_chain"]}"
     hash = calcular_hash_v2(datos)
     timestamp = time.time()
 

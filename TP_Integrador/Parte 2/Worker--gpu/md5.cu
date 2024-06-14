@@ -105,14 +105,14 @@ void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8
 
 
     if (starts_with(resultado_uint8, prefix_uint8, prefix_len)){
-        printf("%s\n", resultado_uint8);
+        //printf("%s\n", resultado_uint8);
         memcpy(result, resultado_uint8, 32 * sizeof(uint8_t));
         //printf("%s\n", result);
         memcpy(result + 32, _nonce_num_str, buffer_len * sizeof(uint8_t));
         //printf("%s\n", result);
         result[32 + buffer_len] = '\0'; 
         //printf("%s\n", result);
-        printf("%d\n", _nonce);
+        //printf("%d\n", _nonce);
 
     }
 }
@@ -149,9 +149,10 @@ int main(int argc, char *argv[]) {
     int blocks  = 150;//(to - from + threads - 1) / threads;//171 
     int rep = 0;
     bool encontrado = false;
-    int = to / (threads * blocks)
+    int repeticiones = to / (threads * blocks);
 
-    while (rep <= int && !encontrado){
+    while (rep <= repeticiones && !encontrado){
+        printf("repeticiones: %d\n", rep);
         int desde = from + rep * blocks * threads;
         calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result, desde);
         cudaDeviceSynchronize();

@@ -33,4 +33,4 @@ def ejecutar_minero(from_val, to_val, prefix, hash_val):
     return contenido
 
 # Ejemplo de uso
-ejecutar_minero(1, 10, "39", "atas")
+#ejecutar_minero(33, 500, "39ac9799b1", "atas")

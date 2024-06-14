@@ -1,5 +1,8 @@
 import pika
 import requests
+import minero_gpu
+import json
+import time
 
 #Enviar el resultado al coordinador para verificar que el resultado es correcto
 def enviar_resultado(data):
@@ -11,14 +14,16 @@ def enviar_resultado(data):
         print("Fallo al enviar el post:", e)
 
 # #Minero: Encargado de realizar el desafio
-# def minero(ch, method, properties, body):
-#     data = json.loads(body)
-#     print(f"Bloque {data} recibido")
+def minero(ch, method, properties, body):
+    data = json.loads(body)
+    print(f"Bloque {data} recibido")
 
 #     encontrado = False
-#     tiempo_inicial = time.time()
+    tiempo_inicial = time.time()
+    print("Minero comenzado!")
+    resultado = minero_gpu.ejecutar_minero(1, data["max_random"], data["prefix"], data["base_string_chain"])
     
-#     print("Minero comenzado!")
+   
 #     #Hasta que no encuentra un hash que comienze con el prefijo no para
 #     while not encontrado:
 #         #Tomo un numero aleatorio y le calculo el hash a: El aleatorio + la base del bloque + contenido de la cadena de bloues"
@@ -28,16 +33,18 @@ def enviar_resultado(data):
 #         if hash.startswith(data["prefix"]):
 #             #Corto el bucle y envio el resultado al coordinador
 #             encontrado = True
-#             tiempo_proceso = time.time() - tiempo_inicial
-            
-#             data["tiempo_proceso"] = tiempo_proceso
-#             data["hash"] = hash
-#             data["numero"] = aleatorio
+    #tiempo_proceso = time.time() - tiempo_inicial
+    #{"numero": 9700, "hash_md5_result": "0eb61761a7b8c92cebf4f820f5b9b380"}  
+       
+    #data["tiempo_proceso"] = tiempo_proceso
+    resultado = json.loads(resultado)
+    data["hash"] = resultado['hash_md5_result']
+    data["numero"] = resultado["numero"]
 
-#             enviar_resultado(data)
-#     #Confirmo con un ACK que lo resolvi
-#     ch.basic_ack(delivery_tag=method.delivery_tag)
-#     print(f"Resultado encontrado y enviado con el ID Bloque {data['id']} en {tiempo_proceso:.2f} segundos")
+    enviar_resultado(data)
+    #Confirmo con un ACK que lo resolvi
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+    print(f"Resultado encontrado y enviado con el ID Bloque {data['id']}")
 
 #Conexion con rabbit al topico y comienza a ser consumidor
 def main():
