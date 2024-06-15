@@ -122,13 +122,13 @@ def procesar_paquetes():
                 redis.get_ultimo()
             )  # Obtener el último elemento de la lista en Redis
 
-            max_random = 1000000
+            max_random = 200000
             idBloque = str(random.randint(0, max_random))
 
             bloque = {
                 "id": idBloque,
                 "transaccion": paquete,
-                "prefix": "0",  # Dificulta de tres 0 -> Buscar el quiebre
+                "prefix": "77",  # Dificulta de tres 0 -> Buscar el quiebre
                 "base_string_chain": "papa", #Es lo que concateno para el hash, que tiene que arrancar con el prefijo
                 "blockchain_content": (
                     last_element["blockchain_content"] if last_element else "[]"

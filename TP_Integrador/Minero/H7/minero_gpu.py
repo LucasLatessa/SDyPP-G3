@@ -20,9 +20,10 @@ def ejecutar_minero(from_val, to_val, prefix, hash_val):
     encontrado = False
     repeticiones = int(to_val / (512 * 150))
     desde = 1
-
+    print("repeticiones:", repeticiones)
     while (rep <= repeticiones and not(encontrado)):
         desde += (512 * 150)
+        print("ciclos:", rep, "comienzo:", desde)
 
         execute_command = ['./md5', str(desde), str(to_val), prefix, hash_val]
         execute_process = subprocess.run(execute_command, capture_output=True, text=True)
@@ -48,4 +49,4 @@ def ejecutar_minero(from_val, to_val, prefix, hash_val):
     return contenido
 
 # Ejemplo de uso
-#ejecutar_minero(1, 10000000, "391aaa", "at2az11212")
+#ejecutar_minero(1, 3000000, "7889aa", "at2az11212")
