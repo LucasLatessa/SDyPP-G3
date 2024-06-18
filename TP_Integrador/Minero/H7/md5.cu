@@ -76,8 +76,8 @@ __device__ void byte_to_hex_div(const unsigned char* byte_array, char* hex_strin
 }
 
 __global__
-void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8_t* result) {
-    int _nonce = blockIdx.x * blockDim.x + threadIdx.x;
+void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8_t* result, int from) {
+    int _nonce = from + blockIdx.x * blockDim.x + threadIdx.x;
     char _nonce_num_str[64];
     size_t buffer_len = num_digits(_nonce) ;
     int suma = (input_len + buffer_len);
@@ -90,8 +90,6 @@ void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8
     memcpy(concatenated_str + buffer_len, input, input_len);
 
     concatenated_str[suma + 1] = '\0';
-    //printf("%s\n",concatenated_str);
-
 
     uint8_t *input_uint8 = reinterpret_cast<uint8_t*>(concatenated_str);
     uint8_t *prefix_uint8 = reinterpret_cast<uint8_t*>(prefix);
@@ -107,25 +105,24 @@ void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8
     if (starts_with(resultado_uint8, prefix_uint8, prefix_len)){
         printf("%s\n", resultado_uint8);
         memcpy(result, resultado_uint8, 32 * sizeof(uint8_t));
-        //printf("%s\n", result);
         memcpy(result + 32, _nonce_num_str, buffer_len * sizeof(uint8_t));
-        //printf("%s\n", result);
         result[32 + buffer_len] = '\0'; 
-        //printf("%s\n", result);
-        //printf("%d\n", _nonce);
 
     }
 }
 
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
+    if (argc != 5) {
         fprintf(stderr, "Uso: %s <cadena>\n", argv[0]);
         return 1;
     }
 
-    const char* prefix = argv[1];
-    const char* input = argv[2];
+    int from = atoi(argv[1]);
+	int to = atoi(argv[2]);
+
+    const char* prefix = argv[3];
+    const char* input = argv[4];
     
     size_t input_len = strlen(input);
     size_t prefix_len = strlen(prefix);
@@ -143,9 +140,30 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(d_prefix,prefix, prefix_len * sizeof(char), cudaMemcpyHostToDevice);
 
     int threads = 512;
-    int blocks  = 150;
-    calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result);
+    int blocks  = 150;//(to - from + threads - 1) / threads;//171 
+    /*int rep = 0;
+    bool encontrado = false;
+    int = to / (threads * blocks)
 
+    while (rep <= int && !encontrado){
+        int desde = from + rep * blocks * threads;
+        calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result, desde);
+        cudaDeviceSynchronize();
+        cudaError_t error = cudaGetLastError();
+
+        if (error != cudaSuccess) {
+            printf("{ error: true, cuda: %s }", cudaGetErrorString(error));
+            return 1;
+            }
+        cudaMemcpy(&result, d_result, 64 * sizeof(unsigned char), cudaMemcpyDeviceToHost);    
+        bool is_empty = (result[0] == '\0');
+        if (!is_empty) {
+            encontrado = true;
+        }
+        rep++;
+    }
+    */
+    calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result, from);
     cudaDeviceSynchronize();
     cudaError_t error = cudaGetLastError();
 
@@ -153,9 +171,8 @@ int main(int argc, char *argv[]) {
         printf("{ error: true, cuda: %s }", cudaGetErrorString(error));
         return 1;
     }
-    //cudaMemcpy(&nonce, dev_nonce, sizeof(int), cudaMemcpyDeviceToHost);
+    
     cudaMemcpy(&result, d_result, 64 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
-    //printf("Prefijo agregado: %d\n", nonce);
     char hash_md5_result[33];
     strncpy(hash_md5_result, reinterpret_cast<const char*>(result), 32);
     char* remaining_chars = reinterpret_cast<char*>(result) + 32;

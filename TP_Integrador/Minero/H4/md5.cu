@@ -8,7 +8,6 @@
     __global__
     void calculate_md5(const unsigned char* input, unsigned long long input_len, unsigned char* result) {
         cuda_md5(input, input_len, result);
-        printf("%s", result);
     }
 
     void byte_to_hex(const unsigned char* byte_array, char* hex_string, size_t length) {
@@ -37,7 +36,7 @@
         cudaMalloc(&d_result, 16 * sizeof(unsigned char));
         cudaMemcpy(d_input, reinterpret_cast<const unsigned char*>(input), input_len * sizeof(unsigned char), cudaMemcpyHostToDevice);
 
-        calculate_md5<<<1, 1>>>(d_input, input_len, d_result);
+        calculate_md5<<<1, 32>>>(d_input, input_len, d_result);
 
         cudaMemcpy(result, d_result, 16 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
 

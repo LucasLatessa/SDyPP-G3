@@ -30,6 +30,7 @@ def minero(ch, method, properties, body):
     tiempo_inicial = time.time()
     
     print("Minero comenzado!")
+    start_time_total = time.time()
     #Hasta que no encuentra un hash que comienze con el prefijo no para
     while not encontrado:
         #Tomo un numero aleatorio y le calculo el hash a: El aleatorio + la base del bloque + contenido de la cadena de bloues"
@@ -47,8 +48,12 @@ def minero(ch, method, properties, body):
 
             enviar_resultado(data)
     #Confirmo con un ACK que lo resolvi
+    end_time_total = time.time()
+    execution_time_total = end_time_total - start_time_total
+    
     ch.basic_ack(delivery_tag=method.delivery_tag)
     print(f"Resultado encontrado y enviado con el ID Bloque {data['id']} en {tiempo_proceso:.2f} segundos")
+    print("Tiempo de ejecucion:",execution_time_total )
 
 #Conexion con rabbit al topico y comienza a ser consumidor
 def main():
