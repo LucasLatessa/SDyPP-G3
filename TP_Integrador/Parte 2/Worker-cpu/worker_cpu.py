@@ -7,7 +7,7 @@ import requests
 
 
 #Encargada de hacer el hash dado un texto
-def calcular_sha256(texto):
+def calcular_md5(texto):
     hash = hashlib.md5()
     hash.update(texto.encode('utf-8'))
     return hash.hexdigest()
@@ -35,13 +35,14 @@ def minero(ch, method, properties, body):
     while not encontrado:
         #Tomo un numero aleatorio y le calculo el hash a: El aleatorio + la base del bloque + contenido de la cadena de bloues"
         aleatorio = str(random.randint(0,data["max_random"]))
-        hash = calcular_sha256(aleatorio + data["base_string_chain"] + data["blockchain_content"])
+        hash = calcular_md5(aleatorio + data["base_string_chain"] + data["blockchain_content"])
         #Si el hash arranca con el prefijo
         if hash.startswith(data["prefix"]):
             #Corto el bucle y envio el resultado al coordinador
             encontrado = True
             tiempo_proceso = time.time() - tiempo_inicial
             
+            print(f"Valor encontrado: {aleatorio}")
             data["tiempo_proceso"] = tiempo_proceso
             data["hash"] = hash
             data["numero"] = aleatorio
