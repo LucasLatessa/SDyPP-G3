@@ -28,6 +28,7 @@ channel.exchange_declare(
     exchange="block_challenge", exchange_type="topic", durable=True
 )
 
+
 # Conexion con Redis
 redis = RedisUtils()
 
@@ -60,6 +61,15 @@ def calcular_hash_v2(data):
     hash = hashlib.md5()
     hash.update(data.encode('utf-8'))
     return hash.hexdigest()
+
+#En el caso de que ningun worker agarre el mensaje, levanto workers cpu en Gcloud
+def handle_return(channel, method, properties, body):
+    print("Mensaje devuelto")
+    global message_returned
+    message_returned = True
+
+#Manejo de devolucion de mensajes
+channel.add_on_return_callback(handle_return)
 
 # Funcion para tomar los paquetes que estan en la cola y mandarlo al Topic de Rabbit, asi los workers pueden resolver el desafio
 def procesar_paquetes():
@@ -110,9 +120,19 @@ def procesar_paquetes():
                 exchange="block_challenge",
                 routing_key="blocks",
                 body=json.dumps(bloque),
+                mandatory=True
             )
             
             print(f"Paquete con Bloque ID {idBloque} enviado a Topic de Rabbit")
+            global message_returned
+            message_returned = False
+            #Manejo de paquetes devueltos
+            try:
+                while not message_returned:
+                    connection.process_data_events()  # Procesar eventos para permitir que la devolución de llamada se ejecute
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
 
         # time.sleep(60) #Se ejecuta cada 1 minuto
         time.sleep(10)
@@ -202,6 +222,7 @@ def tarea_worker():
             return jsonify({"mensaje":"Bloque validado y añadido a la blockchain"}),201
         
     else:
+        print("No coinciden :(")
         return jsonify({"mensaje":"Los hash no coinciden, paquete descartado!"}),400   
 
 

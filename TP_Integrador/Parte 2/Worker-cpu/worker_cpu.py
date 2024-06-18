@@ -8,7 +8,7 @@ import requests
 
 #Encargada de hacer el hash dado un texto
 def calcular_sha256(texto):
-    hash = hashlib.sha256()
+    hash = hashlib.md5()
     hash.update(texto.encode('utf-8'))
     return hash.hexdigest()
 
