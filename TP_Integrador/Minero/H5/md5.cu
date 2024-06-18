@@ -142,8 +142,8 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(d_input,input, input_len * sizeof(char), cudaMemcpyHostToDevice);
     cudaMemcpy(d_prefix,prefix, prefix_len * sizeof(char), cudaMemcpyHostToDevice);
 
-    int threads = 128;
-    int blocks  = 32;
+    int threads = 512;
+    int blocks  = 150;
     calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result);
 
     cudaDeviceSynchronize();

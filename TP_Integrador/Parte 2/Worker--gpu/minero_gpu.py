@@ -23,6 +23,7 @@ def ejecutar_minero(from_val, to_val, prefix, hash_val):
     desde = 1
     print("repeticiones:", repeticiones)
     start_time_total = time.time()
+    
     while (rep <= repeticiones and not(encontrado)):
         print("ciclos:", rep, "comienzo:", desde)
 

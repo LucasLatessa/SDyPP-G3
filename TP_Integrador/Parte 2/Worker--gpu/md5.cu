@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
     // Registrar el evento de inicio
     cudaEventRecord(start, 0);
 
-    calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result, from);
+     
     cudaEventRecord(stop, 0);
 
     // Esperar a que el evento de fin sea registrado
