@@ -139,8 +139,8 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(d_input,input, input_len * sizeof(char), cudaMemcpyHostToDevice);
     cudaMemcpy(d_prefix,prefix, prefix_len * sizeof(char), cudaMemcpyHostToDevice);
 
-    int threads = 32;
-    int blocks  = 2400;//(to - from + threads - 1) / threads;//171 
+    int threads = 512;
+    int blocks  = 150;//(to - from + threads - 1) / threads;//171 
 
     cudaEvent_t start, stop;
     float elapsedTime;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 
     // Registrar el evento de inicio
     cudaEventRecord(start, 0);
-
+    calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result, from);
      
     cudaEventRecord(stop, 0);
 

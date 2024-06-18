@@ -21,7 +21,8 @@ def minero(ch, method, properties, body):
 #     encontrado = False
     tiempo_inicial = time.time()
     print("Minero comenzado!")
-    resultado = minero_gpu.ejecutar_minero(1, data["max_random"], data["prefix"], data["base_string_chain"])
+    resultado = minero_gpu.ejecutar_minero(1, data["max_random"], data["prefix"], data["base_string_chain"] + data["blockchain_content"])
+    print("Esto", data["base_string_chain"] + data["blockchain_content"])
     
    
 #     #Hasta que no encuentra un hash que comienze con el prefijo no para
@@ -38,6 +39,7 @@ def minero(ch, method, properties, body):
        
     #data["tiempo_proceso"] = tiempo_proceso
     resultado = json.loads(resultado)
+    print("resultado",resultado)
     data["hash"] = resultado['hash_md5_result']
     data["numero"] = resultado["numero"]
 

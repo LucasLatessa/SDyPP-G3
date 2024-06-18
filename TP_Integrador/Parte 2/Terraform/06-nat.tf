@@ -1,4 +1,4 @@
-# https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_router_nat
+ /*https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_router_nat
 resource "google_compute_router_nat" "nat" {
   name   = "nat"
   router = google_compute_router.router.name
@@ -15,11 +15,11 @@ resource "google_compute_router_nat" "nat" {
   nat_ips = [google_compute_address.nat.self_link]
 }
 
-# https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_address
+ https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_address
 resource "google_compute_address" "nat" {
   name         = "nat"
   address_type = "EXTERNAL"
   network_tier = "PREMIUM"
 
   depends_on = [google_project_service.compute]
-}
+}*/
