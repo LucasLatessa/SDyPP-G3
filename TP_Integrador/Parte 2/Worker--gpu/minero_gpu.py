@@ -62,8 +62,4 @@ def ejecutar_minero(from_val, to_val, prefix, hash_val):
     return contenido
 
 # Ejemplo de uso
-#ejecutar_minero(1, 1000000, "0000000", "at22")
-
-import subprocess
-import json
-import time
+ejecutar_minero(1, 10000, "000", "apprew")

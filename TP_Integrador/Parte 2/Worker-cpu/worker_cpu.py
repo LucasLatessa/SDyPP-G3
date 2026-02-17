@@ -47,7 +47,7 @@ def minero(ch, method, properties, body):
             data["hash"] = hash
             data["numero"] = aleatorio
 
-            enviar_resultado(data)
+            #enviar_resultado(data)
     #Confirmo con un ACK que lo resolvi
     end_time_total = time.time()
     execution_time_total = end_time_total - start_time_total

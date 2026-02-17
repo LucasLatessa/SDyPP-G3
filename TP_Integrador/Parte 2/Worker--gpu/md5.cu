@@ -1,193 +1,155 @@
-// main.cu
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <cstdlib>
+#include <stdint.h>
+
 #include "cuda_md5.cu"
 
-__device__ size_t num_digits(int num) {
-    if (num == 0) return 1;
-    size_t digits = 0;
-    if (num < 0) digits++; // Contar el signo negativo
-    while (num != 0) {
-        num /= 10;
-        digits++;
-    }
-    return digits;
-}
+#define THREADS 256
 
-__device__ void int_to_str(int num, char *str) {
+__device__ void int_to_str(int num, char *str, int *len) {
     int i = 0;
-
-    // Manejo del caso especial cuando num es 0
     if (num == 0) {
         str[0] = '0';
-        str[1] = '\0';
+        *len = 1;
         return;
     }
 
-    // Manejo del caso negativo
-    bool is_negative = false;
-    if (num < 0) {
-        is_negative = true;
-        num = -num;
-    }
-
-    // Almacenamiento temporal de los dígitos en orden inverso
-    char temp[64];
-    while (num != 0) {
+    char temp[16];
+    while (num > 0) {
         temp[i++] = '0' + (num % 10);
         num /= 10;
     }
 
-    // Si el número es negativo, añadir el signo negativo
-    int j = 0;
-    if (is_negative) {
-        str[j++] = '-';
-    }
-
-    // Copiar los dígitos en orden correcto a str
-    while (i > 0) {
-        str[j++] = temp[--i];
-    }
-
-    // Añadir el terminador nulo
-    str[j] = '\0';
+    *len = i;
+    for (int j = 0; j < i; j++)
+        str[j] = temp[i - j - 1];
 }
 
-__device__ bool starts_with(const uint8_t* hash, const uint8_t* prefix, int prefix_len) {  
-    //printf("hash: %s prefix: %s len: %d\n", hash, prefix, prefix_len);
-	for (int i = 0; i < prefix_len; ++i) {
-        __syncthreads();
-		if ((char)hash[i] != (char)prefix[i])
-			return false;
-	}   
-	return true;
-}
-
-__device__ void byte_to_hex_div(const unsigned char* byte_array, char* hex_string, size_t length) {
+__device__ bool starts_with_hex(const uint8_t* hash, const char* prefix, int prefix_len) {
     const char hex_digits[] = "0123456789abcdef";
-    for (size_t i = 0; i < length; ++i) {
-        hex_string[i * 2] = hex_digits[(byte_array[i] >> 4) & 0x0F];
-        hex_string[i * 2 + 1] = hex_digits[byte_array[i] & 0x0F];
+    for (int i = 0; i < prefix_len; i++) {
+        uint8_t byte = hash[i / 2];
+        char hex_char = (i % 2 == 0) ?
+            hex_digits[(byte >> 4) & 0xF] :
+            hex_digits[byte & 0xF];
+
+        if (hex_char != prefix[i])
+            return false;
     }
-    hex_string[length * 2] = '\0';
+    return true;
 }
 
 __global__
-void calculate_md5(char* input,char* prefix,int input_len, int prefix_len, uint8_t* result, int from) {
-    int _nonce = from + blockIdx.x * blockDim.x + threadIdx.x;
-    char _nonce_num_str[64];
-    size_t buffer_len = num_digits(_nonce) ;
-    int suma = (input_len + buffer_len);
-    
-    char* concatenated_str = (char*)malloc(suma + 1);
-    int_to_str(_nonce, _nonce_num_str);
-    memcpy(concatenated_str, input, input_len);    
-    memcpy(concatenated_str, _nonce_num_str, buffer_len);   
-    //printf("%s\n",_nonce_num_str);
-    memcpy(concatenated_str + buffer_len, input, input_len);
+void calculate_md5(
+    const char* input,
+    int input_len,
+    const char* prefix,
+    int prefix_len,
+    int from,
+    int to,
+    int* found_flag,
+    int* found_nonce
+) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int nonce = from + idx;
 
-    concatenated_str[suma + 1] = '\0';
+    if (nonce > to || *found_flag)
+        return;
 
-    uint8_t *input_uint8 = reinterpret_cast<uint8_t*>(concatenated_str);
-    uint8_t *prefix_uint8 = reinterpret_cast<uint8_t*>(prefix);
+    char nonce_str[16];
+    int nonce_len;
+    int_to_str(nonce, nonce_str, &nonce_len);
 
-    uint8_t resultado[32];
-    cuda_md5(input_uint8, suma, resultado);
+    char buffer[128];
+    memcpy(buffer, input, input_len);
+    memcpy(buffer + input_len, nonce_str, nonce_len);
 
-    char hex_result[33];
-    byte_to_hex_div(resultado,hex_result,16);
-    uint8_t *resultado_uint8 = reinterpret_cast<uint8_t*>(hex_result);
+    int total_len = input_len + nonce_len;
 
+    uint8_t digest[16];
+    cuda_md5((uint8_t*)buffer, total_len, digest);
 
-    if (starts_with(resultado_uint8, prefix_uint8, prefix_len)){
-        printf("%s\n", resultado_uint8);
-        memcpy(result, resultado_uint8, 32 * sizeof(uint8_t));
-        memcpy(result + 32, _nonce_num_str, buffer_len * sizeof(uint8_t));
-        result[32 + buffer_len] = '\0'; 
-
+    if (starts_with_hex(digest, prefix, prefix_len)) {
+        if (atomicCAS(found_flag, 0, 1) == 0) {
+            *found_nonce = nonce;
+        }
     }
 }
 
-
 int main(int argc, char *argv[]) {
+
     if (argc != 5) {
-        fprintf(stderr, "Uso: %s <cadena>\n", argv[0]);
+        printf("Uso: %s <from> <to> <prefix> <input>\n", argv[0]);
         return 1;
     }
 
     int from = atoi(argv[1]);
-	int to = atoi(argv[2]);
-
+    int to   = atoi(argv[2]);
     const char* prefix = argv[3];
-    const char* input = argv[4];
-    
-    size_t input_len = strlen(input);
-    size_t prefix_len = strlen(prefix);
+    const char* input  = argv[4];
 
-    unsigned char result[64]; // MD5 produce un hash de 16 bytes
+    int input_len = strlen(input);
+    int prefix_len = strlen(prefix);
 
-    char* d_input;
-    char* d_prefix;
-    unsigned char* d_result;
+    char *d_input, *d_prefix;
+    int *d_found_flag, *d_found_nonce;
 
-    cudaMalloc(&d_input, input_len * sizeof(unsigned char));
-    cudaMalloc(&d_prefix, prefix_len * sizeof(unsigned char));
-    cudaMalloc(&d_result, 64 * sizeof(unsigned char));
-    cudaMemcpy(d_input,input, input_len * sizeof(char), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_prefix,prefix, prefix_len * sizeof(char), cudaMemcpyHostToDevice);
+    cudaMalloc(&d_input, input_len);
+    cudaMalloc(&d_prefix, prefix_len);
+    cudaMalloc(&d_found_flag, sizeof(int));
+    cudaMalloc(&d_found_nonce, sizeof(int));
 
-    int threads = 512;
-    int blocks  = 150;//(to - from + threads - 1) / threads;//171 
+    cudaMemcpy(d_input, input, input_len, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_prefix, prefix, prefix_len, cudaMemcpyHostToDevice);
+
+    int zero = 0;
+    cudaMemcpy(d_found_flag, &zero, sizeof(int), cudaMemcpyHostToDevice);
+
+    int total = to - from + 1;
+    int blocks = (total + THREADS - 1) / THREADS;
 
     cudaEvent_t start, stop;
-    float elapsedTime;
+    float elapsed;
 
-    // Crear los eventos
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    // Registrar el evento de inicio
-    cudaEventRecord(start, 0);
-    calculate_md5<<<blocks, threads>>>(d_input, d_prefix, input_len, prefix_len, d_result, from);
-     
-    cudaEventRecord(stop, 0);
+    cudaEventRecord(start);
 
-    // Esperar a que el evento de fin sea registrado
+    calculate_md5<<<blocks, THREADS>>>(
+        d_input,
+        input_len,
+        d_prefix,
+        prefix_len,
+        from,
+        to,
+        d_found_flag,
+        d_found_nonce
+    );
+
+    cudaEventRecord(stop);
     cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsed, start, stop);
 
-    // Calcular el tiempo transcurrido entre los dos eventos
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    float elapsedTimeInSeconds = elapsedTime / 1000.0f;
+    int found_flag = 0;
+    int found_nonce = 0;
 
-    // Imprimir el tiempo transcurrido
-    cudaDeviceSynchronize();
-    cudaError_t error = cudaGetLastError();
+    cudaMemcpy(&found_flag, d_found_flag, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&found_nonce, d_found_nonce, sizeof(int), cudaMemcpyDeviceToHost);
 
-    if (error != cudaSuccess) {
-        printf("{ error: true, cuda: %s }", cudaGetErrorString(error));
-        return 1;
+    if (found_flag) {
+        printf("Nonce encontrado: %d\n", found_nonce);
+    } else {
+        printf("No encontrado\n");
     }
-    
-    cudaMemcpy(&result, d_result, 64 * sizeof(unsigned char), cudaMemcpyDeviceToHost);
-    char hash_md5_result[33];
-    strncpy(hash_md5_result, reinterpret_cast<const char*>(result), 32);
-    char* remaining_chars = reinterpret_cast<char*>(result) + 32;
-    hash_md5_result[32] = '\0';
-    int numero = atoi(remaining_chars);
 
-    printf("Hash MD5 de '%d%s': %.32s\n", numero, input, hash_md5_result);
-    FILE *json_file = fopen("json_output.txt", "w");
-    fprintf(json_file, "{\"numero\": %d, \"hash_md5_result\": \"%s\"}", numero, hash_md5_result);
+    printf("Tiempo: %.4f ms\n", elapsed);
 
-    FILE *time_file = fopen("time_output.txt", "a");
-    fprintf(time_file, "Tiempo transcurrido: %f segundos\n", elapsedTimeInSeconds);
-    fclose(time_file);
-    
     cudaFree(d_input);
-    cudaFree(d_result);
+    cudaFree(d_prefix);
+    cudaFree(d_found_flag);
+    cudaFree(d_found_nonce);
 
     return 0;
 }

@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  worker:
+    build: .
+    container_name: mining_worker_gpu
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

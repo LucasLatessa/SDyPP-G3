@@ -36,3 +36,4 @@ la velocidades distintas velocidades se deben a la velocidad de cada placa y a s
 
 
 
+                            
