@@ -1,4 +1,4 @@
-# 🐳 Cheat Sheet: Comandos Útiles de Docker
+# Comandos Útiles de Docker
 
 Esta guía contiene los comandos fundamentales para la construcción de imágenes, manejo de contenedores y publicación en Docker Hub.
 
