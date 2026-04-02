@@ -10,13 +10,13 @@ Una vez levantado el contenedor y escuchando en el puerto 5000 del contenedor, e
 
 Creando contenedor en docker:
 
-``` 
+```bash
 docker build . -t josuegaticaodato/servidorweb -f servidor.dockerfile
 ```
 
 Pusheando servidor web a docker hub:
 
-``` 
+```bash
 docker push josuegaticaodato/servidorweb
 ```
 
@@ -25,25 +25,25 @@ docker push josuegaticaodato/servidorweb
 
 Pull al servidor web:
 
-```
+```bash
 docker pull josuegaticaodato/servidorweb
 ```
 
 Creacion de la red para comunicar los contenedores
 
-```
+```bash
 docker network create --attachable prueba
 ```
 
 Ejecucion del servidor web
 
-```
+```bash
 docker run --network=prueba --rm --name spweb -v /var/run/docker.sock:/var/run/docker.sock -p 8080:8080 josuegaticaodato/servidorweb
 ```
 
 Para matar todos los contenedores
 
-```
+```bash
 docker stop $(docker ps -a -q)
 ```
 
