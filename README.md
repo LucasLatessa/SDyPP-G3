@@ -17,7 +17,8 @@ Este repositorio contiene el código fuente, la documentación y los informes co
 El desarrollo de los trabajos prácticos y el proyecto final se apoya en las siguientes herramientas:
 * **Lenguaje:** Python
 * **Infraestructura y Contenedores:** Docker, Kubernetes
-* **Comunicación:** API REST / RabbitMQ / Sockets
+* **Comunicación:** API REST / RabbitMQ / Sockets / Redis
+* **Nube:** GCloud
 * **Pipeline de despliegue automatizado (Infra/App):** Github Actions
 * **Control de Versiones:** Git & GitHub
 
@@ -28,8 +29,7 @@ A continuación se detalla el progreso de los trabajos prácticos (TPs) de la cu
 Distribuidos:** (Ver carpeta `/TP1`)
 - [x] **TP 2: Sistemas distribuidos y
 comunicación:** (Ver carpeta `/TP2`)
-- [ ] **TP 3: :** [Breve descripción]. (Ver carpeta `/TP3`)
-- [ ] **TP 4: :** [Breve descripción]. (Ver carpeta `/TP4`)
+- [x] **TP 3: Computación en la Nube:** (Ver carpeta `/TP3`)
 
 ## 🏆 Trabajo Práctico Final
 **Estado:** 🚧 En planificación
@@ -41,4 +41,10 @@ comunicación:** (Ver carpeta `/TP2`)
 📦 SDyPP-G3
  ┣ 📂 TP1
  ┣ 📂 TP2
+ ┣ 📂 TP3
+ ┣ 📂 TP4final
+ ┣ 📂 TP5
+ ┣ 📂 TP_Integrador
+ ┣ 📂 Comandos
+ ┣ 📂 scripts
  ┗ 📜 README.md
