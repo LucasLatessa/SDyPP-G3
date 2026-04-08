@@ -30,6 +30,8 @@ Distribuidos:** (Ver carpeta `/TP1`)
 - [x] **TP 2: Sistemas distribuidos y
 comunicación:** (Ver carpeta `/TP2`)
 - [x] **TP 3: Computación en la Nube:** (Ver carpeta `/TP3`)
+- [ ] **TP 4: Computación en la Nube (Kubernetes / RabbitMQ):** (Ver carpeta `/TP4final`)
+- [x] **TP 5: Programación Paralela (Shaders):** (Ver carpeta `/TP5`)
 
 ## 🏆 Trabajo Práctico Final
 **Estado:** 🚧 En planificación
