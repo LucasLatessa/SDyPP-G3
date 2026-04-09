@@ -1,12 +1,6 @@
 # Sistemas Distribuidos y Programación Paralela (SDyPP)
 
-![Status](https://img.shields.io/badge/Status-En%20Desarrollo-green)
-![Universidad Nacional de Lujan](https://img.shields.io/badge/Universidad-Lic.%20en%20Sistemas-blue)
-
 Este repositorio contiene el código fuente, la documentación y los informes correspondientes a los trabajos prácticos y el proyecto final de la asignatura **Sistemas Distribuidos y Programación Paralela (41409)** - UNLU 2024.
-
-## 🎯 Objetivo de la Asignatura
-""
 
 ## 👥 Integrantes del Grupo
 * Gatica Odato, Josue
@@ -32,11 +26,7 @@ comunicación:** (Ver carpeta `/TP2`)
 - [x] **TP 3: Computación en la Nube:** (Ver carpeta `/TP3`)
 - [ ] **TP 4: Computación en la Nube (Kubernetes / RabbitMQ):** (Ver carpeta `/TP4final`)
 - [x] **TP 5: Programación Paralela (Shaders):** (Ver carpeta `/TP5`)
-
-## 🏆 Trabajo Práctico Final
-**Estado:** 🚧 En planificación
-
-**Objetivo del TP Final:** ["Descripcion."]
+- [x] **TP Integrador** (Ver carpeta `/TP_Integrador`)
 
 ## 📂 Estructura del Repositorio
 ```text
