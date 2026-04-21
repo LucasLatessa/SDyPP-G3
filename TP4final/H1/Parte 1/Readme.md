@@ -3,7 +3,7 @@ Desarrollar un proceso centralizado que tome una imagen, aplique la máscara, y 
 
 ## Instrucciones para aplicar el filtro de sobel
 
-1. Instalar las librerias utilizadsa:
+1. Instalar las librerias utilizadas:
 
 ```
 pip install opencv-python numpy
@@ -15,7 +15,7 @@ pip install opencv-python numpy
 python sobel.py "ruta-de-la-imagen"
 ```
 
-Ej.
+## Ejemplo de ejecucion
 
 ```
 python sobel.py Mirtha.jpg

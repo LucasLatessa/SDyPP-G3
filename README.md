@@ -26,7 +26,7 @@ comunicación:** (Ver carpeta `/TP2`)
 - [x] **TP 3: Computación en la Nube:** (Ver carpeta `/TP3`)
 - [ ] **TP 4: Computación en la Nube (Kubernetes / RabbitMQ):** (Ver carpeta `/TP4final`)
 - [x] **TP 5: Programación Paralela (Shaders):** (Ver carpeta `/TP5`)
-- [x] **TP Integrador** (Ver carpeta `/TP_Integrador`)
+- [] **TP Integrador** (Ver carpeta `/TP_Integrador`)
 
 ## 📂 Estructura del Repositorio
 ```text
