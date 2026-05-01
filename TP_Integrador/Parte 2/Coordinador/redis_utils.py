@@ -3,8 +3,8 @@ import json
 
 class RedisUtils:
     #Conexion con redis cuando se cree la instancia
-    def __init__(self, host='localhost',port=6379,db=0,password="grupo03"):
-        self.redis_client = redis.StrictRedis(host=host, port=port, db=0, password=password)
+    def __init__(self, host='localhost',port=6379,db=0):
+        self.redis_client = redis.StrictRedis(host=host, port=port, db=0)
 
     #Publicar el mensaje al inicio de la lista
     def publicar(self,mensaje, list_key='blockchain'):
