@@ -1,0 +1,68 @@
+"""
+Módulo de rutas para la app principal
+
+Se definen los endpoints que soportara la API
+"""
+from flask import json, jsonify, request
+from services.blockchain_service import validar_guardar_bloque
+from config import (
+    QUEUE_NAME,
+)
+
+def registrar_rutas(app, channel, redis_client) -> None:
+  """
+  Registra los endpoints en la aplicación Flask.
+
+  Args:
+      app: Aplicacion Flask
+      channel: Canal RabbitMQ
+      redis_client: Cliente Redis
+
+  """
+
+  "-------------------------------------------------------------------"
+
+  @app.route("/transaccion", methods=["POST"])
+  def agregar_transaccion():
+    """
+    Recibe una transacción y la envía a RabbitMQ.
+    """
+
+    data = request.get_json()
+    print(f"Transaccion recibida: {data} ")
+
+    # Mando a la cola de Rabbit
+    channel.basic_publish(
+        exchange="", routing_key=QUEUE_NAME, body=json.dumps(data)
+    )
+
+    return "Transaccion recibida y encolada en Rabbit", 200
+
+
+  "-------------------------------------------------------------------"
+
+
+  @app.route("/tarea_worker", methods=["POST"])
+  def tarea_worker():
+    """
+    Recibe un bloque resuelto por un worker.
+    """
+    data = request.get_json()
+
+    ok, mensaje = validar_guardar_bloque(data, redis_client)
+
+    if ok:
+      return jsonify({"mensaje": mensaje}), 201
+    else:
+      return jsonify({"mensaje": mensaje}), 400
+
+
+  "-------------------------------------------------------------------"
+
+
+  @app.route("/status", methods=["GET"])
+  def status():
+      """
+      Estado del servidor.
+      """
+      return jsonify({"status": "funcionando :D"})

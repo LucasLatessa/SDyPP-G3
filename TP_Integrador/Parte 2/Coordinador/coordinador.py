@@ -3,7 +3,7 @@ import random
 import threading
 import time
 from flask import Flask, json, jsonify, request
-from redis_utils import RedisUtils
+from redis import Redis
 import pika
 import redis
 
@@ -30,37 +30,13 @@ channel.exchange_declare(
 
 
 # Conexion con Redis
-redis = RedisUtils()
+redis = Redis()
 
 # ---------------------------
 #    FUNCIONES COORDINADOR
 # ---------------------------
 
-# Funcion para calcular el hash -> Utilzia un numero y una cadena base
-def calcular_hash(data):
-    hash_val = 0  # Valor inicial del hash
-    for byte in data.encode(
-        "utf-8"
-    ):  # Convierte la cadena de entrada a bytes en formato UTF-8 y recorre cada byte
-        hash_val = (hash_val * 31 + byte) % (
-            2**32
-        )  # Multiplica el valor del hash por 31 y añade el valor del byte, asegurando que el resultado esté dentro del rango de 32 bits
-        hash_val ^= (hash_val << 13) | (
-            hash_val >> 19
-        )  # Realiza una rotación de bits: desplaza el valor 13 bits a la izquierda o 19 bits a la derecha, y aplica una operación XOR
-        hash_val = (hash_val * 17) % (
-            2**32
-        )  # Multiplica el valor del hash por 17, asegurando que el resultado esté dentro del rango de 32 bits
-        hash_val = (
-            (hash_val << 5) | (hash_val >> 27)
-        ) & 0xFFFFFFFF  # Realiza otra rotación de bits: desplaza el valor 5 bits a la izquierda o 27 bits a la derecha, y aplica una operación AND para asegurar que el resultado esté dentro de 32 bits
-    return hash_val  # Retorna el valor final del hash
 
-def calcular_hash_v2(data):
-    #hash = hashlib.sha256()
-    hash = hashlib.md5()
-    hash.update(data.encode('utf-8'))
-    return hash.hexdigest()
 
 #En el caso de que ningun worker agarre el mensaje, levanto workers cpu en Gcloud
 def handle_return(channel, method, properties, body):
