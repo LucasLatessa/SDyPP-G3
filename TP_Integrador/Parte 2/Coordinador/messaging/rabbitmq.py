@@ -60,7 +60,7 @@ def crear_canal(connection: pika.BlockingConnection) -> BlockingChannel:
         pika.exceptions.AMQPConnectionError: Si el servidor de RabbitMQ no está disponible o rechaza la conexión.
     """
     channel = connection.channel()
-    channel.queue_declare(queue=QUEUE_NAME)
+    channel.queue_declare(queue=QUEUE_NAME, durable=True)
     channel.exchange_declare(
         exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True
     )
