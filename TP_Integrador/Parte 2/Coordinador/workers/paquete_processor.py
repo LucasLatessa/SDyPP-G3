@@ -13,6 +13,8 @@ from config import (
     EXCHANGE_NAME,
     ROUTING_KEY,
     RABBIT_TIMEOUT,
+    DIFFICULT_PREFIX,
+    STRING_CHAIN
 )
 
 
@@ -69,8 +71,8 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
                 bloque = {
                     "id": idBloque,
                     "transaccion": paquete,
-                    "prefix": "0",  # Dificulta de tres 0 -> Buscar el quiebre
-                    "base_string_chain": "papa",  # Es lo que concateno para el hash, que tiene que arrancar con el prefijo
+                    "prefix": DIFFICULT_PREFIX,  # Dificulta de tres 0 -> Buscar el quiebre
+                    "base_string_chain": STRING_CHAIN,  # Es lo que concateno para el hash, que tiene que arrancar con el prefijo
                     "blockchain_content": (
                         last_element["blockchain_content"] if last_element else "[]"
                     ),  # Contenido de la cadena de bloques hasta el bloque anterior

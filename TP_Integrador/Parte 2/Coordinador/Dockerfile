@@ -6,4 +6,4 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY . .
 RUN pip install -r requirements.txt
-CMD ["python", "coordinador.py"]
+CMD ["python", "app.py"]

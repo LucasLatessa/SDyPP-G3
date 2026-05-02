@@ -30,13 +30,17 @@ def crear_conexion() -> pika.BlockingConnection:
         pika.BlockingConnection: Objeto de conexión bloqueante hacia RabbitMQ
         configurado con las credenciales por defecto.
     """
-    return pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=RABBIT_HOST,
-            port=RABBIT_PORT,
-            credentials=pika.PlainCredentials(RABBIT_USER, RABBIT_PASS),
-        )
-    )
+
+    try:
+      return pika.BlockingConnection(
+          pika.ConnectionParameters(
+              host=RABBIT_HOST,
+              port=RABBIT_PORT,
+              credentials=pika.PlainCredentials(RABBIT_USER, RABBIT_PASS),
+          )
+      )
+    except Exception as e:
+       print(e)
 
 
 def crear_canal(connection: pika.BlockingConnection) -> BlockingChannel:
