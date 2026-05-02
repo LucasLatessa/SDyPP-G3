@@ -1,0 +1,4 @@
+- Control del topico de Rabbit (a veces no los levanta el Worker)
+- Revisar la competencia entre workers
+- Pool de transaciones
+- 

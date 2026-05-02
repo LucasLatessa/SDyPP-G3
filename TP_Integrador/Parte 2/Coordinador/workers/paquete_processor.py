@@ -89,6 +89,7 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
 
                 print(f"Paquete con Bloque ID {idBloque} enviado a Topic de Rabbit")
 
+                # TO-DO: Manejo de workers caidos
                 # global message_returned
                 # message_returned = False
                 # # Manejo de paquetes devueltos
