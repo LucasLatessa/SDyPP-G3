@@ -16,6 +16,17 @@ from config import (
     DIFFICULT_PREFIX,
     STRING_CHAIN
 )
+from utils.logger import get_logger
+
+# ----------------------------------------------------------------------
+#                         CONFIGURACIONES
+# ----------------------------------------------------------------------
+
+logger = get_logger(__name__)
+
+# ----------------------------------------------------------------------
+#                            FUNCIONES
+# ----------------------------------------------------------------------
 
 
 def procesar_paquetes(channel, connection, redis_client) -> None:
@@ -57,7 +68,7 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
             """
 
             if paquete:
-
+                logger.info(f"Procesando paquete de {len(paquete)} transacciones")
                 # Añadir metadatos al paquete del bloque
 
                 # Obtener los últimos mensajes de Redis
@@ -66,10 +77,8 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
                 # Obtener el último elemento de la lista en Redis
                 last_element = (redis_client.get_ultimo())
 
-                idBloque = str(random.randint(0, MAX_RANDOM))
-
                 bloque = {
-                    "id": idBloque,
+                    "id": str(random.randint(0, MAX_RANDOM)),
                     "transaccion": paquete,
                     "prefix": DIFFICULT_PREFIX,  # Dificulta de tres 0 -> Buscar el quiebre
                     "base_string_chain": STRING_CHAIN,  # Es lo que concateno para el hash, que tiene que arrancar con el prefijo
@@ -87,7 +96,7 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
                     mandatory=True,
                 )
 
-                print(f"Paquete con Bloque ID {idBloque} enviado a Topic de Rabbit")
+                logger.info(f"Bloque enviado ID={bloque['id']}")
 
                 # TO-DO: Manejo de workers caidos
                 # global message_returned
@@ -99,7 +108,9 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
                     connection.process_data_events()
                     time.sleep(1)
 
-            print(f"Pasaron {PROCESS_INTERVAL} segundos, procesamiento de paquetes")
+            #print(f"Pasaron {PROCESS_INTERVAL} segundos, procesamiento de paquetes")
+            logger.info(f"Pasaron {PROCESS_INTERVAL} segundos, procesamiento de paquetes")
             time.sleep(PROCESS_INTERVAL)
         except Exception as e:
-            print(f"Error en procesamiento: {e}")
+            logger.error(f"Error en procesamiento de paquetes: {e}")
+            #print(f"Error en procesamiento: {e}")

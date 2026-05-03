@@ -7,6 +7,17 @@ almacenamiento de bloques.
 
 import time
 from utils.hash import calcular_hash_v2
+from utils.logger import get_logger
+
+# ----------------------------------------------------------------------
+#                         CONFIGURACIONES
+# ----------------------------------------------------------------------
+
+logger = get_logger(__name__)
+
+# ----------------------------------------------------------------------
+#                            FUNCIONES
+# ----------------------------------------------------------------------
 
 
 def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
@@ -33,26 +44,30 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
 
     hash_local = calcular_hash_v2(datos)
 
-    print("---------------------------")
-    print("    ¡BLOQUE RECIBIDO!      ")
-    print("---------------------------")
-    print(f"Hash recibidos: {data["hash"]}")
-    print(f"Hash calculado de forma local: {hash}")
+    logger.info(f"Validando bloque ID={data['id']}")
+
+    # print("---------------------------")
+    # print("    ¡BLOQUE RECIBIDO!      ")
+    # print("---------------------------")
+    # print(f"Hash recibidos: {data["hash"]}")
+    # print(f"Hash calculado de forma local: {hash}")
 
     if data["hash"] != hash_local:
-        print("El hash es invalido. Termina la ejecucion!")
+        #print("El hash es invalido. Termina la ejecucion!")
+        logger.warning(f"Hash inválido para bloque ID={data['id']}")
         return False, "Hash inválido"
 
     if redis_client.exists_id(data["id"]):
-        print("El bloque esta duplicado. Termina la ejecucion!")
+        #print("El bloque esta duplicado. Termina la ejecucion!")
+        logger.warning(f"Bloque duplicado ID={data['id']}")
         return False, "Bloque duplicado"
 
     # Logica del armado del bloque
-    print("Los bloques coinciden!")
-    print("---------------------------")
-    print("Vamos a agregar el bloque a la cadena")
-    print(f"Hash:  {data["hash"]}")
-    print(f"Contenido del bloque anterior: {data["blockchain_content"]}")
+    # print("Los bloques coinciden!")
+    # print("---------------------------")
+    # print("Vamos a agregar el bloque a la cadena")
+    # print(f"Hash:  {data["hash"]}")
+    # print(f"Contenido del bloque anterior: {data["blockchain_content"]}")
 
     # Le calculo el hash
     blockchain_data = f"{data["base_string_chain"]}{data["hash"]}"
@@ -61,21 +76,23 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
     # Obtengo el bloque anterior para conectar, si no hay quiere decir que este es el origen
     try:
         bloque_previo = redis_client.get_ultimo()
-    except:
+    except Exception as e:
+        logger.error(f"Error obteniendo bloque previo: {e}")
         bloque_previo = None
 
     if bloque_previo:
-        print(f"Hash del bloque previo:  {bloque_previo["hash"]}")
+        #print(f"Hash del bloque previo:  {bloque_previo["hash"]}")
         data["previous_block"] = bloque_previo["hash"]
     else:
-        print(f"Hash del bloque previo: None")
+        #print(f"Hash del bloque previo: None")
         data["previous_block"] = "None"
 
     data["timestamp"] = time.time()
     data["blockchain_content"] = blockchain_content
 
-    print("Bloque final")
-    print(data)
+    #print("Bloque final")
+    #print(data)
+    logger.info(f"Bloque agregado correctamente ID={data['id']}")
 
     redis_client.publicar(data)
 

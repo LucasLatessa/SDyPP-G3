@@ -8,6 +8,17 @@ from services.blockchain_service import validar_guardar_bloque
 from config import (
     QUEUE_NAME,
 )
+from utils.logger import get_logger
+
+# ----------------------------------------------------------------------
+#                         CONFIGURACIONES
+# ----------------------------------------------------------------------
+
+logger = get_logger(__name__)
+
+# ----------------------------------------------------------------------
+#                            FUNCIONES
+# ----------------------------------------------------------------------
 
 def registrar_rutas(app, channel, redis_client) -> None:
   """
@@ -29,7 +40,9 @@ def registrar_rutas(app, channel, redis_client) -> None:
     """
 
     data = request.get_json()
-    print(f"Transaccion recibida: {data} ")
+
+    logger.info(f"Transacción recibida: {data}")
+    #print(f"Transaccion recibida: {data} ")
 
     # Mando a la cola de Rabbit
     channel.basic_publish(
@@ -49,6 +62,8 @@ def registrar_rutas(app, channel, redis_client) -> None:
     """
     data = request.get_json()
 
+    logger.info(f"Bloque recibido ID={data.get('id')}")
+
     ok, mensaje = validar_guardar_bloque(data, redis_client)
 
     if ok:
@@ -65,4 +80,5 @@ def registrar_rutas(app, channel, redis_client) -> None:
       """
       Estado del servidor.
       """
+      logger.info("Healthcheck solicitado")
       return jsonify({"status": "funcionando :D"})

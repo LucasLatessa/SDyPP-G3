@@ -27,7 +27,7 @@ REDIS_LIST_KEY_NAME = 'blockchain'
 
 # Configuracion para el procesamiento de paquetes
 TAMANO_BLOQUE_PROCESAR = 10
-PROCESS_INTERVAL = 10  # Deberia ser cada 60 segundos
+PROCESS_INTERVAL = 20  # Deberia ser cada 60 segundos
 RABBIT_TIMEOUT = 10
 MAX_RANDOM = 20000000
 DIFFICULT_PREFIX = "0"
