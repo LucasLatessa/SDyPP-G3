@@ -14,11 +14,17 @@ RABBIT_PORT = int(os.getenv("RABBIT_PORT", 5672))
 RABBIT_USER = os.getenv("RABBIT_USER", "grupo03")
 RABBIT_PASS = os.getenv("RABBIT_PASS", "grupo03")
 
-# Configuración de mensajería
+# ------------------ Configuración de mensajería -----------------------
+
+# Cola de transaciones
 QUEUE_NAME = "transacciones"
+
+# Cola de bloques
 EXCHANGE_TYPE = "topic"
 EXCHANGE_NAME = "block_challenge"
 ROUTING_KEY = "blocks"
+
+# ----------------------------------------------------------------------
 
 # Configuracion de redis
 REDIS_HOST = os.getenv("REDIS_HOST", 'localhost')

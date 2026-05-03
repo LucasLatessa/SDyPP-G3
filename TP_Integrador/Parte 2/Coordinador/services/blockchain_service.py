@@ -54,13 +54,13 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
 
     if data["hash"] != hash_local:
         #print("El hash es invalido. Termina la ejecucion!")
-        logger.warning(f"Hash inválido para bloque ID={data['id']}")
-        return False, "Hash inválido"
+        logger.warning(f"Hash inválido para bloque ID={data['id']}. Bloque descartado")
+        return False, "Hash inválido. Bloque descartado"
 
     if redis_client.exists_id(data["id"]):
         #print("El bloque esta duplicado. Termina la ejecucion!")
-        logger.warning(f"Bloque duplicado ID={data['id']}")
-        return False, "Bloque duplicado"
+        logger.warning(f"Bloque duplicado ID={data['id']}. Bloque descartado")
+        return False, "Bloque duplicado. Bloque descartado"
 
     # Logica del armado del bloque
     # print("Los bloques coinciden!")
@@ -86,6 +86,8 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
     else:
         #print(f"Hash del bloque previo: None")
         data["previous_block"] = "None"
+
+    logger.info("Hash bloque previo", data["previous_block"])
 
     data["timestamp"] = time.time()
     data["blockchain_content"] = blockchain_content

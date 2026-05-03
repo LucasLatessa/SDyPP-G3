@@ -113,4 +113,5 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
             time.sleep(PROCESS_INTERVAL)
         except Exception as e:
             logger.error(f"Error en procesamiento de paquetes: {e}")
+            time.sleep(5)
             #print(f"Error en procesamiento: {e}")

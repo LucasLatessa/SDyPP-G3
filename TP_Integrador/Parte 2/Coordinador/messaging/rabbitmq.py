@@ -6,6 +6,8 @@ y configurar los canales, colas y exchanges necesarios para el sistema
 distribuido de transacciones.
 """
 
+import time
+
 import pika
 from config import (
     RABBIT_HOST,
@@ -17,6 +19,13 @@ from config import (
     EXCHANGE_NAME
 )
 from pika.adapters.blocking_connection import BlockingChannel
+from utils.logger import get_logger
+
+# ----------------------------------------------------------------------
+#                         CONFIGURACIONES
+# ----------------------------------------------------------------------
+
+logger = get_logger(__name__)
 
 # ----------------------------------------------------------------------
 #                            FUNCIONES
@@ -31,16 +40,18 @@ def crear_conexion() -> pika.BlockingConnection:
         configurado con las credenciales por defecto.
     """
 
-    try:
-      return pika.BlockingConnection(
-          pika.ConnectionParameters(
-              host=RABBIT_HOST,
-              port=RABBIT_PORT,
-              credentials=pika.PlainCredentials(RABBIT_USER, RABBIT_PASS),
-          )
-      )
-    except Exception as e:
-       print(e)
+    while True:
+      try:
+        return pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=RABBIT_HOST,
+                port=RABBIT_PORT,
+                credentials=pika.PlainCredentials(RABBIT_USER, RABBIT_PASS),
+            )
+        )
+      except pika.exceptions.AMQPConnectionError:
+        logger.error("Fallo en la conexion con Rabbit, reintentando en 5 segundos...")
+        time.sleep(5)
 
 
 def crear_canal(connection: pika.BlockingConnection) -> BlockingChannel:

@@ -3,6 +3,7 @@ Módulo de rutas para la app principal
 
 Se definen los endpoints que soportara la API
 """
+
 from flask import json, jsonify, request
 from services.blockchain_service import validar_guardar_bloque
 from config import (
@@ -20,65 +21,75 @@ logger = get_logger(__name__)
 #                            FUNCIONES
 # ----------------------------------------------------------------------
 
+
 def registrar_rutas(app, channel, redis_client) -> None:
-  """
-  Registra los endpoints en la aplicación Flask.
-
-  Args:
-      app: Aplicacion Flask
-      channel: Canal RabbitMQ
-      redis_client: Cliente Redis
-
-  """
-
-  "-------------------------------------------------------------------"
-
-  @app.route("/transaccion", methods=["POST"])
-  def agregar_transaccion():
     """
-    Recibe una transacción y la envía a RabbitMQ.
+    Registra los endpoints en la aplicación Flask.
+
+    Args:
+        app: Aplicacion Flask
+        channel: Canal RabbitMQ
+        redis_client: Cliente Redis
+
     """
 
-    data = request.get_json()
+    "-------------------------------------------------------------------"
 
-    logger.info(f"Transacción recibida: {data}")
-    #print(f"Transaccion recibida: {data} ")
+    @app.route("/transaccion", methods=["POST"])
+    def agregar_transaccion():
+        """
+        Recibe una transacción y la envía a RabbitMQ.
+        """
 
-    # Mando a la cola de Rabbit
-    channel.basic_publish(
-        exchange="", routing_key=QUEUE_NAME, body=json.dumps(data)
-    )
+        data = request.get_json()
 
-    return "Transaccion recibida y encolada en Rabbit", 200
+        logger.info(f"Transacción recibida: {data}")
 
+        campos_requeridos = ["origen", "destino", "monto"]
+        if not all(field in data for field in campos_requeridos):
+            logger.error("Faltan campos en la transaccion. Solicitud denegada")
+            return (
+                jsonify(
+                    {
+                        "error": "Solicitud denegada. Faltan campos en la transaccion. Los campos deben ser: origen, destino, monto."
+                    }
+                ),
+                400,
+            )
 
-  "-------------------------------------------------------------------"
+        # print(f"Transaccion recibida: {data} ")
 
+        # Mando a la cola de Rabbit
+        channel.basic_publish(
+            exchange="", routing_key=QUEUE_NAME, body=json.dumps(data)
+        )
 
-  @app.route("/tarea_worker", methods=["POST"])
-  def tarea_worker():
-    """
-    Recibe un bloque resuelto por un worker.
-    """
-    data = request.get_json()
+        return "Transaccion recibida y encolada en Rabbit", 200
 
-    logger.info(f"Bloque recibido ID={data.get('id')}")
+    "-------------------------------------------------------------------"
 
-    ok, mensaje = validar_guardar_bloque(data, redis_client)
+    @app.route("/tarea_worker", methods=["POST"])
+    def tarea_worker():
+        """
+        Recibe un bloque resuelto por un worker.
+        """
+        data = request.get_json()
 
-    if ok:
-      return jsonify({"mensaje": mensaje}), 201
-    else:
-      return jsonify({"mensaje": mensaje}), 400
+        logger.info(f"Bloque recibido ID={data.get('id')}")
 
+        ok, mensaje = validar_guardar_bloque(data, redis_client)
 
-  "-------------------------------------------------------------------"
+        if ok:
+            return jsonify({"mensaje": mensaje}), 201
+        else:
+            return jsonify({"mensaje": mensaje}), 400
 
+    "-------------------------------------------------------------------"
 
-  @app.route("/status", methods=["GET"])
-  def status():
-      """
-      Estado del servidor.
-      """
-      logger.info("Healthcheck solicitado")
-      return jsonify({"status": "funcionando :D"})
+    @app.route("/status", methods=["GET"])
+    def status():
+        """
+        Estado del servidor.
+        """
+        logger.info("Healthcheck solicitado")
+        return jsonify({"status": "funcionando :D"})
