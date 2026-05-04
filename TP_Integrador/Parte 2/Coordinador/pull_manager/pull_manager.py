@@ -1,0 +1,182 @@
+"""
+Pull Manager
+
+Este módulo se encarga de:
+- Consumir bloques generados por el coordinador
+- Dividir el trabajo en rangos (chunks)
+- Distribuir tareas a los workers mediante RabbitMQ
+"""
+
+import json, os, sys
+from typing import List, Tuple, Dict, Any
+
+# 1. Obtiene la ruta absoluta del directorio actual (pull_manager)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Obtiene la ruta del directorio padre (la raíz del proyecto)
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+root_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
+
+# 3. Añade el directorio padre y la raíz del proyecto a las rutas donde Python busca módulos
+for path in (parent_dir, root_dir):
+    if path not in sys.path:
+        sys.path.append(path)
+
+sys.path.insert(0, root_dir)
+
+from messaging.rabbitmq import crear_conexion, crear_canal
+from utils.logger import get_logger
+from config import EXCHANGE_NAME
+
+# ----------------------------------------------------------------------
+#                         CONFIGURACIONES
+# ----------------------------------------------------------------------
+
+logger = get_logger(__name__)
+
+# 3. Cola intermedia (Pull Manager)
+QUEUE_BLOCKS = "block_queue"
+
+# 4. Cola de tareas (Workers)
+QUEUE_TASKS = "task_queue"
+CHUNK_SIZE = 100000  # Tamaño de cada rango de trabajo
+
+# ----------------------------------------------------------------------
+#                            FUNCIONES
+# ----------------------------------------------------------------------
+
+
+def dividir_rango(max_random: int, chunk_size: int) -> List[Tuple[int, int]]:
+    """
+    Divide el rango de trabajo total en múltiples subrangos (chunks).
+
+    Args:
+        max_random: Valor máximo del rango
+        chunk_size: Tamaño de cada chunk
+    Return
+        Lista de tuplas (inicio, fin)
+    """
+    rangos = []
+
+    for start in range(0, max_random, chunk_size):
+        end = min(start + chunk_size, max_random)
+        rangos.append((start, end))
+
+    return rangos
+
+
+def crear_tarea(bloque: Dict[str, Any], start: int, end: int) -> Dict[str, Any]:
+    """
+    Crea una tarea a partir de un bloque y un rango.
+
+    Args:
+        bloque: Bloque original
+        start: Inicio del rango
+        end: Fin del rango
+    Return
+        Diccionario con la tarea
+    """
+    return {
+        "id": bloque["id"],
+        "transaccion": bloque["transaccion"],
+        "prefix": bloque["prefix"],
+        "base_string_chain": bloque["base_string_chain"],
+        "blockchain_content": bloque["blockchain_content"],
+        "max_random": bloque["max_random"],
+        "start": start,
+        "end": end,
+    }
+
+
+def publicar_tarea(channel, tarea: Dict[str, Any]) -> None:
+    """
+    Publica una tarea en la cola de workers.
+
+    Args:
+        channel: Canal de RabbitMQ
+        tarea: Tarea a enviar
+    """
+    channel.basic_publish(
+        exchange="",
+        routing_key=QUEUE_TASKS,
+        body=json.dumps(tarea),
+    )
+
+def procesar_bloque(channel, body: bytes) -> None:
+    """
+    Procesa un bloque recibido desde RabbitMQ.
+
+    Args:
+        channel: Canal de RabbitMQ
+        body: Mensaje recibido
+    """
+    bloque = json.loads(body)
+
+    logger.info(f"Bloque recibido ID={bloque['id']}")
+
+    max_random = bloque["max_random"]
+
+    rangos = dividir_rango(max_random, CHUNK_SIZE)
+
+    logger.info(f"Generando {len(rangos)} tareas para bloque ID={bloque['id']}")
+
+    for start, end in rangos:
+        tarea = crear_tarea(bloque, start, end)
+        publicar_tarea(channel, tarea)
+
+    logger.info(f"Tareas publicadas para bloque ID={bloque['id']}")
+
+def callback(channel, method, properties, body) -> None:
+    """
+    Callback de consumo de RabbitMQ.
+
+    Args:
+        channel: Canal
+        method: Método
+        properties: Propiedades
+        body: Mensaje
+    """
+    try:
+        procesar_bloque(channel, body)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+
+    except Exception as e:
+        logger.error(f"Error procesando bloque: {e}")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+
+def iniciar_pull_manager() -> None:
+    """
+    Inicializa el Pull Manager y comienza a consumir bloques.
+    """
+    logger.info("Iniciando Pull Manager...")
+
+    connection = crear_conexion()
+    channel = crear_canal(connection)
+
+    channel.queue_declare(queue=QUEUE_BLOCKS)
+    channel.queue_bind(
+        exchange=EXCHANGE_NAME,
+        queue=QUEUE_BLOCKS,
+        routing_key="blocks"
+    )
+
+    # Cola de tareas para workers
+    channel.queue_declare(queue=QUEUE_TASKS)
+
+    channel.basic_qos(prefetch_count=1)
+
+    channel.basic_consume(
+        queue=QUEUE_BLOCKS,
+        on_message_callback=callback
+    )
+
+    logger.info("Pull Manager esperando bloques...")
+
+    channel.start_consuming()
+
+# ----------------------------------------------------------------------
+#                            MAIN
+# ----------------------------------------------------------------------
+
+if __name__ == "__main__":
+    iniciar_pull_manager()
