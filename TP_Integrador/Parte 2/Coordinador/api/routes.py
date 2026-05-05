@@ -5,11 +5,11 @@ Se definen los endpoints que soportara la API
 """
 
 from flask import json, jsonify, request
-from services.blockchain_service import validar_guardar_bloque
-from config import (
+from Coordinador.services.blockchain_service import validar_guardar_bloque
+from Shared.config import (
     QUEUE_NAME,
 )
-from utils.logger import get_logger
+from Shared.utils.logger import get_logger
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES

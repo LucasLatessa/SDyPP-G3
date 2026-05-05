@@ -9,7 +9,7 @@ distribuido de transacciones.
 import time
 
 import pika
-from config import (
+from Shared.config import (
     RABBIT_HOST,
     RABBIT_PORT,
     RABBIT_USER,
@@ -19,7 +19,7 @@ from config import (
     EXCHANGE_NAME
 )
 from pika.adapters.blocking_connection import BlockingChannel
-from utils.logger import get_logger
+from Shared.utils.logger import get_logger
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES

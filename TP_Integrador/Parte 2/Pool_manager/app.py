@@ -7,39 +7,19 @@ Este módulo se encarga de:
 - Distribuir tareas a los workers mediante RabbitMQ
 """
 
-import json, os, sys
+import json
 from typing import List, Tuple, Dict, Any
 
-# 1. Obtiene la ruta absoluta del directorio actual (pool_manager)
-current_dir = os.path.dirname(os.path.abspath(__file__))
+from Shared.messaging.rabbitmq import crear_conexion, crear_canal
+from Shared.utils.logger import get_logger
+from Shared.config import EXCHANGE_NAME, QUEUE_BLOCKS, QUEUE_TASKS, CHUNK_SIZE
 
-# 2. Obtiene la ruta del directorio padre (la raíz del proyecto)
-parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
-root_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
-
-# 3. Añade el directorio padre y la raíz del proyecto a las rutas donde Python busca módulos
-for path in (parent_dir, root_dir):
-    if path not in sys.path:
-        sys.path.append(path)
-
-sys.path.insert(0, root_dir)
-
-from messaging.rabbitmq import crear_conexion, crear_canal
-from utils.logger import get_logger
-from config import EXCHANGE_NAME
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
 # ----------------------------------------------------------------------
 
 logger = get_logger(__name__)
-
-# 3. Cola intermedia (pool Manager)
-QUEUE_BLOCKS = "block_queue"
-
-# 4. Cola de tareas (Workers)
-QUEUE_TASKS = "task_queue"
-CHUNK_SIZE = 100000  # Tamaño de cada rango de trabajo
 
 # ----------------------------------------------------------------------
 #                            FUNCIONES

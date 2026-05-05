@@ -1,7 +1,7 @@
 import redis
 import json
 
-from config import REDIS_HOST, REDIS_PORT, REDIS_LIST_KEY_NAME
+from Shared.config import REDIS_HOST, REDIS_PORT, REDIS_LIST_KEY_NAME
 
 
 class RedisUtils:

@@ -6,11 +6,11 @@ Inicializa conexiones, rutas y procesos en background.
 from flask import Flask
 import threading
 
-from messaging.rabbitmq import crear_conexion, crear_canal
-from storage.redis import RedisUtils
-from api.routes import registrar_rutas
-from workers.paquete_processor import procesar_paquetes
-from utils.logger import get_logger
+from Shared.messaging.rabbitmq import crear_conexion, crear_canal
+from Shared.storage.redis import RedisUtils
+from Coordinador.api.routes import registrar_rutas
+from Coordinador.workers.paquete_processor import procesar_paquetes
+from Shared.utils.logger import get_logger
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES

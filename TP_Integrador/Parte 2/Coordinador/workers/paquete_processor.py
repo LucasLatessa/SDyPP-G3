@@ -5,7 +5,8 @@ Procesamiento en segundo plano de paquetes de transacciones.
 import json
 import random
 import time
-from config import (
+import uuid
+from Shared.config import (
     TAMANO_BLOQUE_PROCESAR,
     QUEUE_NAME,
     PROCESS_INTERVAL,
@@ -16,7 +17,7 @@ from config import (
     DIFFICULT_PREFIX,
     STRING_CHAIN
 )
-from utils.logger import get_logger
+from Shared.utils.logger import get_logger
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -78,7 +79,7 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
                 last_element = (redis_client.get_ultimo())
 
                 bloque = {
-                    "id": str(random.randint(0, MAX_RANDOM)),
+                    "id": str(uuid.uuid4()),
                     "transaccion": paquete,
                     "prefix": DIFFICULT_PREFIX,  # Dificulta de tres 0 -> Buscar el quiebre
                     "base_string_chain": STRING_CHAIN,  # Es lo que concateno para el hash, que tiene que arrancar con el prefijo

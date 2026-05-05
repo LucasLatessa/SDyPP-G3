@@ -6,8 +6,8 @@ almacenamiento de bloques.
 """
 
 import time
-from utils.hash import calcular_hash_v2
-from utils.logger import get_logger
+from Shared.utils.hash import calcular_hash_v2
+from Shared.utils.logger import get_logger
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -83,7 +83,7 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
     if bloque_previo:
         #print(f"Hash del bloque previo:  {bloque_previo["hash"]}")
         data["previous_block"] = bloque_previo["hash"]
-        logger.info("Hash bloque previo", data["previous_block"])
+        logger.info(f"Hash bloque previo {data["previous_block"]}")
     else:
         #print(f"Hash del bloque previo: None")
         logger.info("Hash bloque previo: None")
