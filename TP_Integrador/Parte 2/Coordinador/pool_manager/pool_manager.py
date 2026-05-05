@@ -1,5 +1,5 @@
 """
-Pull Manager
+pool Manager
 
 Este módulo se encarga de:
 - Consumir bloques generados por el coordinador
@@ -10,7 +10,7 @@ Este módulo se encarga de:
 import json, os, sys
 from typing import List, Tuple, Dict, Any
 
-# 1. Obtiene la ruta absoluta del directorio actual (pull_manager)
+# 1. Obtiene la ruta absoluta del directorio actual (pool_manager)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # 2. Obtiene la ruta del directorio padre (la raíz del proyecto)
@@ -34,7 +34,7 @@ from config import EXCHANGE_NAME
 
 logger = get_logger(__name__)
 
-# 3. Cola intermedia (Pull Manager)
+# 3. Cola intermedia (pool Manager)
 QUEUE_BLOCKS = "block_queue"
 
 # 4. Cola de tareas (Workers)
@@ -46,7 +46,7 @@ CHUNK_SIZE = 100000  # Tamaño de cada rango de trabajo
 # ----------------------------------------------------------------------
 
 
-def dividir_rango(max_random: int, chunk_size: int) -> List[Tuple[int, int]]:
+def dividir_rango(max_random: int, channel, chunk_size: int) -> List[Tuple[int, int]]:
     """
     Divide el rango de trabajo total en múltiples subrangos (chunks).
 
@@ -58,9 +58,21 @@ def dividir_rango(max_random: int, chunk_size: int) -> List[Tuple[int, int]]:
     """
     rangos = []
 
-    for start in range(0, max_random, chunk_size):
-        end = min(start + chunk_size, max_random)
-        rangos.append((start, end))
+    #global canal
+    #print(canal)
+    canal = channel.queue_declare(queue=QUEUE_TASKS, passive=True)
+    consumidores_activos = canal.method.consumer_count
+    logger.info(f"La cola tiene {consumidores_activos} consumidores activos.")
+    rango = max_random / consumidores_activos
+    rango = int(rango)
+    for i in range(1,consumidores_activos + 1):
+        start = rango * (i - 1)
+        end = rango * i
+        rangos.append((int(start), int(end)))
+    logger.info(f"Rangos {rangos}")
+    # for start in range(0, max_random, chunk_size):
+    #    end = min(start + chunk_size, max_random)
+    #    rangos.append((start, end))
 
     return rangos
 
@@ -116,7 +128,7 @@ def procesar_bloque(channel, body: bytes) -> None:
 
     max_random = bloque["max_random"]
 
-    rangos = dividir_rango(max_random, CHUNK_SIZE)
+    rangos = dividir_rango(max_random, channel, CHUNK_SIZE)
 
     logger.info(f"Generando {len(rangos)} tareas para bloque ID={bloque['id']}")
 
@@ -144,16 +156,17 @@ def callback(channel, method, properties, body) -> None:
         logger.error(f"Error procesando bloque: {e}")
         channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
-def iniciar_pull_manager() -> None:
+def iniciar_pool_manager() -> None:
     """
-    Inicializa el Pull Manager y comienza a consumir bloques.
+    Inicializa el pool Manager y comienza a consumir bloques.
     """
-    logger.info("Iniciando Pull Manager...")
+    logger.info("Iniciando pool Manager...")
 
     connection = crear_conexion()
     channel = crear_canal(connection)
 
-    channel.queue_declare(queue=QUEUE_BLOCKS)
+    global canal
+    canal = channel.queue_declare(queue=QUEUE_BLOCKS)
     channel.queue_bind(
         exchange=EXCHANGE_NAME,
         queue=QUEUE_BLOCKS,
@@ -170,7 +183,7 @@ def iniciar_pull_manager() -> None:
         on_message_callback=callback
     )
 
-    logger.info("Pull Manager esperando bloques...")
+    logger.info("pool Manager esperando bloques...")
 
     channel.start_consuming()
 
@@ -179,4 +192,4 @@ def iniciar_pull_manager() -> None:
 # ----------------------------------------------------------------------
 
 if __name__ == "__main__":
-    iniciar_pull_manager()
+    iniciar_pool_manager()

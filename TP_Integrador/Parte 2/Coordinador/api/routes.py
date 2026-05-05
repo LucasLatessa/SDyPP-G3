@@ -83,6 +83,19 @@ def registrar_rutas(app, channel, redis_client) -> None:
             return jsonify({"mensaje": mensaje}), 201
         else:
             return jsonify({"mensaje": mensaje}), 400
+        
+    "-------------------------------------------------------------------"
+    
+    @app.route("/bloques/<block_id>/estado", methods=["GET"])
+    def consultar_estado_bloque(block_id):
+        
+       if not redis_client.exists_id(block_id):
+          print(block_id)
+          return jsonify({"error": "Bloque no encontrado"}), 404
+       
+       return jsonify({
+            "ok": "Bloque resuelto",
+        }), 200
 
     "-------------------------------------------------------------------"
 
@@ -93,3 +106,5 @@ def registrar_rutas(app, channel, redis_client) -> None:
         """
         logger.info("Healthcheck solicitado")
         return jsonify({"status": "funcionando :D"})
+    
+    
