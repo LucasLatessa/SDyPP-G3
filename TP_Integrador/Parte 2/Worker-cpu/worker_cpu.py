@@ -116,7 +116,6 @@ def resolver_desafio(task):
 
     logger.info(f"Procesando bloque {block_id} rango {start}-{end}")
 
-    tiempo_inicial = time.time()
 
     stop_event = threading.Event()
     monitor_thread = threading.Thread(
@@ -127,7 +126,8 @@ def resolver_desafio(task):
     monitor_thread.start()
 
     resultado = None
-
+    tiempo_inicial = time.time()
+    
     for nonce in range(start, end):
         
         if nonce % 10000 == 0 and stop_event.is_set():
@@ -149,7 +149,7 @@ def resolver_desafio(task):
                 'blockchain_content': blockchain_content,
                 "numero": nonce, 
                 "hash": hash_result,
-                "tiempo_proceso": tiempo_proceso,
+                "tiempo_proceso": tiempo_proceso
             }
             stop_event.set()
             break

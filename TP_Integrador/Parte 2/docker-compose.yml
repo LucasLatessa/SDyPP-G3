@@ -37,7 +37,7 @@ services:
       - RABBIT_USER=grupo03
       - RABBIT_PASS=grupo03
       - REDIS_HOST=redis
-      - REDIS_PORT=637
+      - REDIS_PORT=6379
 
   pool_manager:
     build:

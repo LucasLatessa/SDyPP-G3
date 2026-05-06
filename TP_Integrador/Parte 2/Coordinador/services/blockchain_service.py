@@ -8,6 +8,7 @@ almacenamiento de bloques.
 import time
 from Shared.utils.hash import calcular_hash_v2
 from Shared.utils.logger import get_logger
+from Shared.config import WORKER_TIMEOUT, BLOQUES_MINIMOS_DISMINUIR_PREFIJO, MINIMO_PROMEDIO_DISMINUIR_PREFIJO
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -18,6 +19,39 @@ logger = get_logger(__name__)
 # ----------------------------------------------------------------------
 #                            FUNCIONES
 # ----------------------------------------------------------------------
+
+def disminuir_prefijo(redis_client):
+    prefijo = redis_client.get_prefijo()
+
+    if len(prefijo) == 0:
+      logger.info(f"Prefijo minimo alcanzado: {prefijo}")
+      return
+    
+    prefijo = prefijo[1:]
+    redis_client.set_prefijo(prefijo)
+    logger.info(f"Prefijo DISMINUIDO actualizado: {prefijo}")
+
+def aumentar_prefijo(redis_client):
+    prefijo = redis_client.get_prefijo()
+    
+    prefijo = prefijo + "0"
+    redis_client.set_prefijo(prefijo)
+    logger.info(f"Prefijo AUMENTADO actualizado: {prefijo}")
+
+def obtener_tiempo_promedio_ultimos_cinco(redis_client, tiempo_bloque_resuelto_actual): 
+    bloques = redis_client.get_ultimos_mensajes(count=5)
+
+    if len(bloques) < BLOQUES_MINIMOS_DISMINUIR_PREFIJO:
+      return False
+  
+    sum = tiempo_bloque_resuelto_actual
+    for bloque in bloques:
+      sum = sum + bloque["tiempo_proceso"]
+
+    tiempo = sum / (BLOQUES_MINIMOS_DISMINUIR_PREFIJO + 1)
+
+
+    return tiempo < MINIMO_PROMEDIO_DISMINUIR_PREFIJO
 
 
 def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
@@ -40,17 +74,19 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
         str:  Mensaje con el resultado
     """
 
+    # Si el worker paso el tiempo maximo estipulado, disminuimos el prefijo para los bloques siguientes
+    if data["tiempo_proceso"] > WORKER_TIMEOUT:
+        disminuir_prefijo(redis_client)
+
+    # Aumenta el prefijo si de los 5 bloques anteriores y el actual fue inferior al promedio (5 min)
+    elif obtener_tiempo_promedio_ultimos_cinco(redis_client, data["tiempo_proceso"]):
+        aumentar_prefijo(redis_client)
+
     datos = f"{data['numero']}{data['base_string_chain']}{data['blockchain_content']}"
 
     hash_local = calcular_hash_v2(datos)
 
-    logger.info(f"Validando bloque ID={data['id']}")
-
-    # print("---------------------------")
-    # print("    ¡BLOQUE RECIBIDO!      ")
-    # print("---------------------------")
-    # print(f"Hash recibidos: {data["hash"]}")
-    # print(f"Hash calculado de forma local: {hash}")
+    logger.info(f"Bloque recibido. Validando bloque ID={data['id']}")
 
     if data["hash"] != hash_local:
         #print("El hash es invalido. Termina la ejecucion!")
@@ -61,13 +97,6 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
         #print("El bloque esta duplicado. Termina la ejecucion!")
         logger.warning(f"Bloque duplicado ID={data['id']}. Bloque descartado")
         return False, "Bloque duplicado. Bloque descartado"
-
-    # Logica del armado del bloque
-    # print("Los bloques coinciden!")
-    # print("---------------------------")
-    # print("Vamos a agregar el bloque a la cadena")
-    # print(f"Hash:  {data["hash"]}")
-    # print(f"Contenido del bloque anterior: {data["blockchain_content"]}")
 
     # Le calculo el hash
     #blockchain_data = f'{data["base_string_chain"]}{data["hash"]}'

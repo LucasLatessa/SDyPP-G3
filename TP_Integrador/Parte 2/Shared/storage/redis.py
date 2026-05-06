@@ -1,7 +1,7 @@
 import redis
 import json
 
-from Shared.config import REDIS_HOST, REDIS_PORT, REDIS_LIST_KEY_NAME
+from Shared.config import REDIS_HOST, REDIS_PORT, REDIS_LIST_KEY_NAME, DIFFICULT_PREFIX
 
 
 class RedisUtils:
@@ -55,3 +55,16 @@ class RedisUtils:
             ):  # Verifica si el mensaje contiene el ID especificado
                 return True
         return False
+  
+    def get_prefijo(self):
+      return self.redis_client.get('prefix_key').decode("utf-8")
+    
+    def set_prefijo(self,prefijo):
+      self.redis_client.set('prefix_key', prefijo)
+  
+    def inicializar_prefijo(self):
+      if self.redis_client.get('prefix_key') is None:
+        self.redis_client.set('prefix_key', DIFFICULT_PREFIX)  # Valor inicial por defecto
+        print(f"Prefijo inicial insertado en Redis: {DIFFICULT_PREFIX}")
+      else:
+        print("Prefijo ya presente en Redis:", self.get_prefijo())

@@ -8,6 +8,7 @@ Este módulo se encarga de:
 """
 
 import json
+import time
 from typing import List, Tuple, Dict, Any
 
 from Shared.messaging.rabbitmq import crear_conexion, crear_canal
@@ -76,7 +77,7 @@ def crear_tarea(bloque: Dict[str, Any], start: int, end: int) -> Dict[str, Any]:
         "blockchain_content": bloque["blockchain_content"],
         "max_random": bloque["max_random"],
         "start": start,
-        "end": end,
+        "end": end
     }
 
 

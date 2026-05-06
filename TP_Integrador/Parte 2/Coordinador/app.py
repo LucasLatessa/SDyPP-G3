@@ -25,9 +25,13 @@ logger = get_logger(__name__)
 
 logger.info("Inicializando coordinador...")
 
+# Rabbit
 connection = crear_conexion()
 channel = crear_canal(connection)
+
+# Redis
 redis_client = RedisUtils()
+redis_client.inicializar_prefijo()
 
 registrar_rutas(app, channel, redis_client)
 

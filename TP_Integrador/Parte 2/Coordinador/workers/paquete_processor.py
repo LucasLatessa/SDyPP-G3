@@ -78,10 +78,14 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
                 # Obtener el último elemento de la lista en Redis
                 last_element = (redis_client.get_ultimo())
 
+                prefijo = redis_client.get_prefijo()
+                #print(prefijo)
+                #print(f"VALOR: {prefijo} | TIPO: {type(prefijo)}")
+
                 bloque = {
                     "id": str(uuid.uuid4()),
                     "transaccion": paquete,
-                    "prefix": DIFFICULT_PREFIX,  # Dificulta de tres 0 -> Buscar el quiebre
+                    "prefix": prefijo,  # Dificulta de tres 0 -> Buscar el quiebre
                     "base_string_chain": STRING_CHAIN,  # Es lo que concateno para el hash, que tiene que arrancar con el prefijo
                     "blockchain_content": (
                         last_element["blockchain_content"] if last_element else "[]"

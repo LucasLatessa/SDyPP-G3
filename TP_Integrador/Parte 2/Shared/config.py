@@ -2,7 +2,7 @@
 Configuraciones globales del sistema como credenciales, colas y parámetros generales.
 """
 
-import os
+import os, sys
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -40,6 +40,12 @@ REDIS_LIST_KEY_NAME = 'blockchain'
 TAMANO_BLOQUE_PROCESAR = 10
 PROCESS_INTERVAL = 20  # Deberia ser cada 60 segundos
 RABBIT_TIMEOUT = 10
-MAX_RANDOM = 200000000
+#MAX_RANDOM = 200000000
+
+MAX_RANDOM = sys.maxsize-1
 DIFFICULT_PREFIX = "000000"
 STRING_CHAIN = "papa"
+
+WORKER_TIMEOUT = 0.1 * 60 # 10 minutos
+BLOQUES_MINIMOS_DISMINUIR_PREFIJO = 5
+MINIMO_PROMEDIO_DISMINUIR_PREFIJO = 5
