@@ -70,7 +70,8 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
     # print(f"Contenido del bloque anterior: {data["blockchain_content"]}")
 
     # Le calculo el hash
-    blockchain_data = f"{data["base_string_chain"]}{data["hash"]}"
+    #blockchain_data = f'{data["base_string_chain"]}{data["hash"]}'
+    blockchain_data = f"{data['base_string_chain']}{data['hash']}"
     blockchain_content = calcular_hash_v2(blockchain_data)
 
     # Obtengo el bloque anterior para conectar, si no hay quiere decir que este es el origen

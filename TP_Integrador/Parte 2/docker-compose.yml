@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    container_name: "redis"
+    ports:
+      - "6379:6379"    # Redis port
+      - "8001:8001"    # Web interface port
+    # command: redis-server --requirepass grupo03
+    # environment:
+    #   - REDIS_PASSWORD=grupo03
+
+  rabbitmq:
+    image: "rabbitmq:management"
+    container_name: "rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "grupo03"
+      RABBITMQ_DEFAULT_PASS: "grupo03"
+      RABBITMQ_DEFAULT_VHOST: "/"
+
+  coordinador:
+    build:
+      context: .
+      dockerfile: Dockerfile.coordinador
+    depends_on:
+      - rabbitmq
+      - redis
+    ports:
+      - "5000:5000"
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - RABBIT_USER=grupo03
+      - RABBIT_PASS=grupo03
+      - REDIS_HOST=redis
+      - REDIS_PORT=637
+
+  pool_manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.pool_manager
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - RABBIT_USER=grupo03
+      - RABBIT_PASS=grupo03

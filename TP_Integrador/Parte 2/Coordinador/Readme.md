@@ -94,6 +94,7 @@ El coordinador verifica que el hash sea correcto y valida que el bloque no exist
 | POST   | /transaccion  | Encola una nueva transacción      |
 | POST   | /tarea_worker | Recibe bloque resuelto por worker |
 | GET    | /status       | Estado del servidor               |
+| GET    | /bloques/<block_id>/estado       | Estado de un bloque, si existe o no en redis. Este endpoint es consultado por los Workers               |
 
 ## Ejecucion local
 

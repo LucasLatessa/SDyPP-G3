@@ -1,0 +1,19 @@
+FROM python:3.12.3-slim
+
+# Evita que Python genere archivos .pyc y permite ver logs en tiempo real
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Directorio de trabajo
+WORKDIR /app
+
+COPY Coordinador/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar carpeta Shared y servicio especifico
+COPY Shared/ ./Shared/
+COPY Coordinador/ ./Coordinador/
+
+ENV PYTHONPATH="/app"
+
+CMD ["python", "-m", "Coordinador.app"]
