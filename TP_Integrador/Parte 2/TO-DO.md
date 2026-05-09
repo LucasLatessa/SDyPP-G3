@@ -1,6 +1,6 @@
-- DOCUMENTACION COMPLETA
+- DOCUMENTACION COMPLETA (ENTRE TODOS)
 
-- Quitar valores arbitrarios, definir porque elegimos esos valores:
+- Quitar valores arbitrarios, definir porque elegimos esos valores: (LUCAS)
   MAX_RANDOM = sys.maxsize-1 #4294967296
   DIFFICULT_PREFIX = "00000000"
   STRING_CHAIN = "a18b"
@@ -9,13 +9,16 @@
   BLOQUES_MINIMOS_DISMINUIR_PREFIJO = 5
   MINIMO_PROMEDIO_DISMINUIR_PREFIJO = 1
 
-- Tenemos que saber que hacer frente a todos los casos posibles, incluso si no estan especificados en el codigo.
+- Tenemos que saber que hacer frente a todos los casos posibles, incluso si no estan especificados en el codigo. (ENTRE TODOS)
 
-- Que pasa si se cae un worker en medio del proceso de resolver un desafio? si hay un solo worker y se cae, se envia un nuevo desafio?
+- Que pasa si se cae un worker en medio del proceso de resolver un desafio? si hay un solo worker y se cae, se envia un nuevo desafio? (RECEPCION DE ACK AL COORDINADOR, MATEO)
    
-- Metricas de todo.
+- Metricas de todo. (ENTRE TODOS)
 
-- PROPERTY Y TRANSFERENCIAS NFT (validacion en /transferencias)
+- PROPERTY Y TRANSFERENCIAS NFT (validacion en /transferencias) (JOSUE)
+
+- Test gpu(vast.ia) MATEO
+- Test cpu(google cloud) JOUSE
 
 firma con argumentos: JSON.stringify("data": {  
     "monto"  : 2480,
