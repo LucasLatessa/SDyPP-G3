@@ -42,7 +42,7 @@ def dividir_rango(max_random: int, channel, chunk_size: int) -> List[Tuple[int, 
     #global canal
     #print(canal)
     canal = channel.queue_declare(queue=QUEUE_TASKS, passive=True)
-    consumidores_activos = canal.method.consumer_count
+    consumidores_activos = canal.method.consumer_count or 1
     logger.info(f"La cola tiene {consumidores_activos} consumidores activos.")
     rango = max_random / consumidores_activos
     rango = int(rango)
@@ -147,7 +147,7 @@ def iniciar_pool_manager() -> None:
     channel = crear_canal(connection)
 
     global canal
-    canal = channel.queue_declare(queue=QUEUE_BLOCKS)
+    canal = channel.queue_declare(queue=QUEUE_BLOCKS, durable=True)
     channel.queue_bind(
         exchange=EXCHANGE_NAME,
         queue=QUEUE_BLOCKS,
@@ -155,7 +155,7 @@ def iniciar_pool_manager() -> None:
     )
 
     # Cola de tareas para workers
-    channel.queue_declare(queue=QUEUE_TASKS)
+    channel.queue_declare(queue=QUEUE_TASKS, durable=True)
 
     channel.basic_qos(prefetch_count=1)
 

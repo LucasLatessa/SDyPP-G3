@@ -88,7 +88,7 @@ def procesar_paquetes(channel, connection, redis_client) -> None:
                     "prefix": prefijo,  # Dificulta de tres 0 -> Buscar el quiebre
                     "base_string_chain": STRING_CHAIN,  # Es lo que concateno para el hash, que tiene que arrancar con el prefijo
                     "blockchain_content": (
-                        last_element["blockchain_content"] if last_element else "[]"
+                        last_element["blockchain_content"] if last_element else "[" + str(time.time()) + "]"
                     ),  # Contenido de la cadena de bloques hasta el bloque anterior
                     "max_random": MAX_RANDOM,  # Random usado en la prueba de trabajo
                 }
