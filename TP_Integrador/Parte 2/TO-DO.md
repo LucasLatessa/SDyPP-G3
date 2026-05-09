@@ -16,6 +16,9 @@
 - Metricas de todo. (ENTRE TODOS)
 
 - PROPERTY Y TRANSFERENCIAS NFT (validacion en /transferencias) (JOSUE)
+  Consultar:
+    - La firma la hace el origen
+    - Que usamos para validar la clave publica de origen y destino
 
 - Test gpu(vast.ia) MATEO
 - Test cpu(google cloud) JOUSE
