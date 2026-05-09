@@ -1,70 +1,188 @@
+import json
+import logging
+import os
+import threading
+import time
+from typing import Any
+
 import pika
 import requests
+
 import minero_gpu
-import json
-import time
 
-#Enviar el resultado al coordinador para verificar que el resultado es correcto
-def enviar_resultado(data):
-    url = "http://localhost:5000/tarea_worker"
+
+ENDPOINT_COORDINADOR = os.getenv(
+    "ENDPOINT_COORDINADOR",
+    "http://localhost:5000/tarea_worker",
+)
+
+COORDINADOR_URL = os.getenv("COORDINADOR_URL")
+if not COORDINADOR_URL:
+    COORDINADOR_URL = ENDPOINT_COORDINADOR.rstrip("/")
+    if COORDINADOR_URL.endswith("/tarea_worker"):
+        COORDINADOR_URL = COORDINADOR_URL[: -len("/tarea_worker")]
+
+RABBIT_HOST = os.getenv("RABBIT_HOST", "localhost")
+RABBIT_PORT = int(os.getenv("RABBIT_PORT", "5672"))
+RABBIT_USER = os.getenv("RABBIT_USER", "grupo03")
+RABBIT_PASS = os.getenv("RABBIT_PASS", "grupo03")
+
+QUEUE_TASKS = "task_queue"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [WORKER-GPU] %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+def enviar_resultado(resultado: dict[str, Any]) -> None:
     try:
-        response = requests.post(url, json=data)
-        print("Resolucion enviada al Coordinador!")
-    except Exception as e:
-        print("Fallo al enviar el post:", e)
+        response = requests.post(ENDPOINT_COORDINADOR, json=resultado, timeout=5)
 
-# #Minero: Encargado de realizar el desafio
-def minero(ch, method, properties, body):
-    data = json.loads(body)
-    print(f"Bloque {data} recibido")
+        if response.status_code == 201:
+            logger.info("Resultado enviado correctamente al coordinador")
+        else:
+            logger.warning(
+                "Error al enviar resultado: status=%s body=%s",
+                response.status_code,
+                response.text,
+            )
 
-#     encontrado = False
-    tiempo_inicial = time.time()
-    print("Minero comenzado!")
-    resultado = minero_gpu.ejecutar_minero(1, data["max_random"], data["prefix"], data["base_string_chain"] + data["blockchain_content"])
-    print("Esto", data["base_string_chain"] + data["blockchain_content"])
-    
-   
-#     #Hasta que no encuentra un hash que comienze con el prefijo no para
-#     while not encontrado:
-#         #Tomo un numero aleatorio y le calculo el hash a: El aleatorio + la base del bloque + contenido de la cadena de bloues"
-#         aleatorio = str(random.randint(0,data["max_random"]))
-#         hash = calcular_sha256(aleatorio + data["base_string_chain"] + data["blockchain_content"])
-#         #Si el hash arranca con el prefijo
-#         if hash.startswith(data["prefix"]):
-#             #Corto el bucle y envio el resultado al coordinador
-#             encontrado = True
-    #tiempo_proceso = time.time() - tiempo_inicial
-    #{"numero": 9700, "hash_md5_result": "0eb61761a7b8c92cebf4f820f5b9b380"}  
-       
-    #data["tiempo_proceso"] = tiempo_proceso
-    resultado = json.loads(resultado)
-    print("resultado",resultado)
-    data["hash"] = resultado['hash_md5_result']
-    data["numero"] = resultado["numero"]
+    except requests.exceptions.RequestException as e:
+        logger.error("Fallo al enviar resultado: %s", e)
 
-    enviar_resultado(data)
-    #Confirmo con un ACK que lo resolvi
-    ch.basic_ack(delivery_tag=method.delivery_tag)
-    print(f"Resultado encontrado y enviado con el ID Bloque {data['id']}")
 
-#Conexion con rabbit al topico y comienza a ser consumidor
-def main():
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='localhost', port=5672, credentials=pika.PlainCredentials('grupo03', 'grupo03'))
+def consultar_estado_bloque(block_id: str, stop_event: threading.Event) -> None:
+    while not stop_event.is_set():
+        if stop_event.wait(1):
+            break
+
+        try:
+            endpoint = f"{COORDINADOR_URL.rstrip('/')}/bloques/{block_id}/estado"
+            respuesta = requests.get(endpoint, timeout=5)
+
+            if respuesta.status_code == 200:
+                logger.info("El bloque %s ya fue resuelto. Abortando...", block_id)
+                stop_event.set()
+                break
+
+        except requests.exceptions.RequestException as e:
+            logger.warning("Error consultando estado del bloque: %s", e)
+
+
+def resolver_desafio(task: dict[str, Any]) -> dict[str, Any] | None:
+    block_id = task["id"]
+    base_string = task["base_string_chain"]
+    blockchain_content = task["blockchain_content"]
+    prefix = task["prefix"]
+    start = int(task["start"])
+    end = int(task["end"])
+
+    logger.info("Procesando bloque %s rango %s-%s", block_id, start, end)
+
+    stop_event = threading.Event()
+    monitor_thread = threading.Thread(
+        target=consultar_estado_bloque,
+        args=(block_id, stop_event),
+        daemon=True,
     )
-    channel = connection.channel()
-    channel.exchange_declare(exchange='block_challenge', exchange_type='topic', durable=True)
-    result = channel.queue_declare('', exclusive=True)
-    queue_name = result.method.queue
-    channel.queue_bind(exchange='block_challenge', queue=queue_name, routing_key='blocks')
-    channel.basic_consume(queue=queue_name, on_message_callback=minero, auto_ack=False)
-    print('Esperando mensajes. Para salir pulse CTRL+C')
-    try:
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        connection.close()
-        print("Conexion cerrada")
+    monitor_thread.start()
 
-if __name__ == '__main__':
-    main()
+    tiempo_inicial = time.time()
+
+    try:
+        resultado_raw = minero_gpu.ejecutar_minero(
+            from_val=start,
+            to_val=end,
+            prefix=prefix,
+            hash_val=base_string + blockchain_content,
+            stop_event=stop_event,
+        )
+
+        if not resultado_raw:
+            logger.info("GPU no encontro solucion en rango %s-%s", start, end)
+            return None
+
+        resultado_gpu = json.loads(resultado_raw)
+
+        if not resultado_gpu.get("hash_md5_result"):
+            logger.info("GPU no encontro hash valido en rango %s-%s", start, end)
+            return None
+
+        if stop_event.is_set():
+            logger.info("Solucion encontrada, pero el bloque ya fue resuelto")
+            return None
+
+        tiempo_proceso = time.time() - tiempo_inicial
+        nonce = int(resultado_gpu["numero"])
+        hash_result = resultado_gpu["hash_md5_result"]
+
+        logger.info(
+            "Solucion encontrada bloque=%s nonce=%s hash=%s tiempo=%.4fs",
+            block_id,
+            nonce,
+            hash_result,
+            tiempo_proceso,
+        )
+
+        return {
+            "id": block_id,
+            "transaccion": task["transaccion"],
+            "base_string_chain": base_string,
+            "prefix": prefix,
+            "blockchain_content": blockchain_content,
+            "numero": nonce,
+            "hash": hash_result,
+            "tiempo_proceso": tiempo_proceso,
+        }
+
+    finally:
+        stop_event.set()
+
+
+def callback(ch, method, properties, body: bytes) -> None:
+    try:
+        task = json.loads(body)
+        logger.info("Nueva tarea recibida")
+
+        resultado = resolver_desafio(task)
+
+        if resultado:
+            enviar_resultado(resultado)
+
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+
+    except Exception as e:
+        logger.error("Error procesando tarea: %s", e)
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+
+def iniciar_worker() -> None:
+    while True:
+        try:
+            logger.info("Conectando a RabbitMQ...")
+
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=RABBIT_HOST,
+                    port=RABBIT_PORT,
+                    credentials=pika.PlainCredentials(RABBIT_USER, RABBIT_PASS),
+                )
+            )
+
+            channel = connection.channel()
+            channel.queue_declare(queue=QUEUE_TASKS, durable=True)
+            channel.basic_qos(prefetch_count=1)
+            channel.basic_consume(queue=QUEUE_TASKS, on_message_callback=callback)
+
+            logger.info("Worker GPU listo. Esperando tareas...")
+            channel.start_consuming()
+
+        except Exception as e:
+            logger.error("Error de conexion: %s. Reintentando en 5s...", e)
+            time.sleep(5)
+
+
+if __name__ == "__main__":
+    iniciar_worker()

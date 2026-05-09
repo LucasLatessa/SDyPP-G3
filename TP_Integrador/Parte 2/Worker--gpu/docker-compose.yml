@@ -1,14 +1,16 @@
-version: "3.9"
-
 services:
   worker:
     build: .
     container_name: mining_worker_gpu
     restart: always
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    gpus: all
+    environment:
+      RABBIT_HOST: host.docker.internal
+      RABBIT_PORT: 5672
+      RABBIT_USER: grupo03
+      RABBIT_PASS: grupo03
+      ENDPOINT_COORDINADOR: http://host.docker.internal:5000/tarea_worker
+      COORDINADOR_URL: http://host.docker.internal:5000
+      GPU_BATCH_SIZE: 50000000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

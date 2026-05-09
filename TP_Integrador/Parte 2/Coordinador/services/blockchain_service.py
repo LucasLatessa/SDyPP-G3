@@ -113,7 +113,7 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
     if bloque_previo:
         #print(f"Hash del bloque previo:  {bloque_previo["hash"]}")
         data["previous_block"] = bloque_previo["hash"]
-        logger.info(f"Hash bloque previo {data["previous_block"]}")
+        logger.info(f"Hash bloque previo {data['previous_block']}")
     else:
         #print(f"Hash del bloque previo: None")
         logger.info("Hash bloque previo: None")

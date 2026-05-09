@@ -210,7 +210,7 @@ def iniciar_worker() -> None:
 
             channel = connection.channel()
 
-            channel.queue_declare(queue=QUEUE_TASKS)
+            channel.queue_declare(queue=QUEUE_TASKS, durable=True)
 
             # fair dispatch, asi el mismo worker no agarra todo
             channel.basic_qos(prefetch_count=1)

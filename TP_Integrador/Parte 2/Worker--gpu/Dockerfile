@@ -13,6 +13,8 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN nvcc md5.cu -o md5
+
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python3", "-u", "minero_gpu.py"]
+CMD ["python3", "-u", "worker_gpu.py"]

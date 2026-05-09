@@ -53,12 +53,11 @@ def registrar_rutas(app, channel, redis_client) -> None:
                     {
                         "error": "Solicitud denegada. Faltan campos en la transaccion. Los campos deben ser: origen, destino, monto."
                     }
-                ),
-                400,
+                ), 400
             )
 
         # print(f"Transaccion recibida: {data} ")
-
+        
         # Mando a la cola de Rabbit
         channel.basic_publish(
             exchange="", routing_key=QUEUE_NAME, body=json.dumps(data)
