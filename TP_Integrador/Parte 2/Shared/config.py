@@ -36,6 +36,14 @@ REDIS_HOST = os.getenv("REDIS_HOST", 'localhost')
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_LIST_KEY_NAME = 'blockchain'
 
+# Tipos de transacciones
+from enum import Enum
+
+class TipoTransaccion(Enum):
+  TX = "TX"
+  PROPERTY = "PROPERTY"
+  TX_NFT = "TX_NFT"
+
 # Configuracion para el procesamiento de paquetes
 TAMANO_BLOQUE_PROCESAR = 10
 PROCESS_INTERVAL = 60  # Deberia ser cada 60 segundos
