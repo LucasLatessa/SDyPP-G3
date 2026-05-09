@@ -41,3 +41,10 @@ python worker_cpu.py
 ```
 python worker_gpu.py
 ```
+
+## TEST
+
+Correr test de worker cpu (Worker-cpu\test.py)
+```
+python test.py --start 1 --end 100000000 --prefix 000000 --hash-val apprew --inclusive
+```
