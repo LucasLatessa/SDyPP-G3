@@ -4,12 +4,15 @@ Módulo de rutas para la app principal
 Se definen los endpoints que soportara la API
 """
 
-from flask import json, jsonify, request
+from flask import jsonify, request
 from Coordinador.services.blockchain_service import validar_guardar_bloque
+from Coordinador.services.validar_transaccion import validar_transaccion
 from Shared.config import (
     QUEUE_NAME,
+    TipoTransaccion
 )
 from Shared.utils.logger import get_logger
+import json, time
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -39,30 +42,47 @@ def registrar_rutas(app, channel, redis_client) -> None:
     def agregar_transaccion():
         """
         Recibe una transacción y la envía a RabbitMQ.
+
+        Tipo de transacciones:
+          - TX: Transaciones
+          - PROPERTY: Inicializacion NFT
+          - TX_NFT: Transferencia NFT
+
+        Es necesario que el origen y el destino envien su clave publica para realizar la transaccion
         """
 
-        data = request.get_json()
+        datos = request.get_json()
 
-        logger.info(f"Transacción recibida: {data}")
+        # JSON valido
+        if isinstance(datos, str):
+          try:
+              datos = json.loads(datos)
+          except json.JSONDecodeError:
+              return jsonify({"error": "El formato de los datos no es un JSON válido"}), 400
 
-        campos_requeridos = ["origen", "destino", "monto"]
-        if not all(field in data for field in campos_requeridos):
-            logger.error("Faltan campos en la transaccion. Solicitud denegada")
-            return (
-                jsonify(
-                    {
-                        "error": "Solicitud denegada. Faltan campos en la transaccion. Los campos deben ser: origen, destino, monto."
-                    }
-                ), 400
-            )
+        logger.info(f"Transacción recibida: {datos}")
 
-        # print(f"Transaccion recibida: {data} ")
+        # ----------- VALIDACIONES ------------------
+           
+        ok, message = validar_transaccion(datos)
+          
+        if not ok:
+          logger.error(message)
+          return (jsonify({"error": message}), 400)
+
+        # -------------------------------------------
+
+        # Agregar el timestamp si la transaccion es Property
+        if datos["type"] == TipoTransaccion.PROPERTY.value:
+          logger.info(f"Trnasaccion de tipo de PROPERTY, se agrega timestamp")
+          datos["timestamp"] = time.time()
         
         # Mando a la cola de Rabbit
         channel.basic_publish(
-            exchange="", routing_key=QUEUE_NAME, body=json.dumps(data)
+            exchange="", routing_key=QUEUE_NAME, body=json.dumps(datos)
         )
 
+        logger.info("Transaccion recibida y encolada en Rabbit")
         return "Transaccion recibida y encolada en Rabbit", 200
 
     "-------------------------------------------------------------------"
