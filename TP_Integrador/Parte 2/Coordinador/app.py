@@ -4,6 +4,7 @@ Inicializa conexiones, rutas y procesos en background.
 """
 
 from flask import Flask
+from flask_cors import CORS
 import threading
 
 from Shared.messaging.rabbitmq import crear_conexion, crear_canal
@@ -17,6 +18,7 @@ from Shared.utils.logger import get_logger
 # ----------------------------------------------------------------------
 
 app = Flask(__name__)
+CORS(app)
 logger = get_logger(__name__)
 
 # ----------------------------------------------------------------------
