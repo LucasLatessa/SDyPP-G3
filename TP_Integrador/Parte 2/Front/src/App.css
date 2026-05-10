@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Opcional: Un pequeño ajuste extra para que el fondo oscuro ocupe toda la pantalla y el scroll sea suave */
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #0f172a; /* slate-900 */
+  color: white;
+}
