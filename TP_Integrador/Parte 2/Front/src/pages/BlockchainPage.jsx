@@ -162,7 +162,7 @@ function BlockCard({ block, index, total }) {
   return (
     <div className={styles.blockWrap}>
       {/* Chain link between blocks */}
-      {index < total - 1 && (
+      {index < total  && (
         <div className={styles.chainLink}>
           <div className={styles.chainLinkLine} />
           <span className={styles.chainLinkArrow}>▼</span>
@@ -299,7 +299,7 @@ export default function BlockchainPage() {
       const data = await res.json();
       const list = Array.isArray(data) ? data : (data.blocks || data.chain || []);
       // Sort by numero desc (newest first)
-      list.sort((a, b) => (b.numero ?? 0) - (a.numero ?? 0));
+      list.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
       setBlocks(list);
       setLastFetch(new Date());
     } catch (err) {

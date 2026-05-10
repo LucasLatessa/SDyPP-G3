@@ -17,8 +17,11 @@
 
 X PROPERTY Y TRANSFERENCIAS NFT (validacion en /transferencias) (JOSUE)
   Falta:
-    Validar si TX_NFT es valida
+    Validar si TX_NFT es valida (tiene que haber un property primero)
     No hay workers -> El pool debe hacer algo
+  X Vista front (genesis abajo)
+    Diagrama en Miro
+    Pulir front en cuanto a lectura
 
 
 - Test gpu(vast.ia) MATEO
