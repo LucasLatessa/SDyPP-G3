@@ -284,6 +284,7 @@ function Stat({ label, val, color }) {
 
 export default function BlockchainPage() {
   const [blocks, setBlocks] = useState([]);
+  const [prefijo, setPrefijo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastFetch, setLastFetch] = useState(null);
@@ -308,7 +309,26 @@ export default function BlockchainPage() {
     }
   }, []);
 
-  useEffect(() => { fetchBlocks(); }, [fetchBlocks]);
+const fetchPrefijo = useCallback(async () => {
+  try {
+    const res = await fetch(`${API_URL}/prefijo`);
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    // IMPORTANTE: Usamos .text() en lugar de .json() 
+    // porque el backend devuelve un texto/string directamente.
+    const data = await res.text(); 
+    
+    setPrefijo(data); // Guardamos el valor en el estado
+  } catch (err) {
+    console.error(`Error obteniendo el prefijo: ${err.message}`);
+    // Opcional: manejar el error visualmente con un toast o estado de error
+    // setError(`No se pudo obtener el prefijo — ${err.message}`);
+  }
+}, []);
+
+
+  useEffect(() => { fetchBlocks(); fetchPrefijo();}, [fetchBlocks,fetchPrefijo]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -329,7 +349,7 @@ export default function BlockchainPage() {
           <div className={styles.statsRow}>
             <Stat label="BLOQUES" val={blocks.length} color="var(--accent-cyan)" />
             <Stat label="TXs TOTALES" val={totalTxs} color="var(--accent-gold)" />
-            <Stat label="ESTADO" val="ACTIVO" color="var(--accent-green)" />
+            <Stat label="PREFIJO ACTUAL" val={prefijo} color="var(--accent-green)" />
           </div>
           <div className={styles.controls}>
             <button className={`${styles.refreshBtn} ${loading ? styles.refreshLoading : ''}`} onClick={fetchBlocks} disabled={loading}>
