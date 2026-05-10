@@ -3,7 +3,9 @@ Modulo para la validacion de los diferentes tipos de transacciones
 """
 from Shared.utils.logger import get_logger
 from Shared.config import (TipoTransaccion)
-from cryptography.hazmat.primitives import serialization
+import base64
+import textwrap
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -15,17 +17,68 @@ logger = get_logger(__name__)
 #                            FUNCIONES
 # ----------------------------------------------------------------------
 
-def es_clave_publica_valida(clave_publica):
-  """
-  Validar si la clave publica es valida
-  """
-  # try:
-  #   serialization.load_pem_public_key(clave_publica.encode())
-  #   return True
-  # except Exception:
-  #     return False
-  return True
+import re
+import textwrap
+from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_ssh_public_key
 
+def es_clave_publica_valida(clave_publica):
+    """
+    Valida la clave pública enviada desde el front. 
+    Soporta automáticamente formato PEM crudo (Base64) y formato OpenSSH.
+    """
+    if not clave_publica or not isinstance(clave_publica, str):
+        return False
+
+    try:
+        # 1. Limpiamos cualquier espacio o salto de línea residual
+        clave_limpia = clave_publica.replace(" ", "").replace("\n", "").replace("\r", "")
+
+        # ---------------------------------------------------------
+        # CASO A: El usuario subió el archivo .pub original (OpenSSH)
+        # ---------------------------------------------------------
+        # Si el frontend comprimió algo como "ssh-rsa AAAA... user@host"
+        if "ssh-rsa" in clave_limpia or "AAAA" in clave_limpia[:20]:
+            # Rescatamos solo la secuencia Base64 pura usando una expresión regular
+            match = re.search(r'(AAAA[A-Za-z0-9+/=]+)', clave_limpia)
+            if match:
+                b64_puro = match.group(1)
+                # Reconstruimos el formato exacto que exige la librería para OpenSSH
+                clave_ssh = f"ssh-rsa {b64_puro}"
+                try:
+                    load_ssh_public_key(clave_ssh.encode('utf-8'))
+                    return True
+                except ValueError:
+                    pass # Si no era OpenSSH, ignoramos el error y probamos como PEM
+
+        # ---------------------------------------------------------
+        # CASO B: El usuario subió el archivo .pem (PKCS#1 o PKCS#8)
+        # ---------------------------------------------------------
+        # Reparamos el padding de Base64 por si se perdió algún "=" en la transferencia
+        faltante = len(clave_limpia) % 4
+        if faltante != 0:
+            clave_limpia += "=" * (4 - faltante)
+
+        # Reconstruimos la estructura PEM (máximo 64 caracteres por línea)
+        lineas = textwrap.wrap(clave_limpia, 64)
+        cuerpo_pem = "\n".join(lineas)
+        
+        # Probar formato genérico (PKCS#8)
+        try:
+            pem_format = f"-----BEGIN PUBLIC KEY-----\n{cuerpo_pem}\n-----END PUBLIC KEY-----"
+            load_pem_public_key(pem_format.encode('utf-8'))
+            return True
+        except ValueError:
+            # Probar formato específico de RSA (PKCS#1)
+            pem_format_rsa = f"-----BEGIN RSA PUBLIC KEY-----\n{cuerpo_pem}\n-----END RSA PUBLIC KEY-----"
+            load_pem_public_key(pem_format_rsa.encode('utf-8'))
+            return True
+            
+    except Exception as e:
+        # Cualquier otro fallo crítico (datos corruptos, curva no soportada, etc.)
+        # print(f"Error crítico validando: {e}")
+        logger.error(f"Error interno validando clave: {e}")
+        return False
+    
 def validar_campos_root(datos):
   campos_permitidos = {"data", "type", "sign"}
 
@@ -157,9 +210,5 @@ def validar_transaccion(datos):
       if not es_clave_publica_valida(data["destino"]):
           return False, "Clave pública de destino inválida"
       
-  # FIRMA
-
-
-
   # Pasan todas las validaciones
   return True, "OK"

@@ -60,7 +60,8 @@ def registrar_rutas(app, channel, redis_client) -> None:
           except json.JSONDecodeError:
               return jsonify({"error": "El formato de los datos no es un JSON válido"}), 400
 
-        logger.info(f"Transacción recibida: {datos}")
+        #logger.info(f"Transacción recibida: {datos}")
+        logger.info("Transacción recibida.")
 
         # ----------- VALIDACIONES ------------------
            
@@ -69,6 +70,8 @@ def registrar_rutas(app, channel, redis_client) -> None:
         if not ok:
           logger.error(message)
           return (jsonify({"error": message}), 400)
+        
+        logger.info("Transaccion valida.")
 
         # -------------------------------------------
 
