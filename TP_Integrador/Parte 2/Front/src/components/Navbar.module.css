@@ -1,0 +1,115 @@
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+  background: rgba(8, 15, 26, 0.95);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoIcon {
+  font-size: 28px;
+  color: var(--accent-gold);
+  filter: drop-shadow(0 0 12px rgba(240,180,41,0.7));
+  font-family: 'Orbitron', sans-serif;
+}
+
+.logoText {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logoBadge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+  padding: 2px 6px;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.links {
+  display: flex;
+  gap: 4px;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.link:hover {
+  color: var(--accent-cyan);
+  border-color: var(--border);
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.link.active {
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.08);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.15);
+}
+
+.linkDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.link.active .linkDot {
+  opacity: 1;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 10px var(--accent-green);
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.statusText {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}

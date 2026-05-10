@@ -15,10 +15,11 @@
    
 - Metricas de todo. (ENTRE TODOS)
 
-- PROPERTY Y TRANSFERENCIAS NFT (validacion en /transferencias) (JOSUE)
-  Consultar:
-    - La firma la hace el origen
-    - Que usamos para validar la clave publica de origen y destino
+X PROPERTY Y TRANSFERENCIAS NFT (validacion en /transferencias) (JOSUE)
+  Falta:
+    Validar si TX_NFT es valida
+    No hay workers -> El pool debe hacer algo
+
 
 - Test gpu(vast.ia) MATEO
 - Test cpu(google cloud) JOUSE

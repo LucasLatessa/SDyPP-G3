@@ -110,6 +110,9 @@ def registrar_rutas(app, channel, redis_client) -> None:
     
     @app.route("/bloques/<block_id>/estado", methods=["GET"])
     def consultar_estado_bloque(block_id):
+       """
+       Endpoint para los workers, cuando si el bloque que estan trabajando es el correcto
+       """
         
        if not redis_client.exists_id(block_id):
           print(block_id)
@@ -118,6 +121,15 @@ def registrar_rutas(app, channel, redis_client) -> None:
        return jsonify({
             "ok": "Bloque resuelto",
         }), 200
+    
+    "-------------------------------------------------------------------"
+
+    @app.route("/blockchain", methods=["GET"])
+    def blockchain():
+      blockchain = redis_client.get_ultimos_mensajes()
+      logger.info(f"Blochckain:{blockchain}")
+      return blockchain
+
 
     "-------------------------------------------------------------------"
 

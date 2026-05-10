@@ -53,5 +53,5 @@ Correr test de worker cpu (Worker-cpu\test.py)
 python test.py --start 1 --end 100000000 --prefix 000000 --hash-val apprew --inclusive
 ```
 
-ssh-keygen -t rsa -b 4096 -m PEM -f ./unlucoin_priv
+ssh-keygen -t rsa -b 4096 -m PEM -f ./unlucoin
 ssh-keygen -f ./unlucoin_priv.pub -e -m PEM > unlucoin_pub.pem

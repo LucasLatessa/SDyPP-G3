@@ -46,12 +46,12 @@ class TipoTransaccion(Enum):
 
 # Configuracion para el procesamiento de paquetes
 TAMANO_BLOQUE_PROCESAR = 10
-PROCESS_INTERVAL = 60  # Deberia ser cada 60 segundos
+PROCESS_INTERVAL = 10  # Deberia ser cada 60 segundos
 RABBIT_TIMEOUT = 10
 #MAX_RANDOM = 200000000
 
 MAX_RANDOM = sys.maxsize-1 #4294967296
-DIFFICULT_PREFIX = "00000000"
+DIFFICULT_PREFIX = "000" #00000000
 STRING_CHAIN = "a18b"
 
 WORKER_TIMEOUT = 5 * 60 # 5 minutos

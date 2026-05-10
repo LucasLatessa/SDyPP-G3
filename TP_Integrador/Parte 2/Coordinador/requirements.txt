@@ -2,3 +2,4 @@ Flask
 pika
 redis
 flask-cors
+cryptography
