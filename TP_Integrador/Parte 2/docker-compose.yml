@@ -50,3 +50,15 @@ services:
       - RABBIT_PORT=5672
       - RABBIT_USER=grupo03
       - RABBIT_PASS=grupo03
+  
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile  
+      args:
+        - VITE_API_URL=http://localhost:5000 
+    container_name: "frontend_react"
+    ports:
+      - "8080:80" 
+    depends_on:
+      - coordinador

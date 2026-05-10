@@ -140,7 +140,6 @@ export default function TransactionPage() {
 
     const data = buildPayloadData();
     const payload = { data, type: txType, sign };
-    if (txType === 'PROPERTY') payload.timestamp = Date.now();
 
     const loadToast = toast.loading('Enviando a la red UNLUCOIN...');
     setLoading(true);
@@ -350,8 +349,7 @@ export default function TransactionPage() {
             {JSON.stringify({
                 data: buildPayloadData(),
                 type: txType,
-                sign: sign,
-                ...(txType === 'PROPERTY' ? { timestamp: Date.now() } : {}),
+                sign: sign
               }, null, 2)}
           </pre>
         </details>

@@ -69,7 +69,7 @@ def registrar_rutas(app, channel, redis_client) -> None:
           
         if not ok:
           logger.error(message)
-          return (jsonify({"error": message}), 400)
+          return (message, 400)
         
         logger.info("Transaccion valida.")
 
@@ -127,8 +127,17 @@ def registrar_rutas(app, channel, redis_client) -> None:
     @app.route("/blockchain", methods=["GET"])
     def blockchain():
       blockchain = redis_client.get_ultimos_mensajes()
-      logger.info(f"Blochckain:{blockchain}")
+      #logger.info(f"Blochckain:{blockchain}")
       return blockchain
+  
+    "-------------------------------------------------------------------"
+
+    @app.route("/prefijo", methods=["GET"])
+    def prefijo():
+      prefijo = redis_client.get_prefijo()
+
+      #logger.info(f"Blochckain:{blockchain}")
+      return prefijo
 
 
     "-------------------------------------------------------------------"
