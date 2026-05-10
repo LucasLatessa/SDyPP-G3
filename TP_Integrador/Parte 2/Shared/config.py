@@ -48,12 +48,29 @@ class TipoTransaccion(Enum):
 TAMANO_BLOQUE_PROCESAR = 10
 PROCESS_INTERVAL = 10  # Deberia ser cada 60 segundos
 RABBIT_TIMEOUT = 10
-#MAX_RANDOM = 200000000
 
-MAX_RANDOM = sys.maxsize-1 #4294967296
-DIFFICULT_PREFIX = "000" #00000000
-STRING_CHAIN = "a18b"
+# 2^32 - 1 para alinearse con el tamanio maximo de un 
+# entero sin signo de 32 bits, lo que suelen usar los kernels de CUDA 
+# evitando errores de overflow durante el calculo del nonce
+MAX_RANDOM = 4294967295 
 
-WORKER_TIMEOUT = 5 * 60 # 5 minutos
-BLOQUES_MINIMOS_DISMINUIR_PREFIJO = 5
-MINIMO_PROMEDIO_DISMINUIR_PREFIJO = 1
+# 6 ceros para tener un equilibrio de dificultad que
+# permita demostrar la superioridad de computo de la GPU 
+# sin bloquear la capacidad de los nodos CPU de encontrar soluciones
+DIFFICULT_PREFIX = "000000" 
+
+# cadena de 4 caracteres para minimizar el overhead y el almacenamiento en base de datos
+STRING_CHAIN = "sdyp" 
+
+# PARAMETROS DE CONTROL 
+# tiempo maximo de espera para la resolucion de un desafio 
+# 120 segundos es un umbral optimo para entornos cloud permitiendo reasignar tareas si un nodo falla o se desconecta
+WORKER_TIMEOUT = 2 * 60 
+
+# ventana de observacion para que el algoritmo de ajuste de dificultad sea reactivo
+# si los nodos GPU se desconectan,el sistema reduce la exigencia para asegurar la disponibilidad
+BLOQUES_MINIMOS_DISMINUIR_PREFIJO = 3 
+
+# si el tiempo de resolucion supera los 45 segundos, se interpreta como una falta de capacidad de procesamiento, 
+# reducimos la dificultad para mantener la fluidez del sistema y evitar bloqueos
+MINIMO_PROMEDIO_DISMINUIR_PREFIJO = 45
