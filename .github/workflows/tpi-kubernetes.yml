@@ -80,7 +80,7 @@ jobs:
     deploy-apps:
         name: Despliegue de servicios y aplicaciones
         needs: infra
-        if: startsWith(github.event.head_commit.message, '(go)')
+        if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(go-deploy)')
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
