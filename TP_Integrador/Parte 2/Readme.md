@@ -9,6 +9,7 @@ Manejar transferencias entre usuarios de forma segura y asegurando que el conten
 ## [Diagrama](https://miro.com/welcomeonboard/T3FBeFNHSDZ3ajRaSlNDQ3lmOHJxMHY5cTlPV3F5aGZjUlYrR0d0UkFnMVFvZVhvT1hNQmF3R3cwMW9DbnJJK2FRMjBrcWVtU2JOdGlGY2doYTl1dG4zOHVtN0x0ZmJBbm9oYWV6MkNxWTkxSFlDdStLYnFIejdFbURFZWNLUS90R2lncW1vRmFBVnlLcVJzTmdFdlNRPT0hdjE=?share_link_id=119593625078)
 
 ## Estructura del Repositorio
+
 ```text
 📦 Parte 2
  ┣ 📂 Coordinador
@@ -22,25 +23,19 @@ Manejar transferencias entre usuarios de forma segura y asegurando que el conten
 
 ## Levantar en local
 
-1. Levantar docker-compose con servicios (Rabbit y Redis). Ir a la carpeta de Parte 2/Services.
+1. Levantar docker-compose completo. Ir a la carpeta de Parte 2.
 
 ```
 docker-compose up
 ```
 
-2. Levanto el coordinador desde la carpeta del coordinador (Parte 2/Coordinador)
-
-```
-python app.py
-```
-
-3. Levantar el worker (CPU). Desde Parte 2/Worker-cpu
+2. Levantar el worker (CPU). Desde Parte 2/Worker-cpu
 
 ```
 python worker_cpu.py
 ```
 
-3. Levantar el worker (GPU).
+2. Levantar el worker (GPU).
 
 ```
 python worker_gpu.py
@@ -49,6 +44,7 @@ python worker_gpu.py
 ## TEST
 
 Correr test de worker cpu (Worker-cpu\test.py)
+
 ```
 python test.py --start 1 --end 100000000 --prefix 000000 --hash-val apprew --inclusive
 ```
