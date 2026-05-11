@@ -39,8 +39,8 @@ jobs:
             - name: Build-push frontend
               uses: docker/build-push-action@v5
               with:
-                  context: './TP_Integrador/Parte 2/front'
-                  file: './TP_Integrador/Parte 2/front/Dockerfile'
+                  context: './TP_Integrador/Parte 2/Front'
+                  file: './TP_Integrador/Parte 2/Front/Dockerfile'
                   push: true
                   tags: ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest
                   build-args: |
