@@ -10,7 +10,7 @@ variable "startup_worker" {
 
 variable "nombre_proyecto" {
   type    = string
-  default = "sdypp-2024"
+  default = "sdypp2026"
 }
 
 variable "tipo_maquina" {
@@ -35,7 +35,7 @@ variable "imagen" {
 
 variable "nombre_infra" {
   type    = string
-  default = "infrah-node-pool"
+  default = "infra-node-pool"
 }
 
 variable "nombre_app" {
