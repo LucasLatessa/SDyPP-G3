@@ -315,8 +315,6 @@ const fetchPrefijo = useCallback(async () => {
     
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     
-    // IMPORTANTE: Usamos .text() en lugar de .json() 
-    // porque el backend devuelve un texto/string directamente.
     const data = await res.text(); 
     
     setPrefijo(data); // Guardamos el valor en el estado
@@ -352,7 +350,7 @@ const fetchPrefijo = useCallback(async () => {
             <Stat label="PREFIJO ACTUAL" val={prefijo} color="var(--accent-green)" />
           </div>
           <div className={styles.controls}>
-            <button className={`${styles.refreshBtn} ${loading ? styles.refreshLoading : ''}`} onClick={fetchBlocks} disabled={loading}>
+            <button className={`${styles.refreshBtn} ${loading ? styles.refreshLoading : ''}`} onClick={fetchBlocks, fetchPrefijo} disabled={loading}>
               {loading ? <span className={styles.spinner} /> : '↻'} ACTUALIZAR
             </button>
             <button className={`${styles.autoBtn} ${autoRefresh ? styles.autoBtnOn : ''}`} onClick={() => setAutoRefresh(a => !a)}>

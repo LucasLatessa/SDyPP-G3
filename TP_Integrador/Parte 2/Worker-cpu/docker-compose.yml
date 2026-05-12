@@ -1,8 +1,8 @@
   worker_cpu:
     image: sdyp-worker-cpu:latest
     build:
-      context: .
-      dockerfile: Dockerfile.worker_cpu
+      context: ..
+      dockerfile: Worker-cpu/Dockerfile
     profiles:
       - workers
     depends_on:

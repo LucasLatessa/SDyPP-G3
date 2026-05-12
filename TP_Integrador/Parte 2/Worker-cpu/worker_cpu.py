@@ -16,8 +16,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-url = os.getenv("ENDPOINT_COORDINADOR", "http://localhost:5000")
-url_tarea =  f"{url}/tarea_worker"
+ENDPOINT_COORDINADOR = os.getenv("ENDPOINT_COORDINADOR")
+COORDINADOR_URL = os.getenv("COORDINADOR_URL")
+
+if not ENDPOINT_COORDINADOR:
+    base_url = (COORDINADOR_URL or "http://localhost:5000").rstrip("/")
+    ENDPOINT_COORDINADOR = f"{base_url}/tarea_worker"
+
+if not COORDINADOR_URL:
+    COORDINADOR_URL = ENDPOINT_COORDINADOR.rstrip("/")
+    if COORDINADOR_URL.endswith("/tarea_worker"):
+        COORDINADOR_URL = COORDINADOR_URL[: -len("/tarea_worker")]
 
 # Configuración del servidor RabbitMQ
 RABBIT_HOST = os.getenv("RABBIT_HOST", "localhost")
@@ -69,7 +78,7 @@ def enviar_resultado(resultado) -> None:
         resultado (Dict[str, Any]): Resultado del PoW.
     """
     try:
-        response = requests.post(url_tarea, json=resultado, timeout=5)
+        response = requests.post(ENDPOINT_COORDINADOR, json=resultado, timeout=5)
 
         if response.status_code == 201:
             logger.info("Resultado enviado correctamente al coordinador")
@@ -95,7 +104,7 @@ def consultar_estado_bloque(block_id: str, stop_event: threading.Event):
             
         try:
             # Reemplaza esta URL con tu endpoint real
-            endpoint = f"{url}/bloques/{block_id}/estado"
+            endpoint = f"{COORDINADOR_URL.rstrip('/')}/bloques/{block_id}/estado"
             respuesta = requests.get(endpoint, timeout=5)
             
             if respuesta.status_code == 200:

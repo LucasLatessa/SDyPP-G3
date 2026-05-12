@@ -16,7 +16,7 @@ terraform apply
 ## 2. Coneccion al cluster
 
 ```
-gcloud container clusters get-credentials primary --region us-east4-a
+gcloud container clusters get-credentials primary --region us-east4-b
 ```
 
 ## 3. Instalar cimientos (Ingress + Cert Manager)
