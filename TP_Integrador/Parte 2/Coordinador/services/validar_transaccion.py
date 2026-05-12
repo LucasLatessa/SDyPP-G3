@@ -5,7 +5,11 @@ from Shared.utils.logger import get_logger
 from Shared.config import (TipoTransaccion)
 import base64
 import textwrap
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
+import json
+import re
+from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_ssh_public_key
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -17,9 +21,6 @@ logger = get_logger(__name__)
 #                            FUNCIONES
 # ----------------------------------------------------------------------
 
-import re
-import textwrap
-from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_ssh_public_key
 
 def es_clave_publica_valida(clave_publica):
     """
@@ -170,25 +171,22 @@ def obtener_propietario_actual_nft(nft, redis_client):
       logger.error(f"Error leyendo transacciones de Redis: {e}")
       return None
 
-  propietario_actual = None
-  mejor_puntaje = None
+  def obtener_owner_desde_transaccion(transaccion):
+      if not isinstance(transaccion, dict):
+          return None
 
-  def calcular_puntaje(mensaje, indice_tx):
-      numero = mensaje.get("numero")
-      timestamp = mensaje.get("timestamp")
-      try:
-          numero = int(numero) if numero is not None else None
-      except (TypeError, ValueError):
-          numero = None
-      try:
-          timestamp = float(timestamp) if timestamp is not None else None
-      except (TypeError, ValueError):
-          timestamp = None
-      return (
-          numero if numero is not None else -1,
-          timestamp if timestamp is not None else -1.0,
-          indice_tx,
-      )
+      data = transaccion.get("data")
+      if not isinstance(data, dict) or data.get("nft") != nft:
+          return None
+
+      tipo = transaccion.get("type")
+      if tipo == TipoTransaccion.PROPERTY.value:
+          return data.get("owner")
+
+      if tipo == TipoTransaccion.TX_NFT.value:
+          return data.get("destino")
+
+      return None
 
   for idx, msg in enumerate(mensajes):
       logger.debug(f"Procesando mensaje {idx}: tipo={type(msg).__name__}")
@@ -199,51 +197,22 @@ def obtener_propietario_actual_nft(nft, redis_client):
       transacciones = msg.get("transaccion")
       if isinstance(transacciones, list):
           logger.debug(f"Mensaje {idx} contiene 'transaccion' con {len(transacciones)} elementos")
-          for sub_idx, transaccion in enumerate(transacciones):
-              if not isinstance(transaccion, dict):
-                  logger.debug(f"Transacción interna {sub_idx} ignorada: no es un dict")
-                  continue
-              data = transaccion.get("data")
-              if not isinstance(data, dict):
-                  logger.debug(f"Transacción interna {sub_idx} ignorada: data no es dict")
-                  continue
-              logger.debug(f"Transacción interna {sub_idx} nft={data.get('nft')} tipo={transaccion.get('type')}")
-              if data.get("nft") != nft:
-                  continue
+          for sub_idx, transaccion in reversed(list(enumerate(transacciones))):
+              owner = obtener_owner_desde_transaccion(transaccion)
+              if owner is not None:
+                  logger.debug(
+                      f"Propietario actual de NFT {nft}: {owner} "
+                      f"desde bloque Redis idx={idx}, transaccion idx={sub_idx}"
+                  )
+                  return owner
 
-              tipo = transaccion.get("type")
-              if tipo not in (TipoTransaccion.TX_NFT.value, TipoTransaccion.PROPERTY.value):
-                  continue
-              owner = data.get("destino") if tipo == TipoTransaccion.TX_NFT.value else data.get("owner")
-              puntaje = calcular_puntaje(msg, sub_idx)
-              logger.debug(f"Candidato encontrado owner={owner} puntaje={puntaje}")
-              if mejor_puntaje is None or puntaje > mejor_puntaje:
-                  mejor_puntaje = puntaje
-                  propietario_actual = owner
-                  logger.debug(f"Propietario actualizado a {owner} desde mensaje {idx} transacción {sub_idx}")
+      owner = obtener_owner_desde_transaccion(msg)
+      if owner is not None:
+          logger.debug(f"Propietario actual de NFT {nft}: {owner} desde mensaje root idx={idx}")
+          return owner
 
-      data = msg.get("data")
-      if not isinstance(data, dict):
-          logger.debug("Mensaje ignorado: data no es dict")
-          continue
-      logger.debug(f"Mensaje {idx} root nft={data.get('nft')} tipo={msg.get('type')}")
-      if data.get("nft") != nft:
-          continue
-
-      tipo = msg.get("type")
-      if tipo not in (TipoTransaccion.TX_NFT.value, TipoTransaccion.PROPERTY.value):
-          continue
-      owner = data.get("destino") if tipo == TipoTransaccion.TX_NFT.value else data.get("owner")
-      puntaje = calcular_puntaje(msg, 0)
-      logger.debug(f"Candidato root encontrado owner={owner} puntaje={puntaje}")
-      if mejor_puntaje is None or puntaje > mejor_puntaje:
-          mejor_puntaje = puntaje
-          propietario_actual = owner
-          logger.debug(f"Propietario actualizado a {owner} desde mensaje {idx} root")
-
-  logger.debug(f"Propietario final para NFT {nft}: {propietario_actual}")
-  return propietario_actual
-
+  logger.debug(f"No se encontro propietario para NFT {nft}")
+  return None
 
 def validar_tx_nft(data, redis_client=None):
   """
@@ -306,18 +275,84 @@ def validar_transaccion(datos, redis_client=None):
   if not ok:
       return False, msg
 
-  # VALIDAR CLAVES (formato valido)
+    # VALIDAR CLAVES PUBLICAS
+  if "owner" in data:
+    if not es_clave_publica_valida(data["owner"]):
+        return False, "Clave publica de owner invalida"
+
   if "origen" in data:
     if not es_clave_publica_valida(data["origen"]):
-        return False, "Clave pública de origen inválida"
+        return False, "Clave publica de origen invalida"
 
   if "destino" in data:
       if not es_clave_publica_valida(data["destino"]):
-          return False, "Clave pública de destino inválida"
-      
+          return False, "Clave publica de destino invalida"
 
+  # VALIDAR FIRMA CONTRA LA CLAVE DEL EMISOR
+  clave_firmante = obtener_clave_firmante(datos)
 
+  if not clave_firmante:
+      return False, "No se encontro clave publica firmante"
 
-      
-  # Pasan todas las validaciones
+  if not verificar_firma(data, datos["sign"], clave_firmante):
+      return False, "Firma invalida"
+
   return True, "OK"
+
+def cargar_clave_publica(clave_publica):
+    if not clave_publica or not isinstance(clave_publica, str):
+        raise ValueError("Clave publica vacia")
+
+    clave_limpia = clave_publica.replace(" ", "").replace("\n", "").replace("\r", "")
+
+    if "ssh-rsa" in clave_limpia or "AAAA" in clave_limpia[:20]:
+        match = re.search(r"(AAAA[A-Za-z0-9+/=]+)", clave_limpia)
+        if match:
+            return load_ssh_public_key(f"ssh-rsa {match.group(1)}".encode("utf-8"))
+
+    faltante = len(clave_limpia) % 4
+    if faltante != 0:
+        clave_limpia += "=" * (4 - faltante)
+
+    cuerpo_pem = "\n".join(textwrap.wrap(clave_limpia, 64))
+
+    try:
+        pem_format = f"-----BEGIN PUBLIC KEY-----\n{cuerpo_pem}\n-----END PUBLIC KEY-----"
+        return load_pem_public_key(pem_format.encode("utf-8"))
+    except ValueError:
+        pem_format_rsa = f"-----BEGIN RSA PUBLIC KEY-----\n{cuerpo_pem}\n-----END RSA PUBLIC KEY-----"
+        return load_pem_public_key(pem_format_rsa.encode("utf-8"))
+
+
+def serializar_data_para_firma(data):
+    data_ordenada = {key: data[key] for key in sorted(data.keys())}
+    return json.dumps(data_ordenada, separators=(",", ":"), ensure_ascii=False)
+
+
+def verificar_firma(data, firma_base64, clave_publica):
+    try:
+        public_key = cargar_clave_publica(clave_publica)
+        firma = base64.b64decode(firma_base64)
+        mensaje = serializar_data_para_firma(data).encode("utf-8")
+
+        public_key.verify(
+            firma,
+            mensaje,
+            padding.PKCS1v15(),
+            hashes.SHA256(),
+        )
+
+        return True
+    except Exception as e:
+        logger.warning(f"Firma invalida: {e}")
+        return False
+
+
+def obtener_clave_firmante(datos):
+    data = datos["data"]
+    tipo = datos["type"]
+
+    if tipo == TipoTransaccion.PROPERTY.value:
+        return data.get("owner")
+
+    return data.get("origen")
