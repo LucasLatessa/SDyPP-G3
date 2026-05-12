@@ -13,20 +13,22 @@ spec:
         app: rabbitmq
     spec:
       containers:
-      - name: rabbitmq
-        image: rabbitmq:management
-        ports:
-        - containerPort: 5672
-          name: amqp
-        - containerPort: 15672
-          name: management
-        env:                             
-        - name: RABBITMQ_DEFAULT_USER  
-          value: "grupo03"               
-        - name: RABBITMQ_DEFAULT_PASS   
-          value: "grupo03"
-        - name: RABBITMQ_DEFAULT_VHOST
-          value: "/"
+        - name: rabbitmq
+          image: rabbitmq:management
+          ports:
+            - containerPort: 5672
+              name: amqp
+            - containerPort: 15672
+              name: management
+          env:
+            - name: REDIS_ARGS
+              value: "--requirepass grupo03"
+            - name: RABBITMQ_DEFAULT_USER
+              value: "grupo03"
+            - name: RABBITMQ_DEFAULT_PASS
+              value: "grupo03"
+            - name: RABBITMQ_DEFAULT_VHOST
+              value: "/"
 ---
 apiVersion: v1
 kind: Service
@@ -35,11 +37,11 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 5672
-    targetPort: 5672
-    name: amqp
-  - port: 15672
-    targetPort: 15672
-    name: management
+    - port: 5672
+      targetPort: 5672
+      name: amqp
+    - port: 15672
+      targetPort: 15672
+      name: management
   selector:
     app: rabbitmq
