@@ -64,7 +64,8 @@ jobs:
               with:
                   workload_identity_provider: 'projects/395180424483/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
                   service_account: 'github-actions-tf@sdypp2026.iam.gserviceaccount.com'
-                  create_credentials_file: true # Esto genera el JSON temporal para Terraform
+                  create_credentials_file: true
+                  export_environment_variables: true
 
             - name: Terraform setup
               uses: hashicorp/setup-terraform@v3
