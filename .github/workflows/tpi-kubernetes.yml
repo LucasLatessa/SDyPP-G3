@@ -138,17 +138,29 @@ jobs:
                 kubectl apply -f ingress.yaml
 
                 # Forzamos el reinicio para que tomen la nueva imagen 'latest'
-                kubectl rollout restart deployment/coordinador-deployment
-                kubectl rollout restart deployment/front-deployment
-                kubectl rollout restart deployment/pool-manager-deployment
+                kubectl rollout restart deployment/coordinador
+                kubectl rollout restart deployment/front
+                kubectl rollout restart deployment/pool-manager
 
     infra-down:
         name: Eliminar K8s Infra
         if: startsWith(github.event.head_commit.message, '(down)')
         runs-on: ubuntu-latest
+        permissions:
+          contents: 'read'
+          id-token: 'write'
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+
+            # Autenticación con WIF
+            - name: Google Cloud authentication
+              uses: google-github-actions/auth@v2
+              with:
+                  workload_identity_provider: 'projects/395180424483/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+                  service_account: 'github-actions-tf@sdypp2026.iam.gserviceaccount.com'
+                  create_credentials_file: true
+                  export_environment_variables: true
 
             # Instalo Terraform
             - name: Terraform setup
@@ -156,16 +168,12 @@ jobs:
 
             # Eliminacion del Cluster
             - name: Terraform destroy
+              uses: hashicorp/setup-terraform@v3
+
+            - name: Terraform init
               working-directory: './TP_Integrador/Parte 2/Terraform'
-              env:
-                GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
               run: |
-                echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
-
-                ls -lah
-
                 terraform init --reconfigure
-
-                terraform plan
-
+                terraform validate
+                terraform plan -lock=false
                 terraform destroy -lock=false --auto-approve
