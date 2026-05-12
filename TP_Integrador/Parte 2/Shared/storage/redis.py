@@ -42,6 +42,11 @@ class RedisUtils:
             )  # Convierte el elemento de JSON a un objeto de Python si existe
         return None  # Retorna None si la lista está vacía
 
+    # Recupera todos los mensajes almacenados en Redis
+    def getAllTransactions(self, list_key=REDIS_LIST_KEY_NAME):
+        messages_json = self.redis_client.lrange(list_key, 0, -1)
+        return [json.loads(msg) for msg in messages_json]
+
     # Verifica si existe ese ID en la lista de Redis
     def exists_id(self, id, list_key=REDIS_LIST_KEY_NAME):
         messages_json = self.redis_client.lrange(

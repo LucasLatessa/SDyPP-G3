@@ -124,7 +124,7 @@ def validar_tx(data):
   return True, "Data válida"
   
 
-def validar_property(data):
+def validar_property(data, redis_client=None):
   """
   Valida si la transaccion Property es valida
 
@@ -145,10 +145,107 @@ def validar_property(data):
       
   if not isinstance(data.get("nft"), str) or not isinstance(data.get("owner"), str):
       return False, "'nft' y 'owner' deben ser cadenas de texto."
+
+  if redis_client is None:
+      return False, "No se proporcionó el cliente Redis para validar PROPERTY"
+
+  propietario_actual = obtener_propietario_actual_nft(data["nft"], redis_client)
+  if propietario_actual is not None:
+      return False, f"El NFT {data['nft']} ya está registrado a nombre de otro usuario"
       
   return True, "Data válida"
 
-def validar_tx_nft(data):
+def obtener_propietario_actual_nft(nft, redis_client):
+  """
+  Devuelve el dueño actual de un NFT consultando la cadena de bloques guardada en Redis
+  """
+  if redis_client is None:
+      logger.debug("Redis client no proporcionado en obtener_propietario_actual_nft")
+      return None
+
+  try:
+      mensajes = redis_client.getAllTransactions()
+      logger.debug(f"Recuperadas {len(mensajes)} transacciones de Redis para nft={nft}")
+  except Exception as e:
+      logger.error(f"Error leyendo transacciones de Redis: {e}")
+      return None
+
+  propietario_actual = None
+  mejor_puntaje = None
+
+  def calcular_puntaje(mensaje, indice_tx):
+      numero = mensaje.get("numero")
+      timestamp = mensaje.get("timestamp")
+      try:
+          numero = int(numero) if numero is not None else None
+      except (TypeError, ValueError):
+          numero = None
+      try:
+          timestamp = float(timestamp) if timestamp is not None else None
+      except (TypeError, ValueError):
+          timestamp = None
+      return (
+          numero if numero is not None else -1,
+          timestamp if timestamp is not None else -1.0,
+          indice_tx,
+      )
+
+  for idx, msg in enumerate(mensajes):
+      logger.debug(f"Procesando mensaje {idx}: tipo={type(msg).__name__}")
+      if not isinstance(msg, dict):
+          logger.debug("Mensaje ignorado: no es un dict")
+          continue
+
+      transacciones = msg.get("transaccion")
+      if isinstance(transacciones, list):
+          logger.debug(f"Mensaje {idx} contiene 'transaccion' con {len(transacciones)} elementos")
+          for sub_idx, transaccion in enumerate(transacciones):
+              if not isinstance(transaccion, dict):
+                  logger.debug(f"Transacción interna {sub_idx} ignorada: no es un dict")
+                  continue
+              data = transaccion.get("data")
+              if not isinstance(data, dict):
+                  logger.debug(f"Transacción interna {sub_idx} ignorada: data no es dict")
+                  continue
+              logger.debug(f"Transacción interna {sub_idx} nft={data.get('nft')} tipo={transaccion.get('type')}")
+              if data.get("nft") != nft:
+                  continue
+
+              tipo = transaccion.get("type")
+              if tipo not in (TipoTransaccion.TX_NFT.value, TipoTransaccion.PROPERTY.value):
+                  continue
+              owner = data.get("destino") if tipo == TipoTransaccion.TX_NFT.value else data.get("owner")
+              puntaje = calcular_puntaje(msg, sub_idx)
+              logger.debug(f"Candidato encontrado owner={owner} puntaje={puntaje}")
+              if mejor_puntaje is None or puntaje > mejor_puntaje:
+                  mejor_puntaje = puntaje
+                  propietario_actual = owner
+                  logger.debug(f"Propietario actualizado a {owner} desde mensaje {idx} transacción {sub_idx}")
+
+      data = msg.get("data")
+      if not isinstance(data, dict):
+          logger.debug("Mensaje ignorado: data no es dict")
+          continue
+      logger.debug(f"Mensaje {idx} root nft={data.get('nft')} tipo={msg.get('type')}")
+      if data.get("nft") != nft:
+          continue
+
+      tipo = msg.get("type")
+      if tipo not in (TipoTransaccion.TX_NFT.value, TipoTransaccion.PROPERTY.value):
+          continue
+      owner = data.get("destino") if tipo == TipoTransaccion.TX_NFT.value else data.get("owner")
+      puntaje = calcular_puntaje(msg, 0)
+      logger.debug(f"Candidato root encontrado owner={owner} puntaje={puntaje}")
+      if mejor_puntaje is None or puntaje > mejor_puntaje:
+          mejor_puntaje = puntaje
+          propietario_actual = owner
+          logger.debug(f"Propietario actualizado a {owner} desde mensaje {idx} root")
+
+  logger.debug(f"Propietario final para NFT {nft}: {propietario_actual}")
+  return propietario_actual
+
+
+def validar_tx_nft(data, redis_client=None):
   """
   Valida si la transaccion TX_NFT es valida
 
@@ -167,21 +264,29 @@ def validar_tx_nft(data):
   if claves_recibidas != claves_esperadas:
       return False, f"Para el tipo TX_NFT, 'data' debe contener exactamente las claves: {claves_esperadas}"
       
-  # Validacion de valores
   if not isinstance(data.get("nft"), str) or not isinstance(data.get("origen"), str) or not isinstance(data.get("destino"), str):
       return False, "Todos los campos (nft, origen, destino) deben ser cadenas de texto."
+
+  if redis_client is None:
+      return False, "No se proporcionó el cliente Redis para validar TX_NFT"
+
+  propietario_actual = obtener_propietario_actual_nft(data["nft"], redis_client)
+  if propietario_actual is None:
+      return False, "El NFT no existe o no tiene un dueño registrado"
+  if propietario_actual != data["origen"]:
+      return False, "El origen no es el dueño actual del NFT"
       
   return True, "Data válida"
       
 
-def validar_transaccion(datos):
+def validar_transaccion(datos, redis_client=None):
   """
   Dada una transaccion, se valida si esta cumple con el formato estipulado
   """
   VALIDADORES = {
     TipoTransaccion.TX.value: validar_tx,
-    TipoTransaccion.PROPERTY.value: validar_property,
-    TipoTransaccion.TX_NFT.value: validar_tx_nft,
+    TipoTransaccion.PROPERTY.value: lambda payload: validar_property(payload, redis_client),
+    TipoTransaccion.TX_NFT.value: lambda payload: validar_tx_nft(payload, redis_client),
   }
 
   # VALIDAR DATOS VALIDOS
@@ -209,6 +314,10 @@ def validar_transaccion(datos):
   if "destino" in data:
       if not es_clave_publica_valida(data["destino"]):
           return False, "Clave pública de destino inválida"
+      
+
+
+
       
   # Pasan todas las validaciones
   return True, "OK"

@@ -24,7 +24,9 @@ spec:
         - name: RABBITMQ_DEFAULT_USER  
           value: "grupo03"               
         - name: RABBITMQ_DEFAULT_PASS   
-          value: "grupo03" 
+          value: "grupo03"
+        - name: RABBITMQ_DEFAULT_VHOST
+          value: "/"
 ---
 apiVersion: v1
 kind: Service

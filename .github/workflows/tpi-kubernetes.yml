@@ -1,0 +1,145 @@
+name: K8s actions github
+
+on:
+    push:
+        branches: ['main']
+        paths: ['TP_Integrador/Parte 2/**']
+
+jobs:
+    build-images:
+        name: Build y Push de imagenes Docker (Coordinador, Pool Manager, Frontend)
+        if: startsWith(github.event.head_commit.message, '(go)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Login en Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKER_HUB_USERNAME }}
+                  password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+            - name: Build-push coordinador
+              uses: docker/build-push-action@v5
+              with:
+                  context: './TP_Integrador/Parte 2'
+                  file: './TP_Integrador/Parte 2/Dockerfile.coordinador'
+                  push: true
+                  tags: ${{ secrets.DOCKER_HUB_USERNAME }}/coordinador:latest
+
+            - name: Build-push pool manager
+              uses: docker/build-push-action@v5
+              with:
+                  context: './TP_Integrador/Parte 2'
+                  file: './TP_Integrador/Parte 2/Dockerfile.pool_manager'
+                  push: true
+                  tags: ${{ secrets.DOCKER_HUB_USERNAME }}/pool_manager:latest
+
+            - name: Build-push frontend
+              uses: docker/build-push-action@v5
+              with:
+                  context: './TP_Integrador/Parte 2/Front'
+                  file: './TP_Integrador/Parte 2/Front/Dockerfile'
+                  push: true
+                  tags: ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest
+                  build-args: |
+                    VITE_API_URL=https://unlucoin.info/api
+
+    infra:
+        name: Build K8S infra
+        needs: build-images
+        if: startsWith(github.event.head_commit.message, '(go)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            # Instalo Terraform
+            - name: Terraform setup
+              uses: hashicorp/setup-terraform@v3
+
+            # Creacion del Cluster
+            - name: Terraform init
+              working-directory: './TP_Integrador/Parte 2/Terraform'
+              env:
+                GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+              run: |
+                echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
+
+                ls -lah
+
+                terraform init --reconfigure
+
+                terraform validate
+
+                terraform plan -lock=false
+
+                terraform apply -lock=false --auto-approve
+
+    deploy-apps:
+        name: Despliegue de servicios y aplicaciones
+        needs: infra
+        if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(go-deploy)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            # Conf GCloud
+            - name: Google Cloud authentication
+              uses: google-github-actions/auth@v2
+              with:
+                  credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+
+            - name: Google Cloud kubectl plugin
+              uses: google-github-actions/setup-gcloud@v2
+              with:
+                  version: '>= 363.0.0'
+                  install_components: 'kubectl'
+
+            - name: GCloud Kubectl credentials
+              run: |
+                    ZONE="us-east4-a"
+                    gcloud info
+                    gcloud components list
+                    gcloud container clusters get-credentials primary --zone=${ZONE}
+
+            - name: Deploy y Services app
+              working-directory: './TP_Integrador/Parte 2/K8s'
+              run: |
+                kubectl apply -f certificate.yaml
+                kubectl apply -f coordinador-services.yaml
+                kubectl apply -f rabbit-services.yaml
+                kubectl apply -f redis-services.yaml
+                kubectl apply -f pool-manager-services.yaml
+                kubectl apply -f front-services.yaml
+                kubectl apply -f ingress.yaml
+
+    infra-down:
+        name: Eliminar K8s Infra
+        if: startsWith(github.event.head_commit.message, '(down)')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            # Instalo Terraform
+            - name: Terraform setup
+              uses: hashicorp/setup-terraform@v3
+
+            # Eliminacion del Cluster
+            - name: Terraform destroy
+              working-directory: './TP_Integrador/Parte 2/Terraform'
+              env:
+                GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+              run: |
+                echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > credentials.json
+
+                ls -lah
+
+                terraform init --reconfigure
+
+                terraform plan
+
+                terraform destroy -lock=false --auto-approve
