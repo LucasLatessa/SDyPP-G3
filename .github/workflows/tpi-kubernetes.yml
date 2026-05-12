@@ -79,17 +79,23 @@ jobs:
 
     deploy-apps:
         name: Despliegue de servicios y aplicaciones
+        needs: infra
         if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(k8s)')
         runs-on: ubuntu-latest
+
+        permissions:
+          contents: 'read'
+          id-token: 'write'
+
         steps:
             - name: Checkout
               uses: actions/checkout@v4
 
-            # Conf GCloud
             - name: Google Cloud authentication
               uses: google-github-actions/auth@v2
               with:
-                  credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+                  workload_identity_provider: 'projects/395180424483/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+                  service_account: 'github-actions-tf@sdypp2026.iam.gserviceaccount.com'
 
             - name: Google Cloud kubectl plugin
               uses: google-github-actions/setup-gcloud@v2
