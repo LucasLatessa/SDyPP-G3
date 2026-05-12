@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 url = os.getenv("ENDPOINT_COORDINADOR", "http://localhost:5000")
-
 url_tarea =  f"{url}/tarea_worker"
 
 
