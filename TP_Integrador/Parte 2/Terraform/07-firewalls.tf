@@ -44,3 +44,20 @@
 
 #     source_ranges = ["0.0.0.0/0"]
 # }
+
+# resource "google_compute_firewall" "allow_master_to_webhook" {
+#   name        = "allow-master-to-webhook"
+#   network     = google_compute_network.main.id # Asegúrate de que apunte a tu red principal
+#   description = "Permite al Control Plane de GKE comunicarse con los webhooks (cert-manager, ingress-nginx) en los nodos"
+
+#   # Los puertos que los webhooks necesitan para recibir la validación
+#   allow {
+#     protocol = "tcp"
+#     ports    = ["443", "8443", "9443", "10250"]
+#   }
+
+#   # Terraform va a buscar automáticamente el CIDR del master dentro de la configuración de tu clúster
+#   source_ranges = [
+#     google_container_cluster.primary.private_cluster_config[0].master_ipv4_cidr_block
+#   ]
+# }

@@ -79,8 +79,7 @@ jobs:
 
     deploy-apps:
         name: Despliegue de servicios y aplicaciones
-        needs: infra
-        if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(go-deploy)')
+        if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(k8s)')
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
@@ -108,12 +107,26 @@ jobs:
             - name: Deploy y Services app
               working-directory: './TP_Integrador/Parte 2/K8s'
               run: |
+                kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
+                kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+
+                # Pequeña pausa táctica de 10 segundos. 
+                # Esto le da tiempo a la API de Kubernetes para registrar que los "Deployments" existen antes de preguntar por ellos.
+                sleep 10
+
+                # Esperamos hasta 3 minutos a que el webhook de cert-manager esté disponible
+                kubectl wait --namespace cert-manager --for=condition=available deployment/cert-manager-webhook --timeout=180s
+
                 kubectl apply -f certificate.yaml
-                kubectl apply -f coordinador-services.yaml
                 kubectl apply -f rabbit-services.yaml
                 kubectl apply -f redis-services.yaml
+                kubectl apply -f coordinador-services.yaml
                 kubectl apply -f pool-manager-services.yaml
                 kubectl apply -f front-services.yaml
+
+                # Esperamos a que NGINX esté listo antes de mandarle las reglas de ruteo
+                kubectl wait --namespace ingress-nginx --for=condition=available deployment/ingress-nginx-controller --timeout=180s
+
                 kubectl apply -f ingress.yaml
 
     infra-down:
