@@ -107,7 +107,7 @@ jobs:
 
             - name: GCloud Kubectl credentials
               run: |
-                    ZONE="us-east4-a"
+                    ZONE="us-east4-b"
                     gcloud info
                     gcloud components list
                     gcloud container clusters get-credentials primary --zone=${ZONE}
