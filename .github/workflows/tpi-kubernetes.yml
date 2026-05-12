@@ -7,7 +7,7 @@ on:
 
 jobs:
     build-images:
-        name: Build y Push de imagenes Docker (Coordinador, Pool Manager, Frontend)
+        name: Build y Push de imagenes Docker (Coordinador, Pool Manager, Frontend, Worker CPU)
         if: startsWith(github.event.head_commit.message, '(go)')
         runs-on: ubuntu-latest
         steps:
@@ -45,6 +45,14 @@ jobs:
                   tags: ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest
                   build-args: |
                     VITE_API_URL=https://unlucoin.info/api
+            
+            - name: Build-push Worker CPU
+              uses: docker/build-push-action@v5
+              with:
+                  context: './TP_Integrador/Parte 2'
+                  file: './TP_Integrador/Parte 2/Worker-cpu/Dockerfile'
+                  push: true
+                  tags: ${{ secrets.DOCKER_HUB_USERNAME }}/sdyp-worker-cpu:latest
 
     infra:
         name: Build K8S infra
@@ -141,6 +149,8 @@ jobs:
                 kubectl rollout restart deployment/coordinador
                 kubectl rollout restart deployment/frontend
                 kubectl rollout restart deployment/pool-manager
+                kubectl rollout restart deployment/rabbitmq
+                kubectl rollout restart deployment/redis
 
     infra-down:
         name: Eliminar K8s Infra
