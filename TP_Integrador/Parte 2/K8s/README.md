@@ -93,5 +93,3 @@ kubectl get certificate
 ```
 
 Si dice READY: True, abre tu navegador en https://unlucoin.info
-
-

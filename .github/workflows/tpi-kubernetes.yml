@@ -139,7 +139,7 @@ jobs:
 
                 # Forzamos el reinicio para que tomen la nueva imagen 'latest'
                 kubectl rollout restart deployment/coordinador
-                kubectl rollout restart deployment/front
+                kubectl rollout restart deployment/frontend
                 kubectl rollout restart deployment/pool-manager
 
     infra-down:
