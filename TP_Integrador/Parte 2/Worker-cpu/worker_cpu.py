@@ -125,14 +125,21 @@ def resolver_desafio(task):
     )
     monitor_thread.start()
 
-    resultado = None
+    resultado = {
+        "id": block_id,
+        "found": False,
+        "start": start,
+        "end": end,
+        "worker_id": os.getenv("WORKER_ID", "worker-cpu"),
+    }
+
     tiempo_inicial = time.time()
     
-    for nonce in range(start, end):
+    for nonce in range(start, end + 1):
         
         if nonce % 10000 == 0 and stop_event.is_set():
             logger.info("Ciclo for detenido externamente.")
-            break
+            return None
         
         hash_result: str = calcular_hash(base_string, blockchain_content, nonce)
 
@@ -149,13 +156,17 @@ def resolver_desafio(task):
                 'blockchain_content': blockchain_content,
                 "numero": nonce, 
                 "hash": hash_result,
-                "tiempo_proceso": tiempo_proceso
+                "tiempo_proceso": tiempo_proceso,
+                "found": True,
+                "start": start,
+                "end": end,
+                "worker_id": os.getenv("WORKER_ID", "worker-cpu")
             }
             stop_event.set()
             break
     
     stop_event.set()
-    #logger.info(f"No se encontró solución en rango {start}-{end}")
+    resultado["tiempo_proceso"] = time.time() - tiempo_inicial
     return resultado
     #return {}
 

@@ -1,7 +1,8 @@
 import redis
 import json
+import time
 
-from Shared.config import REDIS_HOST, REDIS_PORT, REDIS_LIST_KEY_NAME, DIFFICULT_PREFIX
+from Shared.config import REDIS_HOST, REDIS_PORT, REDIS_LIST_KEY_NAME, DIFFICULT_PREFIX, PROCESSING_BLOCK_KEY 
 
 
 class RedisUtils:
@@ -68,3 +69,114 @@ class RedisUtils:
         print(f"Prefijo inicial insertado en Redis: {DIFFICULT_PREFIX}")
       else:
         print("Prefijo ya presente en Redis:", self.get_prefijo())
+
+    def get_bloque_en_proceso(self):
+        raw = self.redis_client.get(PROCESSING_BLOCK_KEY)
+        if not raw:
+            return None
+        return json.loads(raw)
+
+
+    def guardar_bloque_en_proceso(self, bloque, rangos):
+        actual = self.get_bloque_en_proceso()
+        attempt = 1
+
+        if actual and actual.get("id") == bloque["id"]:
+            attempt = actual.get("attempt", 0) + 1
+
+        estado = {
+            "id": bloque["id"],
+            "status": "PROCESSING",
+            "reprocess": False,
+            "reason": None,
+            "attempt": attempt,
+            "total_tasks": len(rangos),
+            "completed_tasks": 0,
+            "found": False,
+            "ranges": [
+                {
+                    "start": start,
+                    "end": end,
+                    "status": "PENDING",
+                }
+                for start, end in rangos
+            ],
+            "block": bloque,
+            "updated_at": time.time(),
+        }
+
+        self.redis_client.set(PROCESSING_BLOCK_KEY, json.dumps(estado))
+
+
+    def marcar_reproceso_bloque(self, reason):
+        estado = self.get_bloque_en_proceso()
+        if not estado:
+            return
+
+        estado["status"] = "REPROCESS"
+        estado["reprocess"] = True
+        estado["reason"] = reason
+        estado["updated_at"] = time.time()
+
+        self.redis_client.set(PROCESSING_BLOCK_KEY, json.dumps(estado))
+
+
+    def registrar_tarea_sin_solucion(self, block_id, start, end, worker_id=None):
+        estado = self.get_bloque_en_proceso()
+        rango_encontrado = False
+
+        if not estado or estado.get("id") != block_id:
+            return False
+
+        for rango in estado["ranges"]:
+            if rango["start"] == start and rango["end"] == end:
+                rango_encontrado = True
+
+                if rango["status"] == "PENDING":
+                    rango["status"] = "DONE_NOT_FOUND"
+                    rango["worker_id"] = worker_id
+                    rango["finished_at"] = time.time()
+                    estado["completed_tasks"] += 1
+                break
+            
+        if not rango_encontrado:
+            return False
+
+        if estado["completed_tasks"] >= estado["total_tasks"] and not estado["found"]:
+            estado["status"] = "REPROCESS"
+            estado["reprocess"] = True
+            estado["reason"] = "NONCE_NOT_FOUND"
+
+        estado["updated_at"] = time.time()
+        self.redis_client.set(PROCESSING_BLOCK_KEY, json.dumps(estado))
+
+        return True
+
+
+    def limpiar_bloque_en_proceso(self, block_id):
+        estado = self.get_bloque_en_proceso()
+
+        if estado and estado.get("id") == block_id:
+            self.redis_client.delete(PROCESSING_BLOCK_KEY)
+
+    def marcar_reproceso_si_expirado(self, timeout_seconds):
+        estado = self.get_bloque_en_proceso()
+
+        if not estado or estado.get("status") != "PROCESSING":
+            return False
+
+        updated_at = estado.get("updated_at")
+        if updated_at is None:
+            return False
+
+        if time.time() - float(updated_at) < timeout_seconds:
+            return False
+
+        estado["status"] = "REPROCESS"
+        estado["reprocess"] = True
+        estado["reason"] = "WORKERS_TIMEOUT"
+        estado["updated_at"] = time.time()
+
+        self.redis_client.set(PROCESSING_BLOCK_KEY, json.dumps(estado))
+        return True
+

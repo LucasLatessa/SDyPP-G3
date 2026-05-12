@@ -74,14 +74,6 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
         str:  Mensaje con el resultado
     """
 
-    # Si el worker paso el tiempo maximo estipulado, disminuimos el prefijo para los bloques siguientes
-    if data["tiempo_proceso"] > WORKER_TIMEOUT:
-        disminuir_prefijo(redis_client)
-
-    # Aumenta el prefijo si de los 5 bloques anteriores y el actual fue inferior al promedio (5 min)
-    elif obtener_tiempo_promedio_ultimos_cinco(redis_client, data["tiempo_proceso"]):
-        aumentar_prefijo(redis_client)
-
     datos = f"{data['numero']}{data['base_string_chain']}{data['blockchain_content']}"
 
     hash_local = calcular_hash_v2(datos)
@@ -97,6 +89,14 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
         #print("El bloque esta duplicado. Termina la ejecucion!")
         logger.warning(f"Bloque duplicado ID={data['id']}. Bloque descartado")
         return False, "Bloque duplicado. Bloque descartado"
+
+    # Si el worker paso el tiempo maximo estipulado, disminuimos el prefijo para los bloques siguientes
+    if data["tiempo_proceso"] > WORKER_TIMEOUT:
+        disminuir_prefijo(redis_client)
+
+    # Aumenta el prefijo si de los 5 bloques anteriores y el actual fue inferior al promedio (5 min)
+    elif obtener_tiempo_promedio_ultimos_cinco(redis_client, data["tiempo_proceso"]):
+        aumentar_prefijo(redis_client)
 
     # Le calculo el hash
     #blockchain_data = f'{data["base_string_chain"]}{data["hash"]}'
@@ -127,5 +127,6 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
     logger.info(f"Bloque agregado correctamente ID={data['id']}")
 
     redis_client.publicar(data)
+    redis_client.limpiar_bloque_en_proceso(data["id"])
 
     return True, "Bloque agregado"

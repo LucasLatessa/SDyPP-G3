@@ -9,11 +9,13 @@ Este módulo se encarga de:
 
 import json
 import time
+import os
 from typing import List, Tuple, Dict, Any
 
 from Shared.messaging.rabbitmq import crear_conexion, crear_canal
+from Shared.storage.redis import RedisUtils
 from Shared.utils.logger import get_logger
-from Shared.config import EXCHANGE_NAME, QUEUE_BLOCKS, QUEUE_TASKS, CHUNK_SIZE
+from Shared.config import EXCHANGE_NAME, QUEUE_BLOCKS, QUEUE_TASKS, WORKER_TIMEOUT
 
 
 # ----------------------------------------------------------------------
@@ -27,35 +29,32 @@ logger = get_logger(__name__)
 # ----------------------------------------------------------------------
 
 
-def dividir_rango(max_random: int, channel, chunk_size: int) -> List[Tuple[int, int]]:
-    """
-    Divide el rango de trabajo total en múltiples subrangos (chunks).
-
-    Args:
-        max_random: Valor máximo del rango
-        chunk_size: Tamaño de cada chunk
-    Return
-        Lista de tuplas (inicio, fin)
-    """
-    rangos = []
-
-    #global canal
-    #print(canal)
+def contar_workers_activos(channel) -> int:
     canal = channel.queue_declare(queue=QUEUE_TASKS, passive=True)
-    consumidores_activos = canal.method.consumer_count or 1
-    logger.info(f"La cola tiene {consumidores_activos} consumidores activos.")
-    rango = max_random / consumidores_activos
-    rango = int(rango)
-    for i in range(1,consumidores_activos + 1):
-        start = rango * (i - 1)
-        end = rango * i
-        rangos.append((int(start), int(end)))
-    logger.info(f"Rangos {rangos}")
-    # for start in range(0, max_random, chunk_size):
-    #    end = min(start + chunk_size, max_random)
-    #    rangos.append((start, end))
+    return canal.method.consumer_count
 
+
+def dividir_rango(max_random: int, consumidores_activos: int) -> List[Tuple[int, int]]:
+    if consumidores_activos <= 0:
+        return []
+
+    total = max_random + 1
+    base = total // consumidores_activos
+    resto = total % consumidores_activos
+
+    rangos = []
+    start = 0
+
+    for i in range(consumidores_activos):
+        size = base + (1 if i < resto else 0)
+        end = start + size - 1
+        rangos.append((start, end))
+        start = end + 1
+
+    logger.info(f"Rangos {rangos}")
     return rangos
+
+
 
 
 def crear_tarea(bloque: Dict[str, Any], start: int, end: int) -> Dict[str, Any]:
@@ -95,21 +94,30 @@ def publicar_tarea(channel, tarea: Dict[str, Any]) -> None:
         body=json.dumps(tarea),
     )
 
-def procesar_bloque(channel, body: bytes) -> None:
-    """
-    Procesa un bloque recibido desde RabbitMQ.
-
-    Args:
-        channel: Canal de RabbitMQ
-        body: Mensaje recibido
-    """
-    bloque = json.loads(body)
-
+def procesar_bloque(channel, bloque: Dict[str, Any], redis_client) -> None:
     logger.info(f"Bloque recibido ID={bloque['id']}")
 
-    max_random = bloque["max_random"]
+    consumidores_activos = contar_workers_activos(channel)
+    logger.info(f"La cola tiene {consumidores_activos} consumidores activos.")
 
-    rangos = dividir_rango(max_random, channel, CHUNK_SIZE)
+    if consumidores_activos <= 0:
+        logger.warning("No hay workers activos. Intentando levantar worker CPU...")
+
+        levantar_worker_cpu_si_hace_falta()
+
+        consumidores_activos = esperar_workers(channel, timeout=20)
+
+        if consumidores_activos <= 0:
+            redis_client.guardar_bloque_en_proceso(bloque, [])
+            redis_client.marcar_reproceso_bloque("NO_WORKERS")
+            logger.warning("No se pudo levantar ningun worker. Bloque marcado para reproceso")
+            return
+
+
+    max_random = bloque["max_random"]
+    rangos = dividir_rango(max_random, consumidores_activos)
+
+    redis_client.guardar_bloque_en_proceso(bloque, rangos)
 
     logger.info(f"Generando {len(rangos)} tareas para bloque ID={bloque['id']}")
 
@@ -118,6 +126,7 @@ def procesar_bloque(channel, body: bytes) -> None:
         publicar_tarea(channel, tarea)
 
     logger.info(f"Tareas publicadas para bloque ID={bloque['id']}")
+
 
 def callback(channel, method, properties, body) -> None:
     """
@@ -143,30 +152,143 @@ def iniciar_pool_manager() -> None:
     """
     logger.info("Iniciando pool Manager...")
 
+    redis_client = RedisUtils()
+    
     connection = crear_conexion()
     channel = crear_canal(connection)
 
-    global canal
-    canal = channel.queue_declare(queue=QUEUE_BLOCKS, durable=True)
+    channel.queue_declare(queue=QUEUE_BLOCKS, durable=True)
     channel.queue_bind(
         exchange=EXCHANGE_NAME,
         queue=QUEUE_BLOCKS,
         routing_key="blocks"
     )
 
-    # Cola de tareas para workers
     channel.queue_declare(queue=QUEUE_TASKS, durable=True)
-
     channel.basic_qos(prefetch_count=1)
-
-    channel.basic_consume(
-        queue=QUEUE_BLOCKS,
-        on_message_callback=callback
-    )
 
     logger.info("pool Manager esperando bloques...")
 
-    channel.start_consuming()
+    while True:
+        try:
+            estado = redis_client.get_bloque_en_proceso()
+
+            if estado and estado.get("reprocess"):
+                bloque = estado["block"]
+                logger.info(f"Reprocesando bloque ID={bloque['id']}")
+                procesar_bloque(channel, bloque, redis_client)
+                time.sleep(2)
+                continue
+
+            if estado and estado.get("status") == "PROCESSING":
+                if redis_client.marcar_reproceso_si_expirado(WORKER_TIMEOUT):
+                    logger.warning(f"Bloque ID={estado['id']} expirado. Marcado para reproceso")
+
+                time.sleep(2)
+                continue
+
+            method, properties, body = channel.basic_get(
+                queue=QUEUE_BLOCKS,
+                auto_ack=False,
+            )
+
+            if method:
+                bloque = json.loads(body)
+                procesar_bloque(channel, bloque, redis_client)
+                channel.basic_ack(delivery_tag=method.delivery_tag)
+            else:
+                time.sleep(2)
+
+        except Exception as e:
+            logger.error(f"Error en pool Manager: {e}")
+            time.sleep(5)
+
+def obtener_red_actual(client):
+    network_env = os.getenv("DOCKER_NETWORK")
+    if network_env:
+        return network_env
+
+    container_id = os.getenv("HOSTNAME")
+    if not container_id:
+        return None
+
+    container = client.containers.get(container_id)
+    networks = container.attrs["NetworkSettings"]["Networks"]
+
+    for name in networks:
+        if name != "bridge":
+            return name
+
+    return None
+
+
+def levantar_worker_cpu_si_hace_falta() -> bool:
+    if os.getenv("AUTO_START_WORKER_CPU", "false").lower() != "true":
+        return False
+
+    try:
+        import docker
+
+        image = os.getenv("WORKER_CPU_IMAGE", "sdyp-worker-cpu:latest")
+        name = os.getenv("AUTO_WORKER_CPU_NAME", "worker_cpu_auto")
+
+        client = docker.from_env()
+
+        try:
+            container = client.containers.get(name)
+
+            if container.status != "running":
+                logger.warning("Worker CPU existe pero esta detenido. Iniciando...")
+                container.start()
+                return True
+
+            logger.info("Worker CPU automatico ya esta corriendo")
+            return True
+
+        except docker.errors.NotFound:
+            network_name = obtener_red_actual(client)
+
+            logger.warning("Levantando worker CPU automatico...")
+
+            kwargs = {
+                "image": image,
+                "name": name,
+                "detach": True,
+                "environment": {
+                    "RABBIT_HOST": "rabbitmq",
+                    "RABBIT_PORT": "5672",
+                    "RABBIT_USER": "grupo03",
+                    "RABBIT_PASS": "grupo03",
+                    "ENDPOINT_COORDINADOR": "http://coordinador:5000/tarea_worker",
+                    "COORDINADOR_URL": "http://coordinador:5000",
+                    "WORKER_ID": name,
+                },
+            }
+
+            if network_name:
+                kwargs["network"] = network_name
+
+            client.containers.run(**kwargs)
+            return True
+
+    except Exception as e:
+        logger.error(f"No se pudo levantar worker CPU automatico: {e}")
+        return False
+
+
+def esperar_workers(channel, timeout=20, intervalo=1) -> int:
+    deadline = time.time() + timeout
+
+    while time.time() < deadline:
+        consumidores = contar_workers_activos(channel)
+
+        if consumidores > 0:
+            return consumidores
+
+        time.sleep(intervalo)
+
+    return 0
+
 
 # ----------------------------------------------------------------------
 #                            MAIN

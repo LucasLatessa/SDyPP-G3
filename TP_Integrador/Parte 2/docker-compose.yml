@@ -50,6 +50,13 @@ services:
       - RABBIT_PORT=5672
       - RABBIT_USER=grupo03
       - RABBIT_PASS=grupo03
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - AUTO_START_WORKER_CPU=true
+      - WORKER_CPU_IMAGE=sdyp-worker-cpu:latest
+      - AUTO_WORKER_CPU_NAME=worker_cpu_auto
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
   
   frontend:
     build:

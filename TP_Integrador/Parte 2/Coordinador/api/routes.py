@@ -99,6 +99,20 @@ def registrar_rutas(app, channel, redis_client) -> None:
 
         logger.info(f"Bloque recibido ID={data.get('id')}")
 
+        if data.get("found") is False:
+            registrado = redis_client.registrar_tarea_sin_solucion(
+                block_id=data["id"],
+                start=data["start"],
+                end=data["end"],
+                worker_id=data.get("worker_id"),
+            )
+
+            if not registrado:
+                return jsonify({"mensaje": "La tarea no coincide con el bloque en proceso"}), 409
+
+            return jsonify({"mensaje": "Tarea registrada sin solucion"}), 200
+
+
         ok, mensaje = validar_guardar_bloque(data, redis_client)
 
         if ok:
