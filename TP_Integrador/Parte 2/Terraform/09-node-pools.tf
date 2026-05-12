@@ -7,7 +7,7 @@ resource "google_service_account" "kubernetes" {
 resource "google_container_node_pool" "infra" {
   name       = var.nombre_infra
   cluster    = google_container_cluster.primary.id
-  node_count = 0
+  node_count = 1
 
   management {
     auto_repair  = true
@@ -22,6 +22,9 @@ resource "google_container_node_pool" "infra" {
   node_config {
     preemptible  = false
     machine_type = var.tipo_maquina
+
+    disk_size_gb = 30
+    disk_type    = "pd-standard"
 
     labels = {
       role = "infra"
@@ -54,6 +57,8 @@ resource "google_container_node_pool" "app" {
   node_config {
     preemptible  = true
     machine_type = var.tipo_maquina
+    disk_size_gb = 30
+    disk_type    = "pd-standard"
 
     labels = {
       team = "app"

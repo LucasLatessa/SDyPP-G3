@@ -8,13 +8,18 @@ import pika
 import requests
 import logging
 from typing import Dict, Any
+from dotenv import load_dotenv
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
 # ----------------------------------------------------------------------
 
-url_tarea = os.getenv("ENDPOINT_COORDINADOR", "http://localhost:5000/tarea_worker")
-url = "http://localhost:5000"
+load_dotenv()
+
+url = os.getenv("ENDPOINT_COORDINADOR", "http://localhost:5000")
+
+url_tarea =  f"{url}/tarea_worker"
+
 
 # Configuración del servidor RabbitMQ
 RABBIT_HOST = os.getenv("RABBIT_HOST", "localhost")

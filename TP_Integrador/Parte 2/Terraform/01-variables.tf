@@ -15,12 +15,12 @@ variable "nombre_proyecto" {
 
 variable "tipo_maquina" {
   type    = string
-  default = "e2-small"
+  default = "e2-standard-2"
 }
 
 variable "zona" {
   type    = string
-  default = "us-east4-a"
+  default = "us-east4-b"
 }
 
 variable "region" {

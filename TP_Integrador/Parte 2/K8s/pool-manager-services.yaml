@@ -27,3 +27,7 @@ spec:
               value: grupo03
             - name: RABBIT_PASS
               value: grupo03
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"

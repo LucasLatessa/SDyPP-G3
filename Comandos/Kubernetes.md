@@ -112,3 +112,8 @@ kubectl scale deployment NOMBRE_DEL_DEPLOYMENT --replicas=3
 ```bash
 kubectl rollout restart deployment NOMBRE_DEL_DEPLOYMENT
 ```
+
+Certificados
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
+```
