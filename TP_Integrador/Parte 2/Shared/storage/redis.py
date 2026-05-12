@@ -1,14 +1,18 @@
 import redis
 import json
 import time
-
-from Shared.config import REDIS_HOST, REDIS_PORT, REDIS_LIST_KEY_NAME, DIFFICULT_PREFIX, PROCESSING_BLOCK_KEY 
-
+import os 
+from Shared.config import REDIS_HOST, REDIS_PORT, REDIS_LIST_KEY_NAME, DIFFICULT_PREFIX, PROCESSING_BLOCK_KEY, REDIS_PASSWORD
 
 class RedisUtils:
     # Conexion con redis cuando se cree la instancia
-    def __init__(self, host=REDIS_HOST, port=REDIS_PORT, db=0):
-        self.redis_client = redis.StrictRedis(host=host, port=port, db=0)
+    def __init__(self, host=REDIS_HOST, password=REDIS_PASSWORD, port=REDIS_PORT, db=0):
+        self.redis_client = redis.StrictRedis(
+            host=host, 
+            port=port, 
+            db=db, 
+            password=password,
+        )
 
     # Publicar el mensaje al inicio de la lista
     def publicar(self, mensaje, list_key=REDIS_LIST_KEY_NAME):
