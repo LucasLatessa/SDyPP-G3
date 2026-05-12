@@ -19,7 +19,6 @@ load_dotenv()
 url = os.getenv("ENDPOINT_COORDINADOR", "http://localhost:5000")
 url_tarea =  f"{url}/tarea_worker"
 
-
 # Configuración del servidor RabbitMQ
 RABBIT_HOST = os.getenv("RABBIT_HOST", "localhost")
 RABBIT_PORT = int(os.getenv("RABBIT_PORT", 5672))
