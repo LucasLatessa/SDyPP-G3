@@ -20,6 +20,9 @@ spec:
           name: redis
         - containerPort: 8001
           name: redis-interface
+        env:
+          - name: REDIS_ARGS
+            value: "--requirepass grupo03"
 ---
 apiVersion: v1
 kind: Service
