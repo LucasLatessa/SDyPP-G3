@@ -19,6 +19,7 @@ load_dotenv()
 ENDPOINT_COORDINADOR = os.getenv("ENDPOINT_COORDINADOR")
 COORDINADOR_URL = os.getenv("COORDINADOR_URL")
 
+
 if not ENDPOINT_COORDINADOR:
     base_url = (COORDINADOR_URL or "http://localhost:5000").rstrip("/")
     ENDPOINT_COORDINADOR = f"{base_url}/tarea_worker"
