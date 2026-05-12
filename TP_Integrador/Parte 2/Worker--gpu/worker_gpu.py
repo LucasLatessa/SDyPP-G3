@@ -79,6 +79,8 @@ def resolver_desafio(task: dict[str, Any]) -> dict[str, Any] | None:
     start = int(task["start"])
     end = int(task["end"])
 
+    worker_id = os.getenv("WORKER_ID", "worker-gpu")
+
     logger.info("Procesando bloque %s rango %s-%s", block_id, start, end)
 
     stop_event = threading.Event()
@@ -100,21 +102,36 @@ def resolver_desafio(task: dict[str, Any]) -> dict[str, Any] | None:
             stop_event=stop_event,
         )
 
+        tiempo_proceso = time.time() - tiempo_inicial
+
         if not resultado_raw:
             logger.info("GPU no encontro solucion en rango %s-%s", start, end)
-            return None
+            return {
+                "id": block_id,
+                "found": False,
+                "start": start,
+                "end": end,
+                "worker_id": worker_id,
+                "tiempo_proceso": tiempo_proceso,
+            }
 
         resultado_gpu = json.loads(resultado_raw)
 
         if not resultado_gpu.get("hash_md5_result"):
             logger.info("GPU no encontro hash valido en rango %s-%s", start, end)
-            return None
+            return {
+                "id": block_id,
+                "found": False,
+                "start": start,
+                "end": end,
+                "worker_id": worker_id,
+                "tiempo_proceso": tiempo_proceso,
+            }
 
         if stop_event.is_set():
             logger.info("Solucion encontrada, pero el bloque ya fue resuelto")
             return None
 
-        tiempo_proceso = time.time() - tiempo_inicial
         nonce = int(resultado_gpu["numero"])
         hash_result = resultado_gpu["hash_md5_result"]
 
@@ -128,6 +145,7 @@ def resolver_desafio(task: dict[str, Any]) -> dict[str, Any] | None:
 
         return {
             "id": block_id,
+            "found": True,
             "transaccion": task["transaccion"],
             "base_string_chain": base_string,
             "prefix": prefix,
@@ -135,6 +153,9 @@ def resolver_desafio(task: dict[str, Any]) -> dict[str, Any] | None:
             "numero": nonce,
             "hash": hash_result,
             "tiempo_proceso": tiempo_proceso,
+            "start": start,
+            "end": end,
+            "worker_id": worker_id,
         }
 
     finally:

@@ -44,6 +44,9 @@ class TipoTransaccion(Enum):
   PROPERTY = "PROPERTY"
   TX_NFT = "TX_NFT"
 
+# Clave para almacenar el bloque en procesamiento en Redis
+PROCESSING_BLOCK_KEY = "processing_block"  
+
 # Configuracion para el procesamiento de paquetes
 TAMANO_BLOQUE_PROCESAR = 10
 PROCESS_INTERVAL = 10  # Deberia ser cada 60 segundos
