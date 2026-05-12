@@ -80,10 +80,16 @@ def registrar_rutas(app, channel, redis_client) -> None:
           logger.info(f"Trnasaccion de tipo de PROPERTY, se agrega timestamp")
           datos["timestamp"] = time.time()
         
-        # Mando a la cola de Rabbit
-        channel.basic_publish(
-            exchange="", routing_key=QUEUE_NAME, body=json.dumps(datos)
-        )
+        try:
+            # Mando a la cola de Rabbit
+            channel.basic_publish(
+                exchange="", routing_key=QUEUE_NAME, body=json.dumps(datos)
+            )
+        except Exception as e:
+            # si falla el encolado, liberamos el lock
+            if datos["type"] == TipoTransaccion.PROPERTY.value:
+                redis_client.redis_client.delete(f"lock:nft:{datos['data']['nft']}")
+            return jsonify({"error": "Error al encolar"}), 500
 
         logger.info("Transaccion recibida y encolada en Rabbit")
         return "Transaccion recibida y encolada en Rabbit", 200

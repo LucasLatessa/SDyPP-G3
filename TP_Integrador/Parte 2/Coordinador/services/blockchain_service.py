@@ -9,7 +9,7 @@ import time
 from Shared.utils.hash import calcular_hash_v2
 from Shared.utils.logger import get_logger
 from Shared.config import WORKER_TIMEOUT, BLOQUES_MINIMOS_DISMINUIR_PREFIJO, MINIMO_PROMEDIO_DISMINUIR_PREFIJO
-
+from Shared.config import (TipoTransaccion)
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
 # ----------------------------------------------------------------------
@@ -128,5 +128,16 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
 
     redis_client.publicar(data)
     redis_client.limpiar_bloque_en_proceso(data["id"])
+
+    # LIBERACION DE LOCKS
+    transacciones = data.get("transaccion", [])
+    for tx in transacciones:
+        # Si la transaccion era de tipo PROPERTY
+        if tx.get("type") in [TipoTransaccion.PROPERTY.value, TipoTransaccion.TX_NFT.value]:
+            nft_id = tx["data"].get("nft")
+            lock_key = f"lock:nft:{nft_id}"
+            # borramos el lock en Redis para que el NFT ya no figure PROCESANDO
+            redis_client.redis_client.delete(lock_key)
+            logger.info(f"Lock liberado para NFT: {nft_id}")
 
     return True, "Bloque agregado"
