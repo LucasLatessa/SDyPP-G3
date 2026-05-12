@@ -35,6 +35,7 @@ CHUNK_SIZE = 100000  # Tamaño de cada rango de trabajo
 REDIS_HOST = os.getenv("REDIS_HOST", 'localhost')
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_LIST_KEY_NAME = 'blockchain'
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "grupo03")
 
 # Tipos de transacciones
 from enum import Enum
@@ -63,7 +64,7 @@ MAX_RANDOM = 4294967295
 DIFFICULT_PREFIX = "000000" 
 
 # cadena de 4 caracteres para minimizar el overhead y el almacenamiento en base de datos
-STRING_CHAIN = "sdyp" 
+STRING_CHAIN = "sdypp" 
 
 # PARAMETROS DE CONTROL 
 # tiempo maximo de espera para la resolucion de un desafio 
