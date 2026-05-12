@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pool-manager
+  labels:
+    app: pool-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pool-manager
+  template:
+    metadata:
+      labels:
+        app: pool-manager
+    spec:
+      containers:
+        - name: pool-manager
+          image: josuegaticaodato/pool_manager:latest
+          imagePullPolicy: Always
+          env:
+            - name: RABBIT_HOST
+              value: rabbitmq
+            - name: RABBIT_PORT
+              value: "5672"
+            - name: RABBIT_USER
+              value: grupo03
+            - name: RABBIT_PASS
+              value: grupo03

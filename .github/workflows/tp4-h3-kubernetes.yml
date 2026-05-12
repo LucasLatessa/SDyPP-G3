@@ -41,7 +41,7 @@ jobs:
     #                 tags: ${{ secrets.DOCKER_HUB_USERNAME }}/webserver:latest
     infra:
         name: Build K8S infra
-        if: startsWith(github.event.head_commit.message, '(go)')
+        if: startsWith(github.event.head_commit.message, '(a)')
         runs-on: ubuntu-latest
         steps:
             - name: Ckeckout
@@ -72,7 +72,7 @@ jobs:
     deploy-apps:
         name: Despliegue de servicios y aplicaciones
         needs: infra
-        if: startsWith(github.event.head_commit.message, '(go)')
+        if: startsWith(github.event.head_commit.message, '(a)')
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
@@ -108,7 +108,7 @@ jobs:
     
     infra-down:
         name: Eliminar K8s Infra
-        if: startsWith(github.event.head_commit.message, '(down)')
+        if: startsWith(github.event.head_commit.message, '(a)')
         runs-on: ubuntu-latest
         steps:
             - name: Ckeckout
@@ -133,11 +133,3 @@ jobs:
                 terraform plan
 
                 terraform destroy -lock=false --auto-approve
-
-
-
-                
-
-            
-            
-              

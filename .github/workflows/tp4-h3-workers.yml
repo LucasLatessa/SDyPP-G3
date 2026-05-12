@@ -8,7 +8,7 @@ on:
 jobs:
     infra:
         name: Build Workers infra
-        if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(worker)')
+        if: startsWith(github.event.head_commit.message, '(a)') || startsWith(github.event.head_commit.message, '(a)')
         runs-on: ubuntu-latest
         steps:
             - name: Ckeckout
@@ -85,7 +85,7 @@ jobs:
 
     infra-down:
       name: Eliminar workers Infra
-      if: startsWith(github.event.head_commit.message, '(down)') || startsWith(github.event.head_commit.message, '(worker-down)')
+      if: startsWith(github.event.head_commit.message, '(a)') || startsWith(github.event.head_commit.message, '(a)')
       runs-on: ubuntu-latest
       steps:
         - name: Checkout

@@ -65,7 +65,7 @@ def registrar_rutas(app, channel, redis_client) -> None:
 
         # ----------- VALIDACIONES ------------------
            
-        ok, message = validar_transaccion(datos)
+        ok, message = validar_transaccion(datos, redis_client)
           
         if not ok:
           logger.error(message)
