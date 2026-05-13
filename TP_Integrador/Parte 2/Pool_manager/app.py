@@ -225,8 +225,8 @@ def obtener_red_actual(client):
 
 
 def levantar_worker_cpu_si_hace_falta() -> bool:
-    if os.getenv("AUTO_START_WORKER_CPU", "false").lower() != "true":
-        return False
+    # if os.getenv("AUTO_START_WORKER_CPU", "false").lower() != "true":
+    #     return False
     
     image = os.getenv("WORKER_CPU_IMAGE", "josuegaticaodato/sdyp-worker-cpu:latest")
     name = os.getenv("AUTO_WORKER_CPU_NAME", "worker-cpu-auto")
@@ -235,7 +235,7 @@ def levantar_worker_cpu_si_hace_falta() -> bool:
         # Credenciales del Pod
         config.load_incluster_config()
         v1 = client.CoreV1Api()
-        namespace = "sdpp2026"
+        namespace = "default"
 
         # Verificar si el pod ya existe
         try:
