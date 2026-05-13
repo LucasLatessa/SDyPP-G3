@@ -38,8 +38,8 @@ def aumentar_prefijo(redis_client):
     redis_client.set_prefijo(prefijo)
     logger.info(f"Prefijo AUMENTADO actualizado: {prefijo}")
 
-def obtener_tiempo_promedio_ultimos_cinco(redis_client, tiempo_bloque_resuelto_actual): 
-    bloques = redis_client.get_ultimos_mensajes(count=5)
+def obtener_tiempo_promedio_ultimos(redis_client, tiempo_bloque_resuelto_actual): 
+    bloques = redis_client.get_ultimos_mensajes(count=BLOQUES_MINIMOS_DISMINUIR_PREFIJO)
 
     if len(bloques) < BLOQUES_MINIMOS_DISMINUIR_PREFIJO:
       return False
@@ -95,7 +95,7 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
         disminuir_prefijo(redis_client)
 
     # Aumenta el prefijo si de los 5 bloques anteriores y el actual fue inferior al promedio (5 min)
-    elif obtener_tiempo_promedio_ultimos_cinco(redis_client, data["tiempo_proceso"]):
+    elif obtener_tiempo_promedio_ultimos(redis_client, data["tiempo_proceso"]):
         aumentar_prefijo(redis_client)
 
     # Le calculo el hash

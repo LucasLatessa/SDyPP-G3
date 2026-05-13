@@ -5,12 +5,10 @@ services:
     restart: always
     gpus: all
     environment:
-      RABBIT_HOST: host.docker.internal
+      RABBIT_HOST: 34.150.250.236
       RABBIT_PORT: 5672
       RABBIT_USER: grupo03
       RABBIT_PASS: grupo03
-      ENDPOINT_COORDINADOR: http://host.docker.internal:5000/tarea_worker
-      COORDINADOR_URL: http://host.docker.internal:5000
-      GPU_BATCH_SIZE: 50000000
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      ENDPOINT_COORDINADOR: https://unlucoin.info/api/tarea_worker
+      COORDINADOR_URL: https://unlucoin.info/api
+      GPU_BATCH_SIZE: 10000000
