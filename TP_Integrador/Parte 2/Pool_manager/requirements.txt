@@ -1,4 +1,4 @@
 Flask
 pika
 redis
-docker==7.1.0
+kubernetes

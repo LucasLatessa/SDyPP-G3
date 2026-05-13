@@ -1,3 +1,30 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pool-manager-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pool-manager-role
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pool-manager-rolebinding
+subjects:
+- kind: ServiceAccount
+  name: pool-manager-sa
+roleRef:
+  kind: Role
+  name: pool-manager-role
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,6 +41,7 @@ spec:
       labels:
         app: pool-manager
     spec:
+      serviceAccountName: pool-manager-sa
       containers:
         - name: pool-manager
           image: josuegaticaodato/pool_manager:latest

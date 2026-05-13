@@ -17,6 +17,8 @@ from Shared.storage.redis import RedisUtils
 from Shared.utils.logger import get_logger
 from Shared.config import EXCHANGE_NAME, QUEUE_BLOCKS, QUEUE_TASKS, WORKER_TIMEOUT
 
+from kubernetes import client, config
+from kubernetes.client.rest import ApiException
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -225,56 +227,66 @@ def obtener_red_actual(client):
 def levantar_worker_cpu_si_hace_falta() -> bool:
     if os.getenv("AUTO_START_WORKER_CPU", "false").lower() != "true":
         return False
+    
+    image = os.getenv("WORKER_CPU_IMAGE", "josuegaticaodato/sdyp-worker-cpu:latest")
+    name = os.getenv("AUTO_WORKER_CPU_NAME", "worker-cpu-auto")
 
     try:
-        import docker
+        # Credenciales del Pod
+        config.load_incluster_config()
+        v1 = client.CoreV1Api()
+        namespace = "sdpp2026"
 
-        image = os.getenv("WORKER_CPU_IMAGE", "sdyp-worker-cpu:latest")
-        name = os.getenv("AUTO_WORKER_CPU_NAME", "worker_cpu_auto")
-
-        client = docker.from_env()
-
+        # Verificar si el pod ya existe
         try:
-            container = client.containers.get(name)
-
-            if container.status != "running":
-                logger.warning("Worker CPU existe pero esta detenido. Iniciando...")
-                container.start()
+            pod = v1.read_namespaced_pod(name=name, namespace=namespace)
+            if pod.status.phase == "Running":
+                logger.info("Worker CPU automatico ya esta corriendo en K8s")
                 return True
+            else:
+                logger.warning(f"Worker CPU existe pero está en estado: {pod.status.phase}")
+                return True
+        
+        except ApiException as e:
+            if e.status != 404:
+                raise e
+      
+        logger.warning("Levantando worker CPU automatico en Kubernetes...")
 
-            logger.info("Worker CPU automatico ya esta corriendo")
-            return True
+        # Definimos las variables de entorno
+        env_vars = [
+            client.V1EnvVar(name="RABBIT_HOST", value="rabbitmq"),
+            client.V1EnvVar(name="RABBIT_PORT", value="5672"),
+            client.V1EnvVar(name="RABBIT_USER", value="grupo03"),
+            client.V1EnvVar(name="RABBIT_PASS", value="grupo03"),
+            client.V1EnvVar(name="ENDPOINT_COORDINADOR", value="http://coordinador:5000/tarea_worker"),
+            client.V1EnvVar(name="COORDINADOR_URL", value="http://coordinador:5000"),
+            client.V1EnvVar(name="WORKER_ID", value=name),
+        ]
 
-        except docker.errors.NotFound:
-            network_name = obtener_red_actual(client)
+        # Definimos el contenedor
+        container = client.V1Container(
+            name="worker",
+            image=image,
+            image_pull_policy="Always", 
+            env=env_vars
+        )
 
-            logger.warning("Levantando worker CPU automatico...")
-
-            kwargs = {
-                "image": image,
-                "name": name,
-                "detach": True,
-                "environment": {
-                    "RABBIT_HOST": "rabbitmq",
-                    "RABBIT_PORT": "5672",
-                    "RABBIT_USER": "grupo03",
-                    "RABBIT_PASS": "grupo03",
-                    "ENDPOINT_COORDINADOR": "http://coordinador:5000/tarea_worker",
-                    "COORDINADOR_URL": "http://coordinador:5000",
-                    "WORKER_ID": name,
-                },
-            }
-
-            if network_name:
-                kwargs["network"] = network_name
-
-            client.containers.run(**kwargs)
-            return True
+        # Definimos el Pod
+        pod_spec = client.V1PodSpec(restart_policy="Never", containers=[container])
+        pod_manifest = client.V1Pod(
+            metadata=client.V1ObjectMeta(name=name, labels={"app": "worker-cpu"}),
+            spec=pod_spec
+        )
+      
+        # K8s que cree el Pod
+        v1.create_namespaced_pod(namespace=namespace, body=pod_manifest)
+        logger.info("Orden de creación enviada a Kubernetes. El clúster hará el pull automáticamente.")
+        return True
 
     except Exception as e:
-        logger.error(f"No se pudo levantar worker CPU automatico: {e}")
+        logger.error(f"No se pudo levantar worker CPU en Kubernetes: {e}")
         return False
-
 
 def esperar_workers(channel, timeout=20, intervalo=1) -> int:
     deadline = time.time() + timeout
