@@ -5,6 +5,9 @@ id_rsa
 id_rsa.pub
 id_ed25519
 unlucoin_priv
-.env
 unlucoin
 unlucoin2
+.env
+.env.*
+*.pem
+*.key

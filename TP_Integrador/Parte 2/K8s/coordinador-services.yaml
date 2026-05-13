@@ -26,13 +26,24 @@ spec:
             - name: RABBIT_PORT
               value: "5672"
             - name: RABBIT_USER
-              value: grupo03
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: RABBIT_USER
             - name: RABBIT_PASS
-              value: grupo03
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: RABBIT_PASS
             - name: REDIS_HOST
               value: redis
             - name: REDIS_PORT
               value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_PASSWORD
 
 ---
 apiVersion: v1

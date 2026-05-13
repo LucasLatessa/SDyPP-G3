@@ -122,6 +122,10 @@ jobs:
 
             - name: Deploy y Services app
               working-directory: './TP_Integrador/Parte 2/K8s'
+              env:
+                RABBIT_USER: ${{ secrets.RABBIT_USER }}
+                RABBIT_PASS: ${{ secrets.RABBIT_PASS }}
+                REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
               run: |
                 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
                 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
@@ -134,6 +138,19 @@ jobs:
                 kubectl wait --namespace cert-manager --for=condition=available deployment/cert-manager-webhook --timeout=180s
 
                 kubectl apply -f certificate.yaml
+
+                : "${RABBIT_USER:?Missing GitHub secret RABBIT_USER}"
+                : "${RABBIT_PASS:?Missing GitHub secret RABBIT_PASS}"
+                : "${REDIS_PASSWORD:?Missing GitHub secret REDIS_PASSWORD}"
+
+                kubectl create secret generic app-secrets \
+                  --from-literal=RABBITMQ_DEFAULT_USER="${RABBIT_USER}" \
+                  --from-literal=RABBITMQ_DEFAULT_PASS="${RABBIT_PASS}" \
+                  --from-literal=RABBIT_USER="${RABBIT_USER}" \
+                  --from-literal=RABBIT_PASS="${RABBIT_PASS}" \
+                  --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
+                  --dry-run=client -o yaml | kubectl apply -f -
+
                 kubectl apply -f rabbit-services.yaml
                 kubectl apply -f redis-services.yaml
                 kubectl apply -f coordinador-services.yaml

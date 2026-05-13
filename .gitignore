@@ -9,3 +9,6 @@ id_rsa*
 credentials.json
 null.json
 *.terraform.lock.hcl
+
+# Kubernetes secrets locales
+TP_Integrador/Parte 2/K8s/secrets.yaml

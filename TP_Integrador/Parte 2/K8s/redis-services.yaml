@@ -21,8 +21,13 @@ spec:
         - containerPort: 8001
           name: redis-interface
         env:
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: REDIS_PASSWORD
           - name: REDIS_ARGS
-            value: "--requirepass grupo03"
+            value: "--requirepass $(REDIS_PASSWORD)"
 ---
 apiVersion: v1
 kind: Service
