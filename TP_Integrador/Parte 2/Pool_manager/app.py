@@ -257,8 +257,24 @@ def levantar_worker_cpu_si_hace_falta() -> bool:
         env_vars = [
             client.V1EnvVar(name="RABBIT_HOST", value="rabbitmq"),
             client.V1EnvVar(name="RABBIT_PORT", value="5672"),
-            client.V1EnvVar(name="RABBIT_USER", value="grupo03"),
-            client.V1EnvVar(name="RABBIT_PASS", value="grupo03"),
+            client.V1EnvVar(
+                name="RABBIT_USER",
+                value_from=client.V1EnvVarSource(
+                    secret_key_ref=client.V1SecretKeySelector(
+                        name="app-secrets",
+                        key="RABBIT_USER"
+                    )
+                )
+            ),
+            client.V1EnvVar(
+                name="RABBIT_PASS",
+                value_from=client.V1EnvVarSource(
+                    secret_key_ref=client.V1SecretKeySelector(
+                        name="app-secrets",
+                        key="RABBIT_PASS"
+                    )
+                )
+            ),
             client.V1EnvVar(name="ENDPOINT_COORDINADOR", value="http://coordinador:5000/tarea_worker"),
             client.V1EnvVar(name="COORDINADOR_URL", value="http://coordinador:5000"),
             client.V1EnvVar(name="WORKER_ID", value=name),
