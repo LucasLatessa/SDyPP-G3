@@ -298,6 +298,7 @@ def levantar_worker_cpu_si_hace_falta() -> bool:
         # K8s que cree el Pod
         v1.create_namespaced_pod(namespace=namespace, body=pod_manifest)
         logger.info("Orden de creación enviada a Kubernetes. El clúster hará el pull automáticamente.")
+        
         return True
 
     except Exception as e:
