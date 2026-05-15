@@ -156,54 +156,52 @@ def iniciar_pool_manager() -> None:
 
     redis_client = RedisUtils()
     
+    connection = crear_conexion()
+    channel = crear_canal(connection)
+
+    channel.queue_declare(queue=QUEUE_BLOCKS, durable=True)
+    channel.queue_bind(
+        exchange=EXCHANGE_NAME,
+        queue=QUEUE_BLOCKS,
+        routing_key="blocks"
+    )
+
+    channel.queue_declare(queue=QUEUE_TASKS, durable=True)
+    channel.basic_qos(prefetch_count=1)
+
+    logger.info("pool Manager esperando bloques...")
+
     while True:
         try:
-          connection = crear_conexion()
-          channel = crear_canal(connection)
+            estado = redis_client.get_bloque_en_proceso()
 
-          channel.queue_declare(queue=QUEUE_BLOCKS, durable=True)
-          channel.queue_bind(
-              exchange=EXCHANGE_NAME,
-              queue=QUEUE_BLOCKS,
-              routing_key="blocks"
-          )
+            if estado and estado.get("reprocess"):
+                bloque = estado["block"]
+                logger.info(f"Reprocesando bloque ID={bloque['id']}")
+                procesar_bloque(channel, bloque, redis_client)
+                time.sleep(2)
+                continue
 
-          channel.queue_declare(queue=QUEUE_TASKS, durable=True)
-          channel.basic_qos(prefetch_count=1)
+            if estado and estado.get("status") == "PROCESSING":
+                if redis_client.marcar_reproceso_si_expirado(WORKER_TIMEOUT):
+                    logger.warning(f"Bloque ID={estado['id']} expirado. Marcado para reproceso")
 
-          logger.info("pool Manager esperando bloques...")
+                time.sleep(2)
+                continue
 
-          estado = redis_client.get_bloque_en_proceso()
+            method, properties, body = channel.basic_get(
+                queue=QUEUE_BLOCKS,
+                auto_ack=False,
+            )
 
-          if estado and estado.get("reprocess"):
-              bloque = estado["block"]
-              logger.info(f"Reprocesando bloque ID={bloque['id']}")
-              procesar_bloque(channel, bloque, redis_client)
-              time.sleep(2)
-              continue
-
-          if estado and estado.get("status") == "PROCESSING":
-              if redis_client.marcar_reproceso_si_expirado(WORKER_TIMEOUT):
-                  logger.warning(f"Bloque ID={estado['id']} expirado. Marcado para reproceso")
-
-              time.sleep(2)
-              continue
-
-          method, properties, body = channel.basic_get(
-              queue=QUEUE_BLOCKS,
-              auto_ack=False,
-          )
-
-          if method:
-              bloque = json.loads(body)
-              procesar_bloque(channel, bloque, redis_client)
-              channel.basic_ack(delivery_tag=method.delivery_tag)
-          else:
-              time.sleep(2)
-
+            if method:
+                bloque = json.loads(body)
+                procesar_bloque(channel, bloque, redis_client)
+                channel.basic_ack(delivery_tag=method.delivery_tag)
+            else:
+                time.sleep(2)
         except Exception as e:
-            logger.error(f"Error en pool Manager: {e}")
-            time.sleep(5)
+          logger.error(f"Error en pool Manager: {e}")
 
 def obtener_red_actual(client):
     network_env = os.getenv("DOCKER_NETWORK")
