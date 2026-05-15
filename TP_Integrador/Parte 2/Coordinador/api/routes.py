@@ -135,7 +135,9 @@ def registrar_rutas(app, channel, redis_client) -> None:
        """
         
        if not redis_client.exists_id(block_id):
-          print(block_id)
+          #print(block_id)
+          redis_client.actualizar_updated_at(block_id)
+          logger.info("Bloque no resuelto. Actualizando updated_at")
           return jsonify({"error": "Bloque no encontrado"}), 404
        
        return jsonify({

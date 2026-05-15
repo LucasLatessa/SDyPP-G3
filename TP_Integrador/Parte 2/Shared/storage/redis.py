@@ -188,4 +188,17 @@ class RedisUtils:
 
         self.redis_client.set(PROCESSING_BLOCK_KEY, json.dumps(estado))
         return True
+    
+    def actualizar_updated_at(self,block_id):
+        estado = self.get_bloque_en_proceso()
+
+        if (not estado) or (estado.get("id") != block_id):
+          return False
+        
+        if estado.get("status") != "PROCESSING":
+          return False
+        
+        estado["updated_at"] = time.time()
+        self.redis_client.set(PROCESSING_BLOCK_KEY, json.dumps(estado))
+        return True
 
