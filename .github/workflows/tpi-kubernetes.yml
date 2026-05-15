@@ -53,6 +53,9 @@ jobs:
                   file: './TP_Integrador/Parte 2/Worker-cpu/Dockerfile'
                   push: true
                   tags: ${{ secrets.DOCKER_HUB_USERNAME }}/sdyp-worker-cpu:latest
+                  build-args: |
+                    RABBIT_USER=${{ secrets.RABBIT_USER }}
+                    RABBIT_PASS=${{ secrets.RABBIT_PASS }}
 
     infra:
         name: Build K8S infra

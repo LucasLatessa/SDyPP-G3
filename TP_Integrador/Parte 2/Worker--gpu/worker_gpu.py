@@ -163,6 +163,7 @@ def resolver_desafio(task: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def callback(ch, method, properties, body: bytes) -> None:
+    ch.basic_ack(delivery_tag=method.delivery_tag)
     try:
         task = json.loads(body)
         logger.info("Nueva tarea recibida")
@@ -172,11 +173,9 @@ def callback(ch, method, properties, body: bytes) -> None:
         if resultado:
             enviar_resultado(resultado)
 
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-
     except Exception as e:
         logger.error("Error procesando tarea: %s", e)
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        #ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
 
 def iniciar_worker() -> None:

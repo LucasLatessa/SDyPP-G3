@@ -199,7 +199,9 @@ def callback(
         method: Información de entrega.
         properties: Propiedades del mensaje.
         body (bytes): Mensaje recibido.
-    """
+    """  
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+
     try:
         task = json.loads(body)
 
@@ -210,11 +212,9 @@ def callback(
         if resultado:
             enviar_resultado(resultado)
 
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-
     except Exception as e:
         logger.error(f"Error procesando tarea: {e}")
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        #ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
 
 def iniciar_worker() -> None:
