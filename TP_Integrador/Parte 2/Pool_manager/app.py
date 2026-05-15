@@ -322,3 +322,4 @@ def esperar_workers(channel, timeout=20, intervalo=1) -> int:
 
 if __name__ == "__main__":
     iniciar_pool_manager()
+    
