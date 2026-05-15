@@ -202,3 +202,4 @@ class RedisUtils:
         self.redis_client.set(PROCESSING_BLOCK_KEY, json.dumps(estado))
         return True
 
+ 

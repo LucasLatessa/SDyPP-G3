@@ -306,17 +306,16 @@ def levantar_worker_cpu_si_hace_falta() -> bool:
         return False
 
 def esperar_workers(channel, timeout=20, intervalo=1) -> int:
-    deadline = time.time() + timeout
+  while True:
+    # Cada 20 seg, preguntar
+    consumidores = contar_workers_activos(channel)
 
-    while time.time() < deadline:
-        consumidores = contar_workers_activos(channel)
+    if consumidores > 0:
+        logger.info(f"¡Worker detectado! Cantidad de consumidores: {consumidores}")
+        return consumidores
 
-        if consumidores > 0:
-            return consumidores
-
-        time.sleep(intervalo)
-
-    return 0
+    #logger.info("Aún no hay workers activos. Reintentando...")
+    time.sleep(intervalo)
 
 
 # ----------------------------------------------------------------------
