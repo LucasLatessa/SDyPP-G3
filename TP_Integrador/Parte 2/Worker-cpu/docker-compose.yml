@@ -1,18 +1,19 @@
+services:
   worker_cpu:
     image: sdyp-worker-cpu:latest
     build:
       context: ..
       dockerfile: Worker-cpu/Dockerfile
-    profiles:
-      - workers
-    depends_on:
-      - rabbitmq
-      - coordinador
+      args:
+        RABBIT_USER: ${RABBIT_USER:-sdypp}
+        RABBIT_PASS: ${RABBIT_PASS:-sdypp}
+    container_name: sdyp-worker-cpu
+    restart: unless-stopped
     environment:
-      - RABBIT_HOST=rabbitmq
-      - RABBIT_PORT=5672
-      - RABBIT_USER=grupo03
-      - RABBIT_PASS=grupo03
-      - ENDPOINT_COORDINADOR=http://coordinador:5000/tarea_worker
-      - COORDINADOR_URL=http://coordinador:5000
-      - WORKER_ID=worker-cpu-auto
+      RABBIT_HOST: ${RABBIT_HOST:-34.150.250.236}
+      RABBIT_PORT: ${RABBIT_PORT:-5672}
+      RABBIT_USER: ${RABBIT_USER:-sdypp}
+      RABBIT_PASS: ${RABBIT_PASS:-sdypp}
+      ENDPOINT_COORDINADOR: ${ENDPOINT_COORDINADOR:-http://coordinador:5000/tarea_worker}
+      COORDINADOR_URL: ${COORDINADOR_URL:-http://coordinador:5000}
+      WORKER_ID: ${WORKER_ID:-worker-cpu-auto}
