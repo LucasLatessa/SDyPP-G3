@@ -28,6 +28,7 @@ variable "region" {
   default = "us-east4"
 }
 
+
 variable "imagen" {
   type    = string
   default = "ubuntu-os-cloud/ubuntu-2004-lts"
