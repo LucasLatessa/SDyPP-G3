@@ -56,7 +56,7 @@ logger.info("Thread de procesamiento iniciado")
 
 if __name__ == "__main__":
     logger.info("Servidor Flask iniciado")
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=False)
 
 # if __name__ == "__main__":
 #     try:

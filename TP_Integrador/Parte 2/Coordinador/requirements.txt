@@ -1,4 +1,5 @@
 Flask
+gunicorn
 pika
 redis
 flask-cors
