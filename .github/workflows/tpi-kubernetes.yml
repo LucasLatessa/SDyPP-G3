@@ -86,7 +86,7 @@ jobs:
         run: |
           terraform init --reconfigure
           terraform validate
-          terraform plan -lock=false
+          terraform plan -lock=false 
           terraform apply -lock=false --auto-approve
 
   deploy-apps:
