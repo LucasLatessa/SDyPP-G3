@@ -10,7 +10,7 @@ variable "startup_worker" {
 
 variable "nombre_proyecto" {
   type    = string
-  default = "sdypp-2024"
+  default = "project-c0ccded1-22c1-4a9e-85f"
 }
 
 variable "tipo_maquina" {
