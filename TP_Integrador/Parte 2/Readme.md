@@ -23,22 +23,88 @@ Manejar transferencias entre usuarios de forma segura y asegurando que el conten
 
 ## Levantar en local
 
-1. Levantar docker-compose completo. Ir a la carpeta de Parte 2.
+1. Ubicarse en la carpeta de Parte 2.
 
-```
-docker-compose up
+```powershell
+cd "TP_Integrador\Parte 2"
 ```
 
-2. Levantar el worker (CPU). Desde Parte 2/Worker-cpu
+2. Construir la imagen del worker CPU. El pool manager usa Kubernetes en producción, por lo que en local el worker se inicia manualmente.
 
+```powershell
+docker build `
+	--file Worker-cpu/Dockerfile `
+	--build-arg RABBIT_USER=grupo03 `
+	--build-arg RABBIT_PASS=grupo03 `
+	--tag sdyp-worker-cpu:latest `
+	.
 ```
+
+3. Levantar Redis, RabbitMQ, el coordinador, el pool manager y el frontend:
+
+```powershell
+docker compose -p tp-integrador up --build -d
+```
+
+4. Levantar el worker CPU en la misma red Docker:
+
+```powershell
+docker run -d `
+	--name worker-cpu-local `
+	--network tp-integrador_default `
+	-e RABBIT_HOST=rabbitmq `
+	-e RABBIT_PORT=5672 `
+	-e RABBIT_USER=grupo03 `
+	-e RABBIT_PASS=grupo03 `
+	-e ENDPOINT_COORDINADOR=http://coordinador:5000/tarea_worker `
+	-e COORDINADOR_URL=http://coordinador:5000 `
+	-e WORKER_ID=worker-cpu-local `
+	sdyp-worker-cpu:latest
+```
+
+Servicios disponibles:
+
+| Servicio            | URL                    |
+| ------------------- | ---------------------- |
+| Frontend            | http://localhost:8080  |
+| API del coordinador | http://localhost:5000  |
+| RabbitMQ Management | http://localhost:15672 |
+| Redis Insight       | http://localhost:8001  |
+
+Credenciales locales de RabbitMQ:
+
+```text
+Usuario: grupo03
+Password: grupo03
+```
+
+Verificar el coordinador:
+
+```powershell
+Invoke-RestMethod http://localhost:5000/status
+```
+
+Ver logs:
+
+```powershell
+docker compose -p tp-integrador logs -f coordinador
+docker compose -p tp-integrador logs -f pool_manager
+docker logs -f worker-cpu-local
+```
+
+Para detener el entorno:
+
+```powershell
+docker rm -f worker-cpu-local
+docker compose -p tp-integrador down
+```
+
+### Alternativa: worker CPU con Python
+
+También se puede ejecutar el worker desde el host. Desde `Parte 2/Worker-cpu`, instalar `pika`, `requests` y `python-dotenv`, configurar `RABBIT_HOST=localhost`, `RABBIT_USER=grupo03`, `RABBIT_PASS=grupo03` y `COORDINADOR_URL=http://localhost:5000`, y ejecutar:
+
+```powershell
 python worker_cpu.py
-```
-
-2. Levantar el worker (GPU).
-
-```
-python worker_gpu.py
 ```
 
 ## TEST
