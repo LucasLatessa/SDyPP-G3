@@ -3,7 +3,7 @@ terraform {
 
   # Guardar el estado en la nube
   backend "gcs" {
-    bucket  = "sdypp2026-terraform-state-g3" 
+    bucket  = "sdpp2026-terraform-state-g3"
     prefix  = "terraform/state"              # La carpeta dentro del bucket
   }
 

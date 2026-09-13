@@ -1,205 +1,208 @@
 name: K8s actions github
 
 on:
-    push:
-        branches: ['main']
-        paths: ['TP_Integrador/Parte 2/**']
+  push:
+    branches: ["main"]
+    paths: ["TP_Integrador/Parte 2/**"]
 
 jobs:
-    build-images:
-        name: Build y Push de imagenes Docker (Coordinador, Pool Manager, Frontend, Worker CPU)
-        if: startsWith(github.event.head_commit.message, '(go)')
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+  build-images:
+    name: Build y Push de imagenes Docker (Coordinador, Pool Manager, Frontend, Worker CPU)
+    if: startsWith(github.event.head_commit.message, '(go)')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Login en Docker Hub
-              uses: docker/login-action@v3
-              with:
-                  username: ${{ secrets.DOCKER_HUB_USERNAME }}
-                  password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Login en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-            - name: Build-push coordinador
-              uses: docker/build-push-action@v5
-              with:
-                  context: './TP_Integrador/Parte 2'
-                  file: './TP_Integrador/Parte 2/Dockerfile.coordinador'
-                  push: true
-                  tags: ${{ secrets.DOCKER_HUB_USERNAME }}/coordinador:latest
+      - name: Build-push coordinador
+        uses: docker/build-push-action@v5
+        with:
+          context: "./TP_Integrador/Parte 2"
+          file: "./TP_Integrador/Parte 2/Dockerfile.coordinador"
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/coordinador:latest
 
-            - name: Build-push pool manager
-              uses: docker/build-push-action@v5
-              with:
-                  context: './TP_Integrador/Parte 2'
-                  file: './TP_Integrador/Parte 2/Dockerfile.pool_manager'
-                  push: true
-                  tags: ${{ secrets.DOCKER_HUB_USERNAME }}/pool_manager:latest
+      - name: Build-push pool manager
+        uses: docker/build-push-action@v5
+        with:
+          context: "./TP_Integrador/Parte 2"
+          file: "./TP_Integrador/Parte 2/Dockerfile.pool_manager"
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/pool_manager:latest
 
-            - name: Build-push frontend
-              uses: docker/build-push-action@v5
-              with:
-                  context: './TP_Integrador/Parte 2/Front'
-                  file: './TP_Integrador/Parte 2/Front/Dockerfile'
-                  push: true
-                  tags: ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest
-                  build-args: |
-                    VITE_API_URL=https://unlucoin.info/api
-            
-            - name: Build-push Worker CPU
-              uses: docker/build-push-action@v5
-              with:
-                  context: './TP_Integrador/Parte 2'
-                  file: './TP_Integrador/Parte 2/Worker-cpu/Dockerfile'
-                  push: true
-                  tags: ${{ secrets.DOCKER_HUB_USERNAME }}/sdyp-worker-cpu:latest
-                  build-args: |
-                    RABBIT_USER=${{ secrets.RABBIT_USER }}
-                    RABBIT_PASS=${{ secrets.RABBIT_PASS }}
+      - name: Build-push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: "./TP_Integrador/Parte 2/Front"
+          file: "./TP_Integrador/Parte 2/Front/Dockerfile"
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/frontend:latest
+          build-args: |
+            VITE_API_URL=https://unlucoin.info/api
 
-    infra:
-        name: Build K8S infra
-        needs: build-images
-        if: startsWith(github.event.head_commit.message, '(go)')
-        runs-on: ubuntu-latest
-        permissions:
-          contents: 'read'
-          id-token: 'write'
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+      - name: Build-push Worker CPU
+        uses: docker/build-push-action@v5
+        with:
+          context: "./TP_Integrador/Parte 2"
+          file: "./TP_Integrador/Parte 2/Worker-cpu/Dockerfile"
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/sdyp-worker-cpu:latest
+          build-args: |
+            RABBIT_USER=${{ secrets.RABBIT_USER }}
+            RABBIT_PASS=${{ secrets.RABBIT_PASS }}
 
-              # Autenticación con WIF
-            - name: Google Cloud authentication
-              uses: google-github-actions/auth@v2
-              with:
-                  workload_identity_provider: 'projects/395180424483/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-                  service_account: 'github-actions-tf@sdypp2026.iam.gserviceaccount.com'
-                  create_credentials_file: true
-                  export_environment_variables: true
+  infra:
+    name: Build K8S infra
+    needs: build-images
+    if: startsWith(github.event.head_commit.message, '(go)')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Terraform setup
-              uses: hashicorp/setup-terraform@v3
+        # Autenticación con WIF
+      - name: Google Cloud authentication
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/571458284813/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "github-actions-tf@project-c0ccded1-22c1-4a9e-85f.iam.gserviceaccount.com"
+          create_credentials_file: true
+          export_environment_variables: true
 
-            - name: Terraform init
-              working-directory: './TP_Integrador/Parte 2/Terraform'
-              run: |
-                terraform init --reconfigure
-                terraform validate
-                terraform plan -lock=false
-                terraform apply -lock=false --auto-approve
+      - name: Terraform setup
+        uses: hashicorp/setup-terraform@v3
 
-    deploy-apps:
-        name: Despliegue de servicios y aplicaciones
-        needs: infra
-        if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(k8s)')
-        runs-on: ubuntu-latest
+      - name: Terraform init
+        working-directory: "./TP_Integrador/Parte 2/Terraform"
+        run: |
+          terraform init --reconfigure
+          terraform validate
+          terraform plan -lock=false
+          terraform apply -lock=false --auto-approve
 
-        permissions:
-          contents: 'read'
-          id-token: 'write'
+  deploy-apps:
+    name: Despliegue de servicios y aplicaciones
+    needs: infra
+    if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(k8s)')
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+    permissions:
+      contents: "read"
+      id-token: "write"
 
-            - name: Google Cloud authentication
-              uses: google-github-actions/auth@v2
-              with:
-                  workload_identity_provider: 'projects/395180424483/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-                  service_account: 'github-actions-tf@sdypp2026.iam.gserviceaccount.com'
-                  token_format: 'access_token'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Google Cloud kubectl plugin
-              uses: google-github-actions/setup-gcloud@v2
-              with:
-                  version: '>= 363.0.0'
-                  install_components: 'kubectl'
+      - name: Google Cloud authentication
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: "project-c0ccded1-22c1-4a9e-85f"
+          workload_identity_provider: "projects/571458284813/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "github-actions-tf@project-c0ccded1-22c1-4a9e-85f.iam.gserviceaccount.com"
+          create_credentials_file: true
+          export_environment_variables: true
+          token_format: "access_token"
 
-            - name: GCloud Kubectl credentials
-              run: |
-                    ZONE="us-east4-b"
-                    gcloud info
-                    gcloud components list
-                    gcloud container clusters get-credentials primary --zone=${ZONE}
+      - name: Google Cloud kubectl plugin
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: ">= 363.0.0"
+          install_components: "kubectl"
 
-            - name: Deploy y Services app
-              working-directory: './TP_Integrador/Parte 2/K8s'
-              env:
-                RABBIT_USER: ${{ secrets.RABBIT_USER }}
-                RABBIT_PASS: ${{ secrets.RABBIT_PASS }}
-                REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-              run: |
-                kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
-                kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+      - name: GCloud Kubectl credentials
+        run: |
+          ZONE="us-east4-b"
+          gcloud info
+          gcloud components list
+          gcloud container clusters get-credentials primary --zone=${ZONE}
 
-                # Pequeña pausa táctica de 10 segundos. 
-                # Esto le da tiempo a la API de Kubernetes para registrar que los "Deployments" existen antes de preguntar por ellos.
-                sleep 10
+      - name: Deploy y Services app
+        working-directory: "./TP_Integrador/Parte 2/K8s"
+        env:
+          RABBIT_USER: ${{ secrets.RABBIT_USER }}
+          RABBIT_PASS: ${{ secrets.RABBIT_PASS }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
 
-                # Esperamos hasta 3 minutos a que el webhook de cert-manager esté disponible
-                kubectl wait --namespace cert-manager --for=condition=available deployment/cert-manager-webhook --timeout=180s
+          # Pequeña pausa táctica de 10 segundos.
+          # Esto le da tiempo a la API de Kubernetes para registrar que los "Deployments" existen antes de preguntar por ellos.
+          sleep 10
 
-                kubectl apply -f certificate.yaml
+          # Esperamos hasta 3 minutos a que el webhook de cert-manager esté disponible
+          kubectl wait --namespace cert-manager --for=condition=available deployment/cert-manager-webhook --timeout=180s
 
-                : "${RABBIT_USER:?Missing GitHub secret RABBIT_USER}"
-                : "${RABBIT_PASS:?Missing GitHub secret RABBIT_PASS}"
-                : "${REDIS_PASSWORD:?Missing GitHub secret REDIS_PASSWORD}"
+          kubectl apply -f certificate.yaml
 
-                kubectl create secret generic app-secrets \
-                  --from-literal=RABBITMQ_DEFAULT_USER="${RABBIT_USER}" \
-                  --from-literal=RABBITMQ_DEFAULT_PASS="${RABBIT_PASS}" \
-                  --from-literal=RABBIT_USER="${RABBIT_USER}" \
-                  --from-literal=RABBIT_PASS="${RABBIT_PASS}" \
-                  --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
-                  --dry-run=client -o yaml | kubectl apply -f -
+          : "${RABBIT_USER:?Missing GitHub secret RABBIT_USER}"
+          : "${RABBIT_PASS:?Missing GitHub secret RABBIT_PASS}"
+          : "${REDIS_PASSWORD:?Missing GitHub secret REDIS_PASSWORD}"
 
-                kubectl apply -f rabbit-services.yaml
-                kubectl apply -f redis-services.yaml
-                kubectl apply -f coordinador-services.yaml
-                kubectl apply -f pool-manager-services.yaml
-                kubectl apply -f front-services.yaml
+          kubectl create secret generic app-secrets \
+            --from-literal=RABBITMQ_DEFAULT_USER="${RABBIT_USER}" \
+            --from-literal=RABBITMQ_DEFAULT_PASS="${RABBIT_PASS}" \
+            --from-literal=RABBIT_USER="${RABBIT_USER}" \
+            --from-literal=RABBIT_PASS="${RABBIT_PASS}" \
+            --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
+            --dry-run=client -o yaml | kubectl apply -f -
 
-                # Esperamos a que NGINX esté listo antes de mandarle las reglas de ruteo
-                kubectl wait --namespace ingress-nginx --for=condition=available deployment/ingress-nginx-controller --timeout=180s
+          kubectl apply -f rabbit-services.yaml
+          kubectl apply -f redis-services.yaml
+          kubectl apply -f coordinador-services.yaml
+          kubectl apply -f pool-manager-services.yaml
+          kubectl apply -f front-services.yaml
 
-                kubectl apply -f ingress.yaml
+          # Esperamos a que NGINX esté listo antes de mandarle las reglas de ruteo
+          kubectl wait --namespace ingress-nginx --for=condition=available deployment/ingress-nginx-controller --timeout=180s
 
-                # Forzamos el reinicio para que tomen la nueva imagen 'latest'
-                kubectl rollout restart deployment/coordinador
-                kubectl rollout restart deployment/frontend
-                kubectl rollout restart deployment/pool-manager
-                kubectl rollout restart deployment/rabbitmq
-                kubectl rollout restart deployment/redis
+          kubectl apply -f ingress.yaml
 
-    infra-down:
-        name: Eliminar K8s Infra
-        if: startsWith(github.event.head_commit.message, '(down)')
-        runs-on: ubuntu-latest
-        permissions:
-          contents: 'read'
-          id-token: 'write'
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+          # Forzamos el reinicio para que tomen la nueva imagen 'latest'
+          kubectl rollout restart deployment/coordinador
+          kubectl rollout restart deployment/frontend
+          kubectl rollout restart deployment/pool-manager
+          kubectl rollout restart deployment/rabbitmq
+          kubectl rollout restart deployment/redis
 
-            # Autenticación con WIF
-            - name: Google Cloud authentication
-              uses: google-github-actions/auth@v2
-              with:
-                  workload_identity_provider: 'projects/395180424483/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-                  service_account: 'github-actions-tf@sdypp2026.iam.gserviceaccount.com'
-                  create_credentials_file: true
-                  export_environment_variables: true
+  infra-down:
+    name: Eliminar K8s Infra
+    if: startsWith(github.event.head_commit.message, '(down)')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            # Eliminacion del Cluster
-            - name: Terraform destroy
-              uses: hashicorp/setup-terraform@v3
+      # Autenticación con WIF
+      - name: Google Cloud authentication
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/571458284813/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "github-actions-tf@project-c0ccded1-22c1-4a9e-85f.iam.gserviceaccount.com"
+          create_credentials_file: true
+          export_environment_variables: true
 
-            - name: Terraform init
-              working-directory: './TP_Integrador/Parte 2/Terraform'
-              run: |
-                terraform init --reconfigure
-                terraform validate
-                terraform plan -lock=false
-                terraform destroy -lock=false --auto-approve
+      # Eliminacion del Cluster
+      - name: Terraform destroy
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: "./TP_Integrador/Parte 2/Terraform"
+        run: |
+          terraform init --reconfigure
+          terraform validate
+          terraform plan -lock=false
+          terraform destroy -lock=false --auto-approve
