@@ -28,6 +28,58 @@
 }
 
 .headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.walletManagerBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 6px;
+  color: var(--accent-cyan);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.walletManagerBtn:hover {
+  background: rgba(0, 212, 255, 0.18);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.demoFillBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(240, 180, 41, 0.08);
+  border: 1px solid rgba(240, 180, 41, 0.4);
+  border-radius: 6px;
+  color: var(--accent-gold);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.demoFillBtn:hover {
+  background: rgba(240, 180, 41, 0.18);
+  border-color: var(--accent-gold);
+}
+
+.blockCount {
+  text-align: right;
 }
 
 .blockCountLabel {
@@ -187,17 +239,54 @@
 .inputWithFile {
   display: flex;
   gap: 10px;
+  align-items: center;
 }
 
 .inputWithFile .input {
   flex: 1;
 }
 
+.accountBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #00d4ff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.quickBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.quickBtn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.08);
+}
+
 .fileBtn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 12px 16px;
+  padding: 12px 14px;
   background: rgba(0, 212, 255, 0.06);
   border: 1px dashed var(--border);
   border-radius: 6px;
@@ -207,7 +296,7 @@
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
-  max-width: 160px;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

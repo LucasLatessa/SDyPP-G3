@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import styles from './Navbar.module.css';
 
+// Barra de navegacion
 export default function Navbar() {
   const { pathname } = useLocation();
 
@@ -9,7 +10,6 @@ export default function Navbar() {
       <div className={styles.logo}>
         <span className={styles.logoIcon}>₿</span>
         <span className={styles.logoText}>UNLUCOIN</span>
-        <span className={styles.logoBadge}>TESTNET</span>
       </div>
       <div className={styles.links}>
         <Link to="/" className={`${styles.link} ${pathname === '/' ? styles.active : ''}`}>
