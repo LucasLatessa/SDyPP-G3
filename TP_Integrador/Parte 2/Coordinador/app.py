@@ -35,17 +35,17 @@ channel = crear_canal(connection)
 redis_client = RedisUtils()
 redis_client.inicializar_prefijo()
 
-registrar_rutas(app, channel, redis_client)
-
-# ----------------------------------------------------------------------
-#                            BACKGROUND
-# ----------------------------------------------------------------------
-
 thread = threading.Thread(
     target=procesar_paquetes,
     args=(channel, connection, redis_client),
     daemon=True,
 )
+
+registrar_rutas(app, channel, redis_client, thread)
+
+# ----------------------------------------------------------------------
+#                            BACKGROUND
+# ----------------------------------------------------------------------
 
 thread.start()
 logger.info("Thread de procesamiento iniciado")
