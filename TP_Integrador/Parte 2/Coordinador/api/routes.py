@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 # ----------------------------------------------------------------------
 
 
-def registrar_rutas(app, channel, redis_client) -> None:
+def registrar_rutas(app, channel, redis_client, processor_thread) -> None:
     """
     Registra los endpoints en la aplicación Flask.
 
@@ -167,9 +167,49 @@ def registrar_rutas(app, channel, redis_client) -> None:
     @app.route("/status", methods=["GET"])
     def status():
         """
-        Estado del servidor.
+        Estado completo del servicio y sus dependencias críticas.
         """
-        logger.info("Healthcheck solicitado")
-        return jsonify({"status": "funcionando :D"})
-    
+        dependencies = {}
+
+        try:
+            redis_client.redis_client.ping()
+            dependencies["redis"] = "ok"
+        except Exception as e:
+            dependencies["redis"] = "error"
+            logger.warning("Healthcheck Redis falló: %s", e)
+
+        rabbit_ok = bool(
+            getattr(channel, "is_open", False)
+            and getattr(channel.connection, "is_open", False)
+        )
+        dependencies["rabbitmq"] = "ok" if rabbit_ok else "error"
+
+        if not rabbit_ok:
+            logger.warning("Healthcheck RabbitMQ falló: conexión o canal cerrado")
+
+        dependencies["processor"] = (
+            "running" if processor_thread.is_alive() else "stopped"
+        )
+
+        healthy = (
+            dependencies["redis"] == "ok"
+            and dependencies["rabbitmq"] == "ok"
+            and dependencies["processor"] == "running"
+        )
+        payload = {
+            "status": "ok" if healthy else "degraded",
+            "dependencies": dependencies,
+        }
+
+        logger.info(
+            "Healthcheck completo: status=%s dependencies=%s",
+            payload["status"],
+            dependencies,
+        )
+        return jsonify(payload), 200 if healthy else 503
+
+    @app.route("/status/live", methods=["GET"])
+    def status_live():
+        """Comprueba únicamente que Flask está atendiendo requests."""
+        return jsonify({"status": "alive"}), 200
     
