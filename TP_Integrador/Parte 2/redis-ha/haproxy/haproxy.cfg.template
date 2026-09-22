@@ -1,0 +1,31 @@
+global
+    log stdout format raw local0
+
+resolvers docker
+    nameserver dns 127.0.0.11:53
+    hold valid 10s
+    hold obsolete 30s
+    hold timeout 1s
+
+defaults
+    mode tcp
+    timeout connect 5s
+    timeout client 60s
+    timeout server 60s
+
+frontend redis_frontend
+    bind *:6379
+    default_backend redis_master
+
+backend redis_master
+    option tcp-check
+
+    tcp-check connect
+    tcp-check send "AUTH __REDIS_PASSWORD__\r\n"
+    tcp-check expect string +OK
+    tcp-check send "INFO replication\r\n"
+    tcp-check expect string role:master
+
+    server redis-0 redis-0:6379 check resolvers docker init-addr libc,none inter 2s fall 2 rise 1
+    server redis-1 redis-1:6379 check resolvers docker init-addr libc,none inter 2s fall 2 rise 1
+    server redis-2 redis-2:6379 check resolvers docker init-addr libc,none inter 2s fall 2 rise 1

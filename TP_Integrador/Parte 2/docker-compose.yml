@@ -1,15 +1,143 @@
 version: '3.8'
 
 services:
-  redis:
-    image: redis/redis-stack:latest
-    container_name: "redis"
-    ports:
-      - "6379:6379"    # Redis port
-      - "8001:8001"    # Web interface port
-    command: redis-server --requirepass grupo03
+  redis-0:
+    image: redis:7.4-alpine
+    command: ["sh", "/scripts/start-redis.sh"]
     environment:
-      - REDIS_PASSWORD=grupo03
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_NODE_NAME: redis-0
+    volumes:
+      - ./redis-ha/redis/start-redis.sh:/scripts/start-redis.sh:ro
+      - redis-0-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis-1:
+    image: redis:7.4-alpine
+    command: ["sh", "/scripts/start-redis.sh"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_NODE_NAME: redis-1
+    volumes:
+      - ./redis-ha/redis/start-redis.sh:/scripts/start-redis.sh:ro
+      - redis-1-data:/data
+    depends_on:
+      redis-0:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis-2:
+    image: redis:7.4-alpine
+    command: ["sh", "/scripts/start-redis.sh"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_NODE_NAME: redis-2
+    volumes:
+      - ./redis-ha/redis/start-redis.sh:/scripts/start-redis.sh:ro
+      - redis-2-data:/data
+    depends_on:
+      redis-0:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  sentinel-0:
+    image: redis:7.4-alpine
+    command: ["sh", "/scripts/start-sentinel.sh"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./redis-ha/sentinel/sentinel.conf.template:/templates/sentinel.conf.template:ro
+      - ./redis-ha/sentinel/start-sentinel.sh:/scripts/start-sentinel.sh:ro
+      - sentinel-0-data:/data
+    depends_on:
+      redis-0:
+        condition: service_healthy
+      redis-1:
+        condition: service_healthy
+      redis-2:
+        condition: service_healthy
+    restart: unless-stopped
+
+  sentinel-1:
+    image: redis:7.4-alpine
+    command: ["sh", "/scripts/start-sentinel.sh"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./redis-ha/sentinel/sentinel.conf.template:/templates/sentinel.conf.template:ro
+      - ./redis-ha/sentinel/start-sentinel.sh:/scripts/start-sentinel.sh:ro
+      - sentinel-1-data:/data
+    depends_on:
+      redis-0:
+        condition: service_healthy
+      redis-1:
+        condition: service_healthy
+      redis-2:
+        condition: service_healthy
+    restart: unless-stopped
+
+  sentinel-2:
+    image: redis:7.4-alpine
+    command: ["sh", "/scripts/start-sentinel.sh"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./redis-ha/sentinel/sentinel.conf.template:/templates/sentinel.conf.template:ro
+      - ./redis-ha/sentinel/start-sentinel.sh:/scripts/start-sentinel.sh:ro
+      - sentinel-2-data:/data
+    depends_on:
+      redis-0:
+        condition: service_healthy
+      redis-1:
+        condition: service_healthy
+      redis-2:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: haproxy:3.1-alpine
+    command: ["sh", "/scripts/start-haproxy.sh"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-ha/haproxy/haproxy.cfg.template:/templates/haproxy.cfg.template:ro
+      - ./redis-ha/haproxy/start-haproxy.sh:/scripts/start-haproxy.sh:ro
+    depends_on:
+      redis-0:
+        condition: service_healthy
+      redis-1:
+        condition: service_healthy
+      redis-2:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - "8001:5540"
+    volumes:
+      - redisinsight-data:/data
+    depends_on:
+      redis:
+        condition: service_started
+    restart: unless-stopped
 
   rabbitmq:
     image: "rabbitmq:management"
@@ -27,36 +155,45 @@ services:
       context: .
       dockerfile: Dockerfile.coordinador
     depends_on:
-      - rabbitmq
-      - redis
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
     ports:
       - "5000:5000"
     environment:
-      - RABBIT_HOST=rabbitmq
-      - RABBIT_PORT=5672
-      - RABBIT_USER=grupo03
-      - RABBIT_PASS=grupo03
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      RABBIT_HOST: rabbitmq
+      RABBIT_PORT: "5672"
+      RABBIT_USER: grupo03
+      RABBIT_PASS: grupo03
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    restart: unless-stopped
 
   pool_manager:
     build:
       context: .
       dockerfile: Dockerfile.pool_manager
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
     environment:
-      - RABBIT_HOST=rabbitmq
-      - RABBIT_PORT=5672
-      - RABBIT_USER=grupo03
-      - RABBIT_PASS=grupo03
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - AUTO_START_WORKER_CPU=true
-      - WORKER_CPU_IMAGE=sdyp-worker-cpu:latest
-      - AUTO_WORKER_CPU_NAME=worker_cpu_auto
+      RABBIT_HOST: rabbitmq
+      RABBIT_PORT: "5672"
+      RABBIT_USER: grupo03
+      RABBIT_PASS: grupo03
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      AUTO_START_WORKER_CPU: "true"
+      WORKER_CPU_IMAGE: sdyp-worker-cpu:latest
+      AUTO_WORKER_CPU_NAME: worker_cpu_auto
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
   
   frontend:
     build:
@@ -68,6 +205,17 @@ services:
     ports:
       - "8080:80" 
     depends_on:
-      - coordinador
+      coordinador:
+        condition: service_started
+
+volumes:
+  redis-0-data:
+  redis-1-data:
+  redis-2-data:
+  sentinel-0-data:
+  sentinel-1-data:
+  sentinel-2-data:
+  haproxy-config:
+  redisinsight-data:
 
       
