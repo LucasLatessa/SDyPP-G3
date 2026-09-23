@@ -129,6 +129,7 @@ spec:
                 - -q
                 - ping
             periodSeconds: 10
+            timeoutSeconds: 10
             failureThreshold: 30
 
           readinessProbe:
