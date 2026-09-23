@@ -1,7 +1,8 @@
 """
 Procesamiento en segundo plano de paquetes de transacciones.
 """
-
+import pika
+from Shared.messaging.rabbitmq import crear_conexion, crear_canal
 import json
 import random
 import time
@@ -30,93 +31,99 @@ logger = get_logger(__name__)
 # ----------------------------------------------------------------------
 
 
-def procesar_paquetes(channel, connection, redis_client) -> None:
-    """
-    Procesa paquetes de transacciones y los envia a RabbitMQ
-
-    Args:
-        channel: Canal de RabbitMQ
-        connection: Conexion con RabbitMQ
-        redis_client: Cliente Redis
-    """
+def procesar_paquetes(redis_client) -> None:
     while True:
+        connection = None
+
         try:
-            paquete = []  # Almacenar los mensajes del paquete actual
+            connection = crear_conexion(max_attempts=1)
+            channel = crear_canal(connection)
 
-            # Procesa en bloques
-            for _ in range(TAMANO_BLOQUE_PROCESAR):
+            logger.info(
+                "Procesador conectado a RabbitMQ"
+            )
 
-                # Obtener un mensaje de la cola 'transactions' de RabbitMQ
-                method_frame, header_frame, body = channel.basic_get(
-                    queue=QUEUE_NAME, auto_ack=False
-                )
+            while connection.is_open and channel.is_open:
+                paquete = []
+                delivery_tags = []
 
-                if method_frame:
+                for _ in range(TAMANO_BLOQUE_PROCESAR):
+                    method_frame, _, body = channel.basic_get(
+                        queue=QUEUE_NAME,
+                        auto_ack=False,
+                    )
 
-                    # Añadir el mensaje al paquete
+                    if not method_frame:
+                        break
+
                     paquete.append(json.loads(body))
+                    delivery_tags.append(
+                        method_frame.delivery_tag
+                    )
 
-                    # Confirmar que el mensaje ha sido recibido y procesado (acknowledge)
-                    channel.basic_ack(delivery_tag=method_frame.delivery_tag)
-                else:
-                    break  # No hay más mensajes disponibles, salir del bucle
+                if paquete:
+                    logger.info(
+                        "Procesando paquete de %s transacciones",
+                        len(paquete),
+                    )
 
-            """ 
-            TO-DO:
-         
-            AGREGAR MANEJO DE PAQUETES NO PROCESADOS!!!!!!!!!!!!!! -> SI NO SE PROCESO EL PAQUETE ENTONCES REENVIO, 
-            EL COORDINADOR NO LE IMPORTA LA CANTIDAD DE WORKERS QUE HAY CONSUMIENDO!
-            """
+                    last_element = redis_client.get_ultimo()
+                    prefijo = redis_client.get_prefijo()
 
-            if paquete:
-                logger.info(f"Procesando paquete de {len(paquete)} transacciones")
-                # Añadir metadatos al paquete del bloque
+                    bloque = {
+                        "id": str(uuid.uuid4()),
+                        "transaccion": paquete,
+                        "prefix": prefijo,
+                        "base_string_chain": STRING_CHAIN,
+                        "blockchain_content": (
+                            last_element["blockchain_content"]
+                            if last_element
+                            else "[" + str(time.time()) + "]"
+                        ),
+                        "max_random": MAX_RANDOM,
+                    }
 
-                # Obtener los últimos mensajes de Redis
-                tail_elements = (redis_client.get_ultimos_mensajes()) 
+                    channel.basic_publish(
+                        exchange=EXCHANGE_NAME,
+                        routing_key=ROUTING_KEY,
+                        body=json.dumps(bloque),
+                        mandatory=True,
+                        properties=pika.BasicProperties(
+                            delivery_mode=2,
+                            content_type="application/json",
+                        ),
+                    )
 
-                # Obtener el último elemento de la lista en Redis
-                last_element = (redis_client.get_ultimo())
+                    # Se confirman las transacciones solamente después
+                    # de publicar correctamente el bloque.
+                    for delivery_tag in delivery_tags:
+                        channel.basic_ack(
+                            delivery_tag=delivery_tag
+                        )
 
-                prefijo = redis_client.get_prefijo()
-                #print(prefijo)
-                #print(f"VALOR: {prefijo} | TIPO: {type(prefijo)}")
+                    logger.info(
+                        "Bloque enviado ID=%s",
+                        bloque["id"],
+                    )
 
-                bloque = {
-                    "id": str(uuid.uuid4()),
-                    "transaccion": paquete,
-                    "prefix": prefijo,  # Dificulta de tres 0 -> Buscar el quiebre
-                    "base_string_chain": STRING_CHAIN,  # Es lo que concateno para el hash, que tiene que arrancar con el prefijo
-                    "blockchain_content": (
-                        last_element["blockchain_content"] if last_element else "[" + str(time.time()) + "]"
-                    ),  # Contenido de la cadena de bloques hasta el bloque anterior
-                    "max_random": MAX_RANDOM,  # Random usado en la prueba de trabajo
-                }
-
-                # Mando el bloque al Topic de Rabbit
-                channel.basic_publish(
-                    exchange=EXCHANGE_NAME,
-                    routing_key=ROUTING_KEY,
-                    body=json.dumps(bloque),
-                    mandatory=True,
+                logger.info(
+                    "Pasaron %s segundos, procesamiento de paquetes",
+                    PROCESS_INTERVAL,
                 )
+                time.sleep(PROCESS_INTERVAL)
 
-                logger.info(f"Bloque enviado ID={bloque['id']}")
+        except Exception as error:
+            logger.error(
+                "Conexion RabbitMQ perdida: %s. "
+                "Reconectando en 5 segundos...",
+                error,
+            )
 
-                # TO-DO: Manejo de workers caidos
-                # global message_returned
-                # message_returned = False
-                # # Manejo de paquetes devueltos
+        finally:
+            if connection is not None and connection.is_open:
+                try:
+                    connection.close()
+                except Exception:
+                    pass
 
-                start = time.time()
-                while time.time() - start < RABBIT_TIMEOUT:
-                    connection.process_data_events()
-                    time.sleep(1)
-
-            #print(f"Pasaron {PROCESS_INTERVAL} segundos, procesamiento de paquetes")
-            logger.info(f"Pasaron {PROCESS_INTERVAL} segundos, procesamiento de paquetes")
-            time.sleep(PROCESS_INTERVAL)
-        except Exception as e:
-            logger.error(f"Error en procesamiento de paquetes: {e}")
-            time.sleep(5)
-            #print(f"Error en procesamiento: {e}")
+        time.sleep(5)

@@ -11,3 +11,4 @@ unlucoin2
 .env.*
 *.pem
 *.key
+*.tfplan

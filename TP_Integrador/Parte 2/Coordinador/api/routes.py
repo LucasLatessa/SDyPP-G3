@@ -5,6 +5,8 @@ Se definen los endpoints que soportara la API
 """
 
 from flask import jsonify, request
+import pika
+from Shared.messaging.rabbitmq import crear_conexion, crear_canal
 from Coordinador.services.blockchain_service import validar_guardar_bloque
 from Coordinador.services.validar_transaccion import validar_transaccion
 from Shared.config import (
@@ -25,7 +27,7 @@ logger = get_logger(__name__)
 # ----------------------------------------------------------------------
 
 
-def registrar_rutas(app, channel, redis_client, processor_thread) -> None:
+def registrar_rutas(app, redis_client, processor_thread) -> None:
     """
     Registra los endpoints en la aplicación Flask.
 
@@ -80,16 +82,44 @@ def registrar_rutas(app, channel, redis_client, processor_thread) -> None:
           logger.info(f"Trnasaccion de tipo de PROPERTY, se agrega timestamp")
           datos["timestamp"] = time.time()
         
+        rabbit_connection = None
+
         try:
-            # Mando a la cola de Rabbit
-            channel.basic_publish(
-                exchange="", routing_key=QUEUE_NAME, body=json.dumps(datos)
+            rabbit_connection = crear_conexion(
+                max_attempts=3,
+                wait_seconds=1,
             )
-        except Exception as e:
-            # si falla el encolado, liberamos el lock
+            rabbit_channel = crear_canal(rabbit_connection)
+
+            rabbit_channel.basic_publish(
+                exchange="",
+                routing_key=QUEUE_NAME,
+                body=json.dumps(datos),
+                properties=pika.BasicProperties(
+                    delivery_mode=2,
+                    content_type="application/json",
+                ),
+            )
+
+        except Exception as error:
+            logger.error(
+                "Error publicando la transaccion en RabbitMQ: %s",
+                error,
+            )
+
             if datos["type"] == TipoTransaccion.PROPERTY.value:
-                redis_client.redis_client.delete(f"lock:nft:{datos['data']['nft']}")
+                redis_client.redis_client.delete(
+                    f"lock:nft:{datos['data']['nft']}"
+                )
+
             return jsonify({"error": "Error al encolar"}), 500
+
+        finally:
+            if (
+                rabbit_connection is not None
+                and rabbit_connection.is_open
+            ):
+                rabbit_connection.close()
 
         logger.info("Transaccion recibida y encolada en Rabbit")
         return "Transaccion recibida y encolada en Rabbit", 200
@@ -178,14 +208,32 @@ def registrar_rutas(app, channel, redis_client, processor_thread) -> None:
             dependencies["redis"] = "error"
             logger.warning("Healthcheck Redis falló: %s", e)
 
-        rabbit_ok = bool(
-            getattr(channel, "is_open", False)
-            and getattr(channel.connection, "is_open", False)
-        )
-        dependencies["rabbitmq"] = "ok" if rabbit_ok else "error"
+        rabbit_connection = None
 
-        if not rabbit_ok:
-            logger.warning("Healthcheck RabbitMQ falló: conexión o canal cerrado")
+        try:
+            rabbit_connection = crear_conexion(
+                max_attempts=1,
+                wait_seconds=0,
+            )
+            rabbit_ok = rabbit_connection.is_open
+
+        except Exception as error:
+            rabbit_ok = False
+            logger.warning(
+                "Healthcheck RabbitMQ fallo: %s",
+                error,
+            )
+
+        finally:
+            if (
+                rabbit_connection is not None
+                and rabbit_connection.is_open
+            ):
+                rabbit_connection.close()
+
+        dependencies["rabbitmq"] = (
+            "ok" if rabbit_ok else "error"
+        )
 
         dependencies["processor"] = (
             "running" if processor_thread.is_alive() else "stopped"

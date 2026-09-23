@@ -139,16 +139,85 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  rabbitmq:
-    image: "rabbitmq:management"
-    container_name: "rabbitmq"
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+  rabbitmq-0:
+    image: rabbitmq:4.2-management
+    hostname: rabbitmq-0
     environment:
-      RABBITMQ_DEFAULT_USER: "grupo03"
-      RABBITMQ_DEFAULT_PASS: "grupo03"
-      RABBITMQ_DEFAULT_VHOST: "/"
+      RABBITMQ_NODENAME: rabbit@rabbitmq-0
+      RABBITMQ_ERLANG_COOKIE: grupo03_rabbitmq_cluster_local_2026
+      RABBITMQ_DEFAULT_USER: grupo03
+      RABBITMQ_DEFAULT_PASS: grupo03
+    volumes:
+      - ./rabbitmq-ha/rabbitmq.conf:/etc/rabbitmq/conf.d/30-cluster.conf:ro
+      - rabbitmq-0-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  rabbitmq-1:
+    image: rabbitmq:4.2-management
+    hostname: rabbitmq-1
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq-1
+      RABBITMQ_ERLANG_COOKIE: grupo03_rabbitmq_cluster_local_2026
+      RABBITMQ_DEFAULT_USER: grupo03
+      RABBITMQ_DEFAULT_PASS: grupo03
+    volumes:
+      - ./rabbitmq-ha/rabbitmq.conf:/etc/rabbitmq/conf.d/30-cluster.conf:ro
+      - rabbitmq-1-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  rabbitmq-2:
+    image: rabbitmq:4.2-management
+    hostname: rabbitmq-2
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq-2
+      RABBITMQ_ERLANG_COOKIE: grupo03_rabbitmq_cluster_local_2026
+      RABBITMQ_DEFAULT_USER: grupo03
+      RABBITMQ_DEFAULT_PASS: grupo03
+    volumes:
+      - ./rabbitmq-ha/rabbitmq.conf:/etc/rabbitmq/conf.d/30-cluster.conf:ro
+      - rabbitmq-2-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  rabbitmq:
+    image: haproxy:3.1-alpine
+    container_name: rabbitmq
+    command:
+      - haproxy
+      - -W
+      - -db
+      - -f
+      - /usr/local/etc/haproxy/haproxy.cfg
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - ./rabbitmq-ha/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      rabbitmq-0:
+        condition: service_healthy
+      rabbitmq-1:
+        condition: service_healthy
+      rabbitmq-2:
+        condition: service_healthy
+    restart: unless-stopped
 
   coordinador:
     build:
@@ -217,5 +286,8 @@ volumes:
   sentinel-2-data:
   haproxy-config:
   redisinsight-data:
+  rabbitmq-0-data:
+  rabbitmq-1-data:
+  rabbitmq-2-data:
 
       

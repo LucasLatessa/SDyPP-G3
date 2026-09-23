@@ -117,7 +117,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           version: ">= 363.0.0"
-          install_components: "kubectl"
+          install_components: "kubectl, gke-gcloud-auth-plugin"
 
       - name: GCloud Kubectl credentials
         run: |
@@ -132,6 +132,7 @@ jobs:
           RABBIT_USER: ${{ secrets.RABBIT_USER }}
           RABBIT_PASS: ${{ secrets.RABBIT_PASS }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          RABBITMQ_ERLANG_COOKIE: ${{ secrets.RABBITMQ_ERLANG_COOKIE }}
         run: |
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
@@ -148,6 +149,7 @@ jobs:
           : "${RABBIT_USER:?Missing GitHub secret RABBIT_USER}"
           : "${RABBIT_PASS:?Missing GitHub secret RABBIT_PASS}"
           : "${REDIS_PASSWORD:?Missing GitHub secret REDIS_PASSWORD}"
+          : "${RABBITMQ_ERLANG_COOKIE:?Missing GitHub secret RABBITMQ_ERLANG_COOKIE}"
 
           kubectl create secret generic app-secrets \
             --from-literal=RABBITMQ_DEFAULT_USER="${RABBIT_USER}" \
@@ -155,9 +157,17 @@ jobs:
             --from-literal=RABBIT_USER="${RABBIT_USER}" \
             --from-literal=RABBIT_PASS="${RABBIT_PASS}" \
             --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
+            --from-literal=RABBITMQ_ERLANG_COOKIE="${RABBITMQ_ERLANG_COOKIE}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
+          # Elimina el RabbitMQ antiguo de una sola instancia.
+          kubectl delete deployment rabbitmq --ignore-not-found=true
+
+          # Crea el clúster RabbitMQ de tres nodos.
           kubectl apply -f rabbit-services.yaml
+          kubectl rollout restart statefulset/rabbitmq
+          kubectl rollout status statefulset/rabbitmq --timeout=300s
+
           kubectl apply -f redis-services.yaml
           kubectl apply -f coordinador-services.yaml
           kubectl apply -f pool-manager-services.yaml
@@ -172,7 +182,6 @@ jobs:
           kubectl rollout restart deployment/coordinador
           kubectl rollout restart deployment/frontend
           kubectl rollout restart deployment/pool-manager
-          kubectl rollout restart deployment/rabbitmq
           kubectl rollout restart deployment/redis
 
   infra-down:

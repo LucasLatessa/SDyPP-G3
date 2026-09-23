@@ -7,7 +7,6 @@ from flask import Flask
 from flask_cors import CORS
 import threading
 
-from Shared.messaging.rabbitmq import crear_conexion, crear_canal
 from Shared.storage.redis import RedisUtils
 from Coordinador.api.routes import registrar_rutas
 from Coordinador.workers.paquete_processor import procesar_paquetes
@@ -27,21 +26,17 @@ logger = get_logger(__name__)
 
 logger.info("Inicializando coordinador...")
 
-# Rabbit
-connection = crear_conexion()
-channel = crear_canal(connection)
-
 # Redis
 redis_client = RedisUtils()
 redis_client.inicializar_prefijo()
 
 thread = threading.Thread(
     target=procesar_paquetes,
-    args=(channel, connection, redis_client),
+    args=(redis_client,),
     daemon=True,
 )
 
-registrar_rutas(app, channel, redis_client, thread)
+registrar_rutas(app, redis_client, thread)
 
 # ----------------------------------------------------------------------
 #                            BACKGROUND

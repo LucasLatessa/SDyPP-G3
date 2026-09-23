@@ -1,9 +1,234 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-ha-config
+data:
+  start-redis.sh: |
+    #!/bin/sh
+    set -eu
+
+    mkdir -p /data/redis
+    DOMAIN="redis-headless.default.svc.cluster.local"
+    SELF="$HOSTNAME.$DOMAIN"
+    MASTER="redis-node-0.$DOMAIN"
+
+    # Consultar a Sentinel para recuperar el maestro actual.
+    for N in 0 1 2; do
+      FOUND="$(redis-cli \
+        -h "redis-node-$N.$DOMAIN" \
+        -p 26379 --raw \
+        SENTINEL get-master-addr-by-name mymaster \
+        2>/dev/null | head -n 1 || true)"
+
+      case "$FOUND" in
+        redis-node-*."$DOMAIN")
+          MASTER="$FOUND"
+          break
+          ;;
+      esac
+    done
+
+    set -- redis-server \
+      --bind 0.0.0.0 \
+      --protected-mode no \
+      --appendonly yes \
+      --appendfsync everysec \
+      --dir /data/redis \
+      --requirepass "$REDIS_PASSWORD" \
+      --masterauth "$REDIS_PASSWORD" \
+      --replica-announce-ip "$SELF" \
+      --replica-announce-port 6379 \
+      --min-replicas-to-write 1 \
+      --min-replicas-max-lag 10
+
+    if [ "$MASTER" != "$SELF" ]; then
+      set -- "$@" --replicaof "$MASTER" 6379
+    fi
+
+    exec "$@"
+
+  start-sentinel.sh: |
+    #!/bin/sh
+    set -eu
+
+    mkdir -p /data/sentinel
+    DOMAIN="redis-headless.default.svc.cluster.local"
+    CONFIG="/data/sentinel/sentinel.conf"
+
+    if [ ! -f "$CONFIG" ]; then
+      until getent hosts "redis-node-0.$DOMAIN" >/dev/null; do
+        sleep 1
+      done
+
+      PASSWORD="$(printf '%s' "$REDIS_PASSWORD" |
+        sed 's/\\/\\\\/g; s/"/\\"/g')"
+
+      {
+        echo "port 26379"
+        echo "bind 0.0.0.0"
+        echo "protected-mode no"
+        echo "dir /data/sentinel"
+        echo "sentinel resolve-hostnames yes"
+        echo "sentinel announce-hostnames yes"
+        echo "sentinel announce-ip $HOSTNAME.$DOMAIN"
+        echo "sentinel announce-port 26379"
+        echo "sentinel monitor mymaster redis-node-0.$DOMAIN 6379 2"
+        printf 'sentinel auth-pass mymaster "%s"\n' "$PASSWORD"
+        echo "sentinel down-after-milliseconds mymaster 5000"
+        echo "sentinel failover-timeout mymaster 60000"
+        echo "sentinel parallel-syncs mymaster 1"
+      } > "$CONFIG"
+    fi
+
+    exec redis-server "$CONFIG" --sentinel
+
+  haproxy.cfg: |
+    global
+        log stdout format raw local0
+
+    resolvers kubernetes
+        parse-resolv-conf
+        hold valid 5s
+
+    defaults
+        mode tcp
+        timeout connect 5s
+        timeout client 60s
+        timeout server 60s
+
+    frontend redis_frontend
+        bind *:6379
+        default_backend redis_master
+
+    backend redis_master
+        option tcp-check
+        tcp-check connect
+        tcp-check send "AUTH ${REDIS_PASSWORD}\r\n"
+        tcp-check expect string +OK
+        tcp-check send "INFO replication\r\n"
+        tcp-check expect string role:master
+
+        default-server check resolvers kubernetes init-addr libc,none inter 2s fall 2 rise 1 on-marked-down shutdown-sessions
+
+        server redis-0 redis-node-0.redis-headless.default.svc.cluster.local:6379
+        server redis-1 redis-node-1.redis-headless.default.svc.cluster.local:6379
+        server redis-2 redis-node-2.redis-headless.default.svc.cluster.local:6379
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-headless
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: redis-ha
+  ports:
+    - name: redis
+      port: 6379
+    - name: sentinel
+      port: 26379
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-node
+spec:
+  serviceName: redis-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: redis-ha
+  template:
+    metadata:
+      labels:
+        app: redis-ha
+    spec:
+      nodeSelector:
+        role: infra
+
+      # Una pareja Redis/Sentinel en cada nodo.
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: redis-ha
+              topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: redis
+          image: redis:7.4-alpine
+          command: ["sh", "/config/start-redis.sh"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_PASSWORD
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli ping | grep -qx PONG'
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: data
+              mountPath: /data
+
+        - name: sentinel
+          image: redis:7.4-alpine
+          command: ["sh", "/config/start-sentinel.sh"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_PASSWORD
+          ports:
+            - containerPort: 26379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "-p", "26379", "ping"]
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: data
+              mountPath: /data
+
+      volumes:
+        - name: config
+          configMap:
+            name: redis-ha-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard-rwo
+        resources:
+          requests:
+            storage: 10Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: redis
@@ -12,35 +237,43 @@ spec:
       labels:
         app: redis
     spec:
+      nodeSelector:
+        role: infra
       containers:
-      - name: redis
-        image: redis/redis-stack:latest
-        ports:
-        - containerPort: 6379
-          name: redis
-        - containerPort: 8001
-          name: redis-interface
-        env:
-          - name: REDIS_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: app-secrets
-                key: REDIS_PASSWORD
-          - name: REDIS_ARGS
-            value: "--requirepass $(REDIS_PASSWORD)"
+        - name: haproxy
+          image: haproxy:3.1-alpine
+          command:
+            - haproxy
+            - -W
+            - -db
+            - -f
+            - /config/haproxy.cfg
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_PASSWORD
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: redis-ha-config
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: redis
 spec:
-  type: LoadBalancer
-  ports:
-  - port: 6379
-    targetPort: 6379
-    name: redis
-  - port: 8001
-    targetPort: 8001
-    name: redis-interface
+  type: ClusterIP
   selector:
     app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379

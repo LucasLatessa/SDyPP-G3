@@ -1,51 +1,213 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-ha-config
+data:
+  rabbitmq.conf: |
+    listeners.tcp.default = 5672
+    management.tcp.port = 15672
+
+    cluster_formation.peer_discovery_backend = classic_config
+    cluster_formation.classic_config.nodes.1 = rabbit@rabbitmq-0.rabbitmq-headless.default.svc.cluster.local
+    cluster_formation.classic_config.nodes.2 = rabbit@rabbitmq-1.rabbitmq-headless.default.svc.cluster.local
+    cluster_formation.classic_config.nodes.3 = rabbit@rabbitmq-2.rabbitmq-headless.default.svc.cluster.local
+
+    cluster_partition_handling = pause_minority
+
+    default_queue_type = quorum
+    quorum_queue.initial_cluster_size = 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-headless
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672
+    - name: epmd
+      port: 4369
+      targetPort: 4369
+    - name: distribution
+      port: 25672
+      targetPort: 25672
+
+---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: rabbitmq
 spec:
-  replicas: 1
+  serviceName: rabbitmq-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+
   selector:
     matchLabels:
       app: rabbitmq
+
   template:
     metadata:
       labels:
         app: rabbitmq
     spec:
+      nodeSelector:
+        role: infra
+
+      terminationGracePeriodSeconds: 120
+
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: rabbitmq
+              topologyKey: kubernetes.io/hostname
+
       containers:
         - name: rabbitmq
-          image: rabbitmq:management
-          ports:
-            - containerPort: 5672
-              name: amqp
-            - containerPort: 15672
-              name: management
+          image: rabbitmq:4.2-management
+          imagePullPolicy: IfNotPresent
+
           env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+            - name: RABBITMQ_NODENAME
+              value: rabbit@$(POD_NAME).rabbitmq-headless.default.svc.cluster.local
+
+            - name: RABBITMQ_USE_LONGNAME
+              value: "true"
+
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: RABBITMQ_DEFAULT_USER
+                  key: RABBIT_USER
+
             - name: RABBITMQ_DEFAULT_PASS
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: RABBITMQ_DEFAULT_PASS
-            - name: RABBITMQ_DEFAULT_VHOST
-              value: "/"
+                  key: RABBIT_PASS
+
+            - name: RABBITMQ_ERLANG_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: RABBITMQ_ERLANG_COOKIE
+
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: management
+              containerPort: 15672
+            - name: epmd
+              containerPort: 4369
+            - name: distribution
+              containerPort: 25672
+
+          startupProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - -q
+                - ping
+            periodSeconds: 10
+            failureThreshold: 30
+
+          readinessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - -q
+                - check_running
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          livenessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - -q
+                - ping
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+
+          volumeMounts:
+            - name: config
+              mountPath: /etc/rabbitmq/conf.d/30-cluster.conf
+              subPath: rabbitmq.conf
+
+            - name: data
+              mountPath: /var/lib/rabbitmq
+
+      volumes:
+        - name: config
+          configMap:
+            name: rabbitmq-ha-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: standard-rwo
+        resources:
+          requests:
+            storage: 10Gi
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: rabbitmq
 spec:
-  type: LoadBalancer
-  ports:
-    - port: 5672
-      targetPort: 5672
-      name: amqp
-    - port: 15672
-      targetPort: 15672
-      name: management
+  type: ClusterIP
   selector:
     app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+
+    - name: management
+      port: 15672
+      targetPort: 15672
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: rabbitmq

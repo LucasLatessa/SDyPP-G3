@@ -149,59 +149,107 @@ def callback(channel, method, properties, body) -> None:
         channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
 def iniciar_pool_manager() -> None:
-    """
-    Inicializa el pool Manager y comienza a consumir bloques.
-    """
     logger.info("Iniciando pool Manager...")
 
     redis_client = RedisUtils()
-    
-    connection = crear_conexion()
-    channel = crear_canal(connection)
-
-    channel.queue_declare(queue=QUEUE_BLOCKS, durable=True)
-    channel.queue_bind(
-        exchange=EXCHANGE_NAME,
-        queue=QUEUE_BLOCKS,
-        routing_key="blocks"
-    )
-
-    channel.queue_declare(queue=QUEUE_TASKS, durable=True)
-    channel.basic_qos(prefetch_count=1)
-
-    logger.info("pool Manager esperando bloques...")
 
     while True:
+        connection = None
+
         try:
-            estado = redis_client.get_bloque_en_proceso()
+            connection = crear_conexion(max_attempts=1)
+            channel = crear_canal(connection)
 
-            if estado and estado.get("reprocess"):
-                bloque = estado["block"]
-                logger.info(f"Reprocesando bloque ID={bloque['id']}")
-                procesar_bloque(channel, bloque, redis_client)
-                time.sleep(2)
-                continue
-
-            if estado and estado.get("status") == "PROCESSING":
-                if redis_client.marcar_reproceso_si_expirado(WORKER_TIMEOUT):
-                    logger.warning(f"Bloque ID={estado['id']} expirado. Marcado para reproceso")
-
-                time.sleep(2)
-                continue
-
-            method, properties, body = channel.basic_get(
+            channel.queue_declare(
                 queue=QUEUE_BLOCKS,
-                auto_ack=False,
+                durable=True,
+            )
+            channel.queue_bind(
+                exchange=EXCHANGE_NAME,
+                queue=QUEUE_BLOCKS,
+                routing_key="blocks",
             )
 
-            if method:
-                bloque = json.loads(body)
-                procesar_bloque(channel, bloque, redis_client)
-                channel.basic_ack(delivery_tag=method.delivery_tag)
-            else:
-                time.sleep(2)
-        except Exception as e:
-          logger.error(f"Error en pool Manager: {e}")
+            channel.queue_declare(
+                queue=QUEUE_TASKS,
+                durable=True,
+            )
+            channel.basic_qos(prefetch_count=1)
+
+            logger.info(
+                "Pool Manager conectado a RabbitMQ"
+            )
+
+            while connection.is_open and channel.is_open:
+                estado = redis_client.get_bloque_en_proceso()
+
+                if estado and estado.get("reprocess"):
+                    bloque = estado["block"]
+
+                    logger.info(
+                        "Reprocesando bloque ID=%s",
+                        bloque["id"],
+                    )
+
+                    procesar_bloque(
+                        channel,
+                        bloque,
+                        redis_client,
+                    )
+
+                    time.sleep(2)
+                    continue
+
+                if (
+                    estado
+                    and estado.get("status") == "PROCESSING"
+                ):
+                    if redis_client.marcar_reproceso_si_expirado(
+                        WORKER_TIMEOUT
+                    ):
+                        logger.warning(
+                            "Bloque ID=%s expirado",
+                            estado["id"],
+                        )
+
+                    time.sleep(2)
+                    continue
+
+                method, _, body = channel.basic_get(
+                    queue=QUEUE_BLOCKS,
+                    auto_ack=False,
+                )
+
+                if method:
+                    bloque = json.loads(body)
+
+                    procesar_bloque(
+                        channel,
+                        bloque,
+                        redis_client,
+                    )
+
+                    channel.basic_ack(
+                        delivery_tag=method.delivery_tag
+                    )
+                else:
+                    time.sleep(2)
+
+        except Exception as error:
+            logger.error(
+                "Conexion RabbitMQ perdida: %s. "
+                "Reconectando en 5 segundos...",
+                error,
+            )
+
+        finally:
+            if connection is not None and connection.is_open:
+                try:
+                    connection.close()
+                except Exception:
+                    pass
+
+        time.sleep(5)
 
 def obtener_red_actual(client):
     network_env = os.getenv("DOCKER_NETWORK")

@@ -31,7 +31,11 @@ logger = get_logger(__name__)
 #                            FUNCIONES
 # ----------------------------------------------------------------------
 
-def crear_conexion() -> pika.BlockingConnection:
+def crear_conexion(
+    max_attempts=None,
+    wait_seconds=5,
+) -> pika.BlockingConnection:
+    attempts = 0
     """
     Establece y retorna una conexión con el servidor RabbitMQ. Es necesario tener host, puerto y credenciales definidas.
 
@@ -40,21 +44,43 @@ def crear_conexion() -> pika.BlockingConnection:
         configurado con las credenciales por defecto.
     """
 
-    while True:
-      try:
-        return pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=RABBIT_HOST,
-                port=RABBIT_PORT,
-                credentials=pika.PlainCredentials(RABBIT_USER, RABBIT_PASS),
+    while max_attempts is None or attempts < max_attempts:
+        try:
+            return pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=RABBIT_HOST,
+                    port=RABBIT_PORT,
+                    credentials=pika.PlainCredentials(
+                        RABBIT_USER,
+                        RABBIT_PASS,
+                    ),
+                    heartbeat=30,
+                    blocked_connection_timeout=30,
+                    connection_attempts=1,
+                    socket_timeout=5,
+                )
             )
-        )
-      except pika.exceptions.AMQPConnectionError:
-        logger.error("Fallo en la conexion con Rabbit, reintentando en 5 segundos...")
-        time.sleep(5)
+        except (pika.exceptions.AMQPError, OSError) as error:
+            attempts += 1
+
+            logger.warning(
+                "No se pudo conectar con RabbitMQ: %s",
+                error,
+            )
+
+            if max_attempts is not None and attempts >= max_attempts:
+                raise
+
+            time.sleep(wait_seconds)
+
+    raise pika.exceptions.AMQPConnectionError(
+        "No se pudo conectar con RabbitMQ"
+    )
 
 
-def crear_canal(connection: pika.BlockingConnection) -> BlockingChannel:
+def crear_canal(
+    connection: pika.BlockingConnection,
+) -> BlockingChannel:
     """
     Crea un canal, declara la cola y configura un exchange de tipo Topic.
 
@@ -73,6 +99,9 @@ def crear_canal(connection: pika.BlockingConnection) -> BlockingChannel:
     channel = connection.channel()
     channel.queue_declare(queue=QUEUE_NAME, durable=True)
     channel.exchange_declare(
-        exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True
+        exchange=EXCHANGE_NAME,
+        exchange_type=EXCHANGE_TYPE,
+        durable=True,
     )
+    channel.confirm_delivery()
     return channel
