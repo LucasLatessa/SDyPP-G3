@@ -16,15 +16,8 @@ class RedisUtils:
 
     # Publicar el mensaje al inicio de la lista
     def publicar(self, mensaje, list_key=REDIS_LIST_KEY_NAME):
-        try:
-            # print("[REDIS] Mensaje a guardar")
-            # print(mensaje)
-            mensaje_json = json.dumps(mensaje)  # Convierte el mensaje a formato JSON
-            self.redis_client.lpush(
-                list_key, mensaje_json
-            )  # Inserta el mensaje al inicio de la lista
-        except Exception as e:
-            print(e)
+        mensaje_json = json.dumps(mensaje)
+        return self.redis_client.lpush(list_key, mensaje_json)
 
     # Recupero los ultimos mensajes, en base al count (osea, recupera los ultimos 10)
     def get_ultimos_mensajes(self, list_key=REDIS_LIST_KEY_NAME, count=10):

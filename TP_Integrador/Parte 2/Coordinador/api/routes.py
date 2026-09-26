@@ -15,6 +15,15 @@ from Shared.config import (
 )
 from Shared.utils.logger import get_logger
 import json, time
+from uuid import uuid4
+from redis.exceptions import RedisError
+from werkzeug.exceptions import BadRequest, UnsupportedMediaType
+from Shared.utils.reservas import liberar_reserva
+from Coordinador.services.validar_transaccion import (
+    validar_transaccion,
+    validar_property,
+    validar_tx_nft,
+)
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -53,76 +62,109 @@ def registrar_rutas(app, redis_client, processor_thread) -> None:
         Es necesario que el origen y el destino envien su clave publica para realizar la transaccion
         """
 
-        datos = request.get_json()
+        try:
+            datos = request.get_json()
+        except (BadRequest, UnsupportedMediaType):
+            return jsonify({"error": "Se requiere un objeto JSON válido."}), 400
 
-        # JSON valido
-        if isinstance(datos, str):
-          try:
-              datos = json.loads(datos)
-          except json.JSONDecodeError:
-              return jsonify({"error": "El formato de los datos no es un JSON válido"}), 400
-
-        #logger.info(f"Transacción recibida: {datos}")
-        logger.info("Transacción recibida.")
-
-        # ----------- VALIDACIONES ------------------
-           
-        ok, message = validar_transaccion(datos, redis_client)
-          
-        if not ok:
-          logger.error(message)
-          return (message, 400)
-        
-        logger.info("Transaccion valida.")
-
-        # -------------------------------------------
-
-        # Agregar el timestamp si la transaccion es Property
-        if datos["type"] == TipoTransaccion.PROPERTY.value:
-          logger.info(f"Trnasaccion de tipo de PROPERTY, se agrega timestamp")
-          datos["timestamp"] = time.time()
-        
-        rabbit_connection = None
+        r = redis_client.redis_client
+        token = str(uuid4())
+        reservas = []
+        connection = None
+        publicacion_iniciada = False
+        publicacion_confirmada = False
+        rechazo_confirmado = False
 
         try:
-            rabbit_connection = crear_conexion(
-                max_attempts=3,
-                wait_seconds=1,
-            )
-            rabbit_channel = crear_canal(rabbit_connection)
+            # Los validadores de la sección 2 sólo leen Redis.
+            ok, mensaje = validar_transaccion(datos, redis_client)
+            if not ok:
+                return jsonify({"error": mensaje}), 400
 
-            rabbit_channel.basic_publish(
+            tx_id = datos["data"]["tx_id"]
+            clave_tx = f"tx:aceptada:{tx_id}"
+
+            # Sin TTL: también debe impedir un replay después del minado.
+            if not r.set(clave_tx, token, nx=True):
+                return jsonify({
+                    "error": "La transacción ya fue recibida o está pendiente.",
+                    "tx_id": tx_id,
+                }), 409
+            reservas.append(clave_tx)
+
+            es_nft = datos["type"] in (
+                TipoTransaccion.PROPERTY.value,
+                TipoTransaccion.TX_NFT.value,
+            )
+            if es_nft:
+                clave_nft = f"lock:nft:{datos['data']['nft']}"
+                if not r.set(clave_nft, token, nx=True, ex=600):
+                    return jsonify({"error": "El NFT tiene una operación pendiente."}), 409
+                reservas.append(clave_nft)
+
+                # Reconsultar el propietario después de adquirir la reserva.
+                validador = (
+                    validar_property
+                    if datos["type"] == TipoTransaccion.PROPERTY.value
+                    else validar_tx_nft
+                )
+                ok, mensaje = validador(datos["data"], redis_client)
+                if not ok:
+                    return jsonify({"error": mensaje}), 409
+
+            mensaje = dict(datos)
+            if es_nft:
+                mensaje["_lock_token"] = token
+            if datos["type"] == TipoTransaccion.PROPERTY.value:
+                mensaje["timestamp"] = time.time()
+            body = json.dumps(mensaje, ensure_ascii=False, allow_nan=False)
+
+            connection = crear_conexion(max_attempts=3, wait_seconds=1)
+            channel = crear_canal(connection)
+            # crear_canal ya activa confirm_delivery() en este proyecto.
+            publicacion_iniciada = True
+            channel.basic_publish(
                 exchange="",
                 routing_key=QUEUE_NAME,
-                body=json.dumps(datos),
+                body=body,
+                mandatory=True,
                 properties=pika.BasicProperties(
                     delivery_mode=2,
                     content_type="application/json",
+                    message_id=tx_id,
                 ),
             )
+            publicacion_confirmada = True
+            return jsonify({"mensaje": "Transacción recibida y encolada", "tx_id": tx_id}), 200
 
-        except Exception as error:
-            logger.error(
-                "Error publicando la transaccion en RabbitMQ: %s",
-                error,
-            )
-
-            if datos["type"] == TipoTransaccion.PROPERTY.value:
-                redis_client.redis_client.delete(
-                    f"lock:nft:{datos['data']['nft']}"
-                )
-
-            return jsonify({"error": "Error al encolar"}), 500
-
+        except (pika.exceptions.UnroutableError, pika.exceptions.NackError):
+            rechazo_confirmado = True
+            logger.exception("RabbitMQ rechazó la publicación")
+            return jsonify({"error": "No se pudo encolar la transacción."}), 503
+        except (RedisError, pika.exceptions.AMQPError, OSError):
+            logger.exception("Fallo de infraestructura al recibir la transacción")
+            return jsonify({
+                "error": "No se pudo confirmar la operación. Conservá el mismo tx_id para consultar o reintentar."
+            }), 503
+        except Exception:
+            logger.exception("Error inesperado al recibir la transacción")
+            return jsonify({"error": "Error interno al procesar la transacción."}), 500
         finally:
-            if (
-                rabbit_connection is not None
-                and rabbit_connection.is_open
+            # Liberar sólo si sabemos que el mensaje no quedó publicado.
+            # Una desconexión durante basic_publish puede dejar resultado incierto.
+            if not publicacion_confirmada and (
+                not publicacion_iniciada or rechazo_confirmado
             ):
-                rabbit_connection.close()
-
-        logger.info("Transaccion recibida y encolada en Rabbit")
-        return "Transaccion recibida y encolada en Rabbit", 200
+                for clave in reversed(reservas):
+                    try:
+                        liberar_reserva(r, clave, token)
+                    except RedisError:
+                        logger.exception("No se pudo liberar la reserva %s", clave)
+            if connection is not None and connection.is_open:
+                try:
+                    connection.close()
+                except Exception:
+                    logger.exception("No se pudo cerrar la conexión RabbitMQ")
 
     "-------------------------------------------------------------------"
 

@@ -159,33 +159,16 @@ def validar_property(data, redis_client=None):
     Args:
         data: Valores en el apartado data
     """
-    claves_esperadas = {"nft", "owner"}
-    claves_recibidas = set(data.keys())
-    
-    if claves_recibidas != claves_esperadas:
-        return False, f"Para el tipo PROPERTY, 'data' debe contener exactamente: {claves_esperadas}"
-        
-    if not isinstance(data.get("nft"), str) or not isinstance(data.get("owner"), str):
-        return False, "'nft' y 'owner' deben ser cadenas de texto."
-
+    esperadas = {"tx_id", "nft", "owner"}
+    if not isinstance(data, dict) or set(data) != esperadas:
+        return False, f"Para PROPERTY, 'data' debe contener: {sorted(esperadas)}"
+    if not all(isinstance(data[k], str) and data[k] for k in ("nft", "owner")):
+        return False, "'nft' y 'owner' deben ser cadenas no vacías."
     if redis_client is None:
-        return False, "No se proporcionó el cliente Redis para validar PROPERTY"
-
-    nft_id = data["nft"]
-    
-    propietario_actual = obtener_propietario_actual_nft(nft_id, redis_client)
-    if propietario_actual is not None:
-        return False, f"El NFT {nft_id} ya existe en la blockchain"
-
-    # rserva en la DB PROCESANDO
-    # seteamos clave que expire en 10 minutos
-    lock_key = f"lock:nft:{nft_id}"
-
-    # devuelve true si pudo crear o none si ya existia
-    if not redis_client.redis_client.set(lock_key, "reservado", nx=True, ex=600):
-        return False, f"El NFT {nft_id} ya está en proceso de minería por otra transacción"
-
-    return True, "Data válida y NFT reservado para procesamiento"
+        return False, "No se proporcionó Redis."
+    if obtener_propietario_actual_nft(data["nft"], redis_client) is not None:
+        return False, "El NFT ya existe en la blockchain."
+    return True, "Data válida"
 
 def obtener_propietario_actual_nft(nft, redis_client):
   """
@@ -198,9 +181,9 @@ def obtener_propietario_actual_nft(nft, redis_client):
   try:
       mensajes = redis_client.getAllTransactions()
       logger.debug(f"Recuperadas {len(mensajes)} transacciones de Redis para nft={nft}")
-  except Exception as e:
-      logger.error(f"Error leyendo transacciones de Redis: {e}")
-      return None
+  except Exception:
+      logger.exception("Error leyendo la blockchain para consultar el NFT")
+      raise
 
   def obtener_owner_desde_transaccion(transaccion):
       if not isinstance(transaccion, dict):
@@ -259,42 +242,20 @@ def validar_tx_nft(data, redis_client=None):
     Args:
         data: Valores en el apartado data
     """
-    claves_esperadas = {"nft", "origen", "destino"}
-    claves_recibidas = set(data.keys())
-    if claves_recibidas != claves_esperadas:
-        return False, f"Para el tipo TX_NFT, 'data' debe contener exactamente las claves: {claves_esperadas}"
-        
-    if not isinstance(data.get("nft"), str) or not isinstance(data.get("origen"), str) or not isinstance(data.get("destino"), str):
-        return False, "Todos los campos (nft, origen, destino) deben ser cadenas de texto."
-
+    esperadas = {"tx_id", "nft", "origen", "destino"}
+    if not isinstance(data, dict) or set(data) != esperadas:
+        return False, f"Para TX_NFT, 'data' debe contener: {sorted(esperadas)}"
+    if not all(isinstance(data[k], str) and data[k] for k in ("nft", "origen", "destino")):
+        return False, "'nft', 'origen' y 'destino' deben ser cadenas no vacías."
     if redis_client is None:
-            return False, "No se proporcionó el cliente Redis para validar TX_NFT"
+        return False, "No se proporcionó Redis."
 
-    nft_id = data["nft"]
-    origen = data["origen"]
-    lock_key = f"lock:nft:{nft_id}"
-
-    # buscamos el dueño en la blockchain definitiva
-    propietario_actual = obtener_propietario_actual_nft(nft_id, redis_client)
-    
-    if propietario_actual is None:
-        # si no existe en la blockchain, nos fijamos si hay un lock de registro
-        estado_lock = redis_client.redis_client.get(lock_key)
-        if estado_lock:
-            # lock existe pero no esta en la blockchain, es porque se esta minando
-            return False, f"El NFT {nft_id} se está registrando actualmente. Por favor, esperá a que se confirme."
-        return False, "El NFT no existe o no tiene un dueño registrado."
-
-    # si existe, validamos que quien transfiere sea el dueño
-    if propietario_actual != origen:
+    propietario = obtener_propietario_actual_nft(data["nft"], redis_client)
+    if propietario is None:
+        return False, "El NFT no existe o todavía no se confirmó."
+    if propietario != data["origen"]:
         return False, "El origen no es el dueño actual del NFT."
-    
-    # bloqueo de transferencia
-    # si el NFT ya esta en un bloque transfiriendose (o encolado), rebotamos (reservamos por 10 minutos)
-    if not redis_client.redis_client.set(lock_key, "transferencia_en_progreso", nx=True, ex=600):
-        return False, f"El NFT {nft_id} ya tiene una transferencia o registro pendiente"
-
-    return True, "Data válida y NFT bloqueado para transferencia"
+    return True, "Data válida"
       
 
 def validar_transaccion(datos, redis_client=None):
