@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key, lo
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from uuid import UUID
+import math 
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -114,31 +115,35 @@ def validar_campos_root(datos):
   
   
 def validar_tx(data):
-  """
-  Valida si la transaccion TX es valida
+    """
+    Valida si la transaccion TX es valida
 
-  Formato TX:
-    "data": {  
-      "monto"  : 2480,
-      "origen" : "pub_key_a",
-      "destino": "pub_key_b",
-    },
+    Formato TX:
+        "data": {  
+        "monto"  : 2480,
+        "origen" : "pub_key_a",
+        "destino": "pub_key_b",
+        },
 
-  Args:
-      data: Valores en el apartado data
-  """
-  claves_esperadas = {"monto", "origen", "destino"}
-  claves_recibidas = set(data.keys())
+    Args:
+        data: Valores en el apartado data
+    """
+    esperadas = {"tx_id", "monto", "origen", "destino"}
+    if not isinstance(data, dict) or set(data) != esperadas:
+        return False, f"Para TX, 'data' debe contener: {sorted(esperadas)}"
 
-  if claves_recibidas != claves_esperadas:
-      return False, f"Para el tipo TX, 'data' debe contener exactamente: {claves_esperadas}"
-  
-  if not isinstance(data.get("monto"), (int, float)):
-      return False, "'monto' debe ser un número."
-  if not isinstance(data.get("origen"), str) or not isinstance(data.get("destino"), str):
-      return False, "'origen' y 'destino' deben ser cadenas de texto."
-      
-  return True, "Data válida"
+    monto = data["monto"]
+    
+    if type(monto) not in (int, float):
+        return False, "'monto' debe ser un número, no un booleano."
+    if isinstance(monto, float) and not math.isfinite(monto):
+        return False, "'monto' debe ser finito."
+    if monto <= 0:
+        return False, "'monto' debe ser mayor que cero."
+    if not isinstance(data["origen"], str) or not isinstance(data["destino"], str):
+        return False, "'origen' y 'destino' deben ser cadenas."
+
+    return True, "Data válida"
   
 
 def validar_property(data, redis_client=None):
