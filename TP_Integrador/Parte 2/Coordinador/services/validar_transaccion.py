@@ -10,6 +10,7 @@ import re
 from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_ssh_public_key
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
+from uuid import UUID
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -81,20 +82,35 @@ def es_clave_publica_valida(clave_publica):
         return False
     
 def validar_campos_root(datos):
-  campos_permitidos = {"data", "type", "sign"}
+    if not isinstance(datos, dict):
+        return False, "El JSON debe ser un objeto."
 
-  campos_recibidos = set(datos.keys())
+    esperados = {"data", "type", "sign"}
+    recibidos = set(datos)
+    if recibidos != esperados:
+        return False, (
+            f"Campos faltantes: {sorted(esperados - recibidos)}; "
+            f"campos no permitidos: {sorted(recibidos - esperados)}"
+        )
 
-  if campos_recibidos != campos_permitidos:
-      extra = campos_recibidos - campos_permitidos
-      faltantes = campos_permitidos - campos_recibidos
+    if not isinstance(datos["data"], dict):
+        return False, "'data' debe ser un objeto."
+    if not isinstance(datos["type"], str):
+        return False, "'type' debe ser una cadena."
+    if not isinstance(datos["sign"], str) or not datos["sign"].strip():
+        return False, "'sign' debe ser una cadena no vacía."
 
-      if extra:
-          return False, f"Campos no permitidos: {list(extra)}"
-      if faltantes:
-          return False, f"Faltan campos obligatorios: {list(faltantes)}"
+    tx_id = datos["data"].get("tx_id")
+    if not isinstance(tx_id, str):
+        return False, "'data.tx_id' debe ser un UUID v4."
+    try:
+        identificador = UUID(tx_id)
+    except (ValueError, AttributeError):
+        return False, "'data.tx_id' no es un UUID válido."
+    if identificador.version != 4 or str(identificador) != tx_id:
+        return False, "'data.tx_id' debe ser un UUID v4 en formato canónico."
 
-  return True, "OK"
+    return True, "OK"
   
   
 def validar_tx(data):
