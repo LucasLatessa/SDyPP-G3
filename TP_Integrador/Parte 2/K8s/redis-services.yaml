@@ -3,6 +3,51 @@ kind: ConfigMap
 metadata:
   name: redis-ha-config
 data:
+  discover-master.sh: |
+    #!/bin/sh
+    # Obtener una direccion de maestro respaldada por la mayoria de los
+    # Sentinels accesibles que pueden completar el quorum de failover.
+    discover_master() {
+      DOMAIN="$1"
+      while :; do
+        IPS="$(nslookup redis-sentinel.default.svc.cluster.local \
+          2>/dev/null | awk '$1 == "Name:" { getline; if ($1 == "Address:") print $2 }' \
+          | sort -u || true)"
+        VOTES="$(mktemp)"
+
+        for IP in $IPS; do
+          QUORUM="$(redis-cli -h "$IP" -p 26379 --raw \
+            SENTINEL ckquorum mymaster 2>/dev/null || true)"
+          case "$QUORUM" in
+            OK*) ;;
+            *) continue ;;
+          esac
+
+          FOUND="$(redis-cli -h "$IP" -p 26379 --raw \
+            SENTINEL get-master-addr-by-name mymaster \
+            2>/dev/null | head -n 1 || true)"
+          case "$FOUND" in
+            redis-node-*."$DOMAIN") printf '%s\n' "$FOUND" >> "$VOTES" ;;
+          esac
+        done
+
+        RESPONSES="$(wc -l < "$VOTES")"
+        if [ "$RESPONSES" -ge 2 ]; then
+          WINNER="$(sort "$VOTES" | uniq -c | sort -nr | head -n 1)"
+          COUNT="$(printf '%s\n' "$WINNER" | awk '{print $1}')"
+          MASTER="$(printf '%s\n' "$WINNER" | awk '{print $2}')"
+          if [ "$COUNT" -gt "$((RESPONSES / 2))" ]; then
+            rm -f "$VOTES"
+            printf '%s\n' "$MASTER"
+            return 0
+          fi
+        fi
+
+        rm -f "$VOTES"
+        sleep 2
+      done
+    }
+
   start-redis.sh: |
     #!/bin/sh
     set -eu
@@ -10,23 +55,25 @@ data:
     mkdir -p /data/redis
     DOMAIN="redis-headless.default.svc.cluster.local"
     SELF="$HOSTNAME.$DOMAIN"
-    MASTER="redis-node-0.$DOMAIN"
+    . /config/discover-master.sh
 
-    # Consultar a Sentinel para recuperar el maestro actual.
-    for N in 0 1 2; do
-      FOUND="$(redis-cli \
-        -h "redis-node-$N.$DOMAIN" \
-        -p 26379 --raw \
-        SENTINEL get-master-addr-by-name mymaster \
-        2>/dev/null | head -n 1 || true)"
-
-      case "$FOUND" in
-        redis-node-*."$DOMAIN")
-          MASTER="$FOUND"
+    if [ "${REDIS_BOOTSTRAP:-false}" = "true" ] &&
+       [ "$HOSTNAME" = "redis-node-0" ]; then
+      MASTER="$SELF"
+    else
+      while :; do
+        MASTER="$(discover_master "$DOMAIN")"
+        if [ "$MASTER" = "$SELF" ]; then
           break
-          ;;
-      esac
-    done
+        fi
+        ROLE="$(REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli \
+          -h "$MASTER" --raw ROLE 2>/dev/null | head -n 1 || true)"
+        if [ "$ROLE" = "master" ]; then
+          break
+        fi
+        sleep 2
+      done
+    fi
 
     set -- redis-server \
       --bind 0.0.0.0 \
@@ -54,11 +101,14 @@ data:
     mkdir -p /data/sentinel
     DOMAIN="redis-headless.default.svc.cluster.local"
     CONFIG="/data/sentinel/sentinel.conf"
+    . /config/discover-master.sh
 
     if [ ! -f "$CONFIG" ]; then
-      until getent hosts "redis-node-0.$DOMAIN" >/dev/null; do
-        sleep 1
-      done
+      if [ "${REDIS_BOOTSTRAP:-false}" = "true" ]; then
+        MASTER="redis-node-0.$DOMAIN"
+      else
+        MASTER="$(discover_master "$DOMAIN")"
+      fi
 
       PASSWORD="$(printf '%s' "$REDIS_PASSWORD" |
         sed 's/\\/\\\\/g; s/"/\\"/g')"
@@ -72,7 +122,7 @@ data:
         echo "sentinel announce-hostnames yes"
         echo "sentinel announce-ip $HOSTNAME.$DOMAIN"
         echo "sentinel announce-port 26379"
-        echo "sentinel monitor mymaster redis-node-0.$DOMAIN 6379 2"
+        echo "sentinel monitor mymaster $MASTER 6379 2"
         printf 'sentinel auth-pass mymaster "%s"\n' "$PASSWORD"
         echo "sentinel down-after-milliseconds mymaster 5000"
         echo "sentinel failover-timeout mymaster 60000"
@@ -88,6 +138,7 @@ data:
 
     resolvers kubernetes
         parse-resolv-conf
+        accepted_payload_size 8192
         hold valid 5s
 
     defaults
@@ -110,9 +161,7 @@ data:
 
         default-server check resolvers kubernetes init-addr libc,none inter 2s fall 2 rise 1 on-marked-down shutdown-sessions
 
-        server redis-0 redis-node-0.redis-headless.default.svc.cluster.local:6379
-        server redis-1 redis-node-1.redis-headless.default.svc.cluster.local:6379
-        server redis-2 redis-node-2.redis-headless.default.svc.cluster.local:6379
+        server-template redis 1-10 _redis._tcp.redis-headless.default.svc.cluster.local resolvers kubernetes init-addr none check
 
 ---
 apiVersion: v1
@@ -129,6 +178,21 @@ spec:
       port: 6379
     - name: sentinel
       port: 26379
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-sentinel
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: redis-ha
+  ports:
+    - name: sentinel
+      port: 26379
+      targetPort: 26379
 
 ---
 apiVersion: apps/v1
@@ -169,6 +233,8 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: REDIS_PASSWORD
+            - name: REDIS_BOOTSTRAP
+              value: "false"
           ports:
             - containerPort: 6379
           readinessProbe:
@@ -193,6 +259,8 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: REDIS_PASSWORD
+            - name: REDIS_BOOTSTRAP
+              value: "false"
           ports:
             - containerPort: 26379
           readinessProbe:

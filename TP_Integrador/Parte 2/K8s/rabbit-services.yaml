@@ -3,19 +3,19 @@ kind: ConfigMap
 metadata:
   name: rabbitmq-ha-config
 data:
+  enabled_plugins: |
+    [rabbitmq_management,rabbitmq_peer_discovery_k8s].
   rabbitmq.conf: |
     listeners.tcp.default = 5672
     management.tcp.port = 15672
-
-    cluster_formation.peer_discovery_backend = classic_config
-    cluster_formation.classic_config.nodes.1 = rabbit@rabbitmq-0.rabbitmq-headless.default.svc.cluster.local
-    cluster_formation.classic_config.nodes.2 = rabbit@rabbitmq-1.rabbitmq-headless.default.svc.cluster.local
-    cluster_formation.classic_config.nodes.3 = rabbit@rabbitmq-2.rabbitmq-headless.default.svc.cluster.local
 
     cluster_partition_handling = pause_minority
 
     default_queue_type = quorum
     quorum_queue.initial_cluster_size = 3
+    quorum_queue.continuous_membership_reconciliation.enabled = true
+    quorum_queue.continuous_membership_reconciliation.target_group_size = 7
+    quorum_queue.continuous_membership_reconciliation.interval = 60000
 
 ---
 apiVersion: v1
@@ -165,6 +165,10 @@ spec:
               mountPath: /etc/rabbitmq/conf.d/30-cluster.conf
               subPath: rabbitmq.conf
 
+            - name: config
+              mountPath: /etc/rabbitmq/enabled_plugins
+              subPath: enabled_plugins
+
             - name: data
               mountPath: /var/lib/rabbitmq
 
@@ -208,7 +212,7 @@ kind: PodDisruptionBudget
 metadata:
   name: rabbitmq
 spec:
-  minAvailable: 2
+  maxUnavailable: 1
   selector:
     matchLabels:
       app: rabbitmq
