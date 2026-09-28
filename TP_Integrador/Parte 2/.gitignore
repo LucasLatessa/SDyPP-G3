@@ -12,3 +12,9 @@ unlucoin2
 *.pem
 *.key
 *.tfplan
+**/.env
+**/.env.*
+**/__pycache__
+**/*.pyc
+**/*.pem
+**/*.key
