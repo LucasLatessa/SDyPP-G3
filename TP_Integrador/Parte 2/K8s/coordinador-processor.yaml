@@ -1,25 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: coordinador
+  name: block-processor
   labels:
-    app: coordinador
+    app: block-processor
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
-      app: coordinador
+      app: block-processor
   template:
     metadata:
       labels:
-        app: coordinador
+        app: block-processor
     spec:
       containers:
-        - name: coordinador
+        - name: block-processor
           image: josuegaticaodato/coordinador:latest
           imagePullPolicy: Always
-          ports:
-            - containerPort: 5000
+          command: ["python", "-m", "Coordinador.processor"]
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
           env:
             - name: RABBIT_HOST
               value: rabbitmq
@@ -44,38 +52,3 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: REDIS_PASSWORD
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "256Mi"
-
-          readinessProbe:
-            httpGet:
-              path: /status/live
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 10
-
-          livenessProbe:
-            httpGet:
-              path: /status/live
-              port: 5000
-            initialDelaySeconds: 15
-            periodSeconds: 20
-
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: coordinador
-spec:
-  ports:
-    - port: 5000
-      targetPort: 5000
-  selector:
-    app: coordinador
-  type: ClusterIP

@@ -18,6 +18,9 @@ from Shared.utils.logger import get_logger
 from Shared.config import EXCHANGE_NAME, QUEUE_BLOCKS, QUEUE_TASKS, WORKER_TIMEOUT
 from Shared.utils.dificultad import disminuir_prefijo
 
+import threading
+from redis.exceptions import LockError
+
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
@@ -25,7 +28,12 @@ from kubernetes.client.rest import ApiException
 #                         CONFIGURACIONES
 # ----------------------------------------------------------------------
 
+POOL_MANAGER_LOCK = "lock:pool-manager:leader"
+LOCK_TTL = 30
+LOCK_RENEW_INTERVAL = 10
+
 logger = get_logger(__name__)
+
 
 # ----------------------------------------------------------------------
 #                            FUNCIONES
@@ -97,7 +105,10 @@ def publicar_tarea(channel, tarea: Dict[str, Any]) -> None:
         body=json.dumps(tarea),
     )
 
-def procesar_bloque(channel, bloque: Dict[str, Any], redis_client) -> None:
+def procesar_bloque(channel, bloque: Dict[str, Any], redis_client, detener=None) -> bool:
+    if detener is not None and detener.is_set():
+        return False
+
     logger.info(f"Bloque recibido ID={bloque['id']}")
 
     consumidores_activos = contar_workers_activos(channel)
@@ -108,13 +119,16 @@ def procesar_bloque(channel, bloque: Dict[str, Any], redis_client) -> None:
 
         levantar_worker_cpu_si_hace_falta(redis_client)
 
-        consumidores_activos = esperar_workers(channel, timeout=20)
+        consumidores_activos = esperar_workers(channel, timeout=20, detener=detener)
 
+        if detener is not None and detener.is_set():
+            return False
+        
         if consumidores_activos <= 0:
             redis_client.guardar_bloque_en_proceso(bloque, [])
             redis_client.marcar_reproceso_bloque("NO_WORKERS")
             logger.warning("No se pudo levantar ningun worker. Bloque marcado para reproceso")
-            return
+            return True
 
     prefijo_vigente = redis_client.get_prefijo()
 
@@ -139,6 +153,7 @@ def procesar_bloque(channel, bloque: Dict[str, Any], redis_client) -> None:
         publicar_tarea(channel, tarea)
 
     logger.info(f"Tareas publicadas para bloque ID={bloque['id']}")
+    return True 
 
 
 def callback(channel, method, properties, body) -> None:
@@ -159,12 +174,59 @@ def callback(channel, method, properties, body) -> None:
         logger.error(f"Error procesando bloque: {e}")
         channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
-def iniciar_pool_manager() -> None:
-    logger.info("Iniciando pool Manager...")
+def renovar_liderazgo(lock, detener: threading.Event) -> None:
+    while not detener.wait(LOCK_RENEW_INTERVAL):
+        try:
+            lock.extend(LOCK_TTL, replace_ttl=True)
+        except Exception:
+            logger.exception("Se perdio el liderazgo del Pool Manager.")
+            detener.set()
+            return
 
+
+def ejecutar_con_failover() -> None:
     redis_client = RedisUtils()
 
     while True:
+        lock = redis_client.redis_client.lock(
+            POOL_MANAGER_LOCK,
+            timeout=LOCK_TTL,
+            blocking_timeout=0,
+            thread_local=False,
+        )
+
+        if not lock.acquire(blocking=False):
+            logger.info("Pool Manager en espera: otro pod es el líder.")
+            time.sleep(5)
+            continue
+
+        logger.info("Pool Manager líder adquirido.")
+        detener = threading.Event()
+        renovador = threading.Thread(
+            target=renovar_liderazgo,
+            args=(lock, detener),
+            daemon=True,
+        )
+        renovador.start()
+
+        try:
+            iniciar_pool_manager(redis_client, detener)
+        finally:
+            detener.set()
+            renovador.join(timeout=2)
+
+            try:
+                if lock.owned():
+                    lock.release()
+            except LockError:
+                pass
+
+            logger.info("Pool Manager dejó el liderazgo.")
+
+def iniciar_pool_manager(redis_client, detener: threading.Event) -> None:
+    logger.info("Iniciando pool Manager...")
+
+    while not detener.is_set():
         connection = None
 
         try:
@@ -181,7 +243,7 @@ def iniciar_pool_manager() -> None:
                 "Pool Manager conectado a RabbitMQ"
             )
 
-            while connection.is_open and channel.is_open:
+            while connection.is_open and channel.is_open and not detener.is_set():
                 estado = redis_client.get_bloque_en_proceso()
 
                 if estado and estado.get("reprocess"):
@@ -189,7 +251,7 @@ def iniciar_pool_manager() -> None:
 
                     logger.info( "Reprocesando bloque ID=%s", bloque["id"])
 
-                    procesar_bloque( channel, bloque, redis_client )
+                    procesar_bloque( channel, bloque, redis_client, detener )
 
                     time.sleep(2)
                     continue
@@ -211,9 +273,13 @@ def iniciar_pool_manager() -> None:
                 if method:
                     bloque = json.loads(body)
 
-                    procesar_bloque( channel, bloque, redis_client)
+                    procesado = procesar_bloque( channel, bloque, redis_client, detener )
 
-                    channel.basic_ack( delivery_tag=method.delivery_tag )
+                    if not procesado:
+                        channel.basic_nack( delivery_tag=method.delivery_tag, requeue=True )
+                        break
+
+                    channel.basic_ack(delivery_tag=method.delivery_tag)
                 else:
                     time.sleep(2)
 
@@ -269,9 +335,8 @@ def levantar_worker_cpu_si_hace_falta(redis_client) -> bool:
         try:
             pod = v1.read_namespaced_pod(name=name, namespace=namespace)
             if pod.status.phase == "Running":
-                v1.create_namespaced_pod(namespace=namespace, body=pod_manifest)
                 disminuir_prefijo(redis_client, max_ceros=5)
-                logger.info( "Pod CPU creado; prefijo global revisado para los siguientes bloques." )
+                logger.info("El worker CPU ya está activo.")
                 return True
             else:
                 logger.warning(f"Worker CPU existe pero está en estado: {pod.status.phase}")
@@ -335,17 +400,25 @@ def levantar_worker_cpu_si_hace_falta(redis_client) -> bool:
         logger.error(f"No se pudo levantar worker CPU en Kubernetes: {e}")
         return False
 
-def esperar_workers(channel, timeout=20, intervalo=1) -> int:
-  while True:
-    # Cada 20 seg, preguntar
-    consumidores = contar_workers_activos(channel)
+def esperar_workers(channel, timeout=20, intervalo=1, detener=None) -> int:
+    limite = time.monotonic() + timeout
 
-    if consumidores > 0:
-        logger.info(f"¡Worker detectado! Cantidad de consumidores: {consumidores}")
-        return consumidores
+    while time.monotonic() < limite:
+        if detener is not None and detener.is_set():
+            return 0
 
-    #logger.info("Aún no hay workers activos. Reintentando...")
-    time.sleep(intervalo)
+        consumidores = contar_workers_activos(channel)
+
+        if consumidores > 0:
+            logger.info( "Worker detectado. Cantidad de consumidores: %s", consumidores)
+            return consumidores
+
+        if detener is not None:
+            detener.wait(intervalo)
+        else:
+            time.sleep(intervalo)
+
+    return 0
 
 
 # ----------------------------------------------------------------------
@@ -353,5 +426,4 @@ def esperar_workers(channel, timeout=20, intervalo=1) -> int:
 # ----------------------------------------------------------------------
 
 if __name__ == "__main__":
-    iniciar_pool_manager()
-    
+    ejecutar_con_failover()
