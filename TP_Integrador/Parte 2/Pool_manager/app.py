@@ -160,20 +160,10 @@ def iniciar_pool_manager() -> None:
             connection = crear_conexion(max_attempts=1)
             channel = crear_canal(connection)
 
-            channel.queue_declare(
-                queue=QUEUE_BLOCKS,
-                durable=True,
-            )
-            channel.queue_bind(
-                exchange=EXCHANGE_NAME,
-                queue=QUEUE_BLOCKS,
-                routing_key="blocks",
-            )
+            channel.queue_declare( queue=QUEUE_BLOCKS, durable=True)
+            channel.queue_bind( exchange=EXCHANGE_NAME, queue=QUEUE_BLOCKS, routing_key="blocks")
 
-            channel.queue_declare(
-                queue=QUEUE_TASKS,
-                durable=True,
-            )
+            channel.queue_declare( queue=QUEUE_TASKS, durable=True)
             channel.basic_qos(prefetch_count=1)
 
             logger.info(
@@ -186,31 +176,18 @@ def iniciar_pool_manager() -> None:
                 if estado and estado.get("reprocess"):
                     bloque = estado["block"]
 
-                    logger.info(
-                        "Reprocesando bloque ID=%s",
-                        bloque["id"],
-                    )
+                    logger.info( "Reprocesando bloque ID=%s", bloque["id"])
 
-                    procesar_bloque(
-                        channel,
-                        bloque,
-                        redis_client,
-                    )
+                    procesar_bloque( channel, bloque, redis_client )
 
                     time.sleep(2)
                     continue
 
-                if (
-                    estado
-                    and estado.get("status") == "PROCESSING"
-                ):
+                if ( estado and estado.get("status") == "PROCESSING" ):
                     if redis_client.marcar_reproceso_si_expirado(
                         WORKER_TIMEOUT
                     ):
-                        logger.warning(
-                            "Bloque ID=%s expirado",
-                            estado["id"],
-                        )
+                        logger.warning( "Bloque ID=%s expirado", estado["id"])
 
                     time.sleep(2)
                     continue
@@ -223,15 +200,9 @@ def iniciar_pool_manager() -> None:
                 if method:
                     bloque = json.loads(body)
 
-                    procesar_bloque(
-                        channel,
-                        bloque,
-                        redis_client,
-                    )
+                    procesar_bloque( channel, bloque, redis_client)
 
-                    channel.basic_ack(
-                        delivery_tag=method.delivery_tag
-                    )
+                    channel.basic_ack( delivery_tag=method.delivery_tag )
                 else:
                     time.sleep(2)
 

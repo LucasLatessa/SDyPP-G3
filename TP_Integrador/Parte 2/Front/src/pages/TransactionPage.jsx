@@ -9,7 +9,7 @@ import {
   getStoredWallets,
   saveStoredWallet,
 } from '../utils/crypto';
-const txIdRef = useRef(crypto.randomUUID());
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 const TX_TYPES = [
@@ -19,6 +19,7 @@ const TX_TYPES = [
 ];
 
 export default function TransactionPage() {
+  const txIdRef = useRef(crypto.randomUUID());
   const [txType, setTxType] = useState('TX');
   const [form, setForm] = useState({
     monto: '',

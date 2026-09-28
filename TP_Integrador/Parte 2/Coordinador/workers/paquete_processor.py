@@ -48,18 +48,13 @@ def procesar_paquetes(redis_client) -> None:
                 delivery_tags = []
 
                 for _ in range(TAMANO_BLOQUE_PROCESAR):
-                    method_frame, _, body = channel.basic_get(
-                        queue=QUEUE_NAME,
-                        auto_ack=False,
-                    )
+                    method_frame, _, body = channel.basic_get( queue=QUEUE_NAME, auto_ack=False)
 
                     if not method_frame:
                         break
 
                     paquete.append(json.loads(body))
-                    delivery_tags.append(
-                        method_frame.delivery_tag
-                    )
+                    delivery_tags.append( method_frame.delivery_tag )
 
                 if paquete:
                     logger.info(
@@ -97,9 +92,7 @@ def procesar_paquetes(redis_client) -> None:
                     # Se confirman las transacciones solamente después
                     # de publicar correctamente el bloque.
                     for delivery_tag in delivery_tags:
-                        channel.basic_ack(
-                            delivery_tag=delivery_tag
-                        )
+                        channel.basic_ack( delivery_tag=delivery_tag )
 
                     logger.info(
                         "Bloque enviado ID=%s",
