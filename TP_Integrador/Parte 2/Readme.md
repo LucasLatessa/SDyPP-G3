@@ -15,11 +15,17 @@ Manejar transferencias entre usuarios de forma segura y asegurando que el conten
 ```text
 📦 Parte 2
  ┣ 📂 Coordinador
+ ┣ 📂 front
  ┣ 📂 K8s
+ ┣ 📂 Pool_manager
+ ┣ 📂 rabbitmq-ha
+ ┣ 📂 redis-ha
  ┣ 📂 Services
+ ┣ 📂 Shared
  ┣ 📂 Terraform
  ┣ 📂 Worker--gpu
  ┣ 📂 Worker-cpu
+ ┣ 📜 Local.md
  ┗ 📜 README.md
 ```
 
