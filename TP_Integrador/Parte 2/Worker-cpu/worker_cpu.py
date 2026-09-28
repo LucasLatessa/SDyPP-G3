@@ -35,6 +35,9 @@ RABBIT_PORT = int(os.getenv("RABBIT_PORT", 5672))
 RABBIT_USER = os.getenv("RABBIT_USER")
 RABBIT_PASS = os.getenv("RABBIT_PASS")
 
+if not RABBIT_USER or not RABBIT_PASS:
+    raise RuntimeError("Faltan RABBIT_USER y/o RABBIT_PASS")
+
 
 # Configuración de mensajería
 QUEUE_TASKS = "task_queue"

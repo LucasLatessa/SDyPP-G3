@@ -1,5 +1,12 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+
+#ifndef MD5_MAX_MESSAGE_LEN
+#define MD5_MAX_MESSAGE_LEN 512
+#endif
+
+#define MD5_MAX_PADDED_LEN (((((MD5_MAX_MESSAGE_LEN - 1) + 8) / 64) + 1) * 64)
 
 __device__ uint32_t shifts[] = {  7, 12, 17, 22,  5,  9, 14, 20,  4, 11, 16, 23,  6, 10, 15, 21 };
 __device__ uint32_t sines[]  = { 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
@@ -18,22 +25,39 @@ __device__ uint32_t left_rotate(uint32_t x, uint32_t c) {
 __device__ void cuda_md5(const uint8_t* initial_msg, size_t initial_len, uint8_t* digest) {
     uint32_t h0, h1, h2, h3;
 
+    if (initial_len >= MD5_MAX_MESSAGE_LEN) {
+        for (int i = 0; i < 16; i++) {
+            digest[i] = 0;
+        }
+        return;
+    }
+
     // These vars will contain the hash
     h0 = 0x67452301;
     h1 = 0xefcdab89;
     h2 = 0x98badcfe;
     h3 = 0x10325476;
 
-    int new_len = ((((initial_len + 8) / 64) + 1) * 64) - 8;
+    int len = (int)initial_len;
+    int new_len = ((((len + 8) / 64) + 1) * 64) - 8;
+    int padded_len = new_len + 8;
 
-    uint8_t* msg = (uint8_t*)malloc(new_len + 64);
-    memcpy(msg, initial_msg, initial_len);
-    msg[initial_len] = 128; // append the "1" bit; most significant bit is "1"
-    for (int i = initial_len + 1; i < new_len; i++) {
+    if (padded_len > MD5_MAX_PADDED_LEN) {
+        for (int i = 0; i < 16; i++) {
+            digest[i] = 0;
+        }
+        return;
+    }
+
+    uint32_t msg_words[MD5_MAX_PADDED_LEN / sizeof(uint32_t)];
+    uint8_t *msg = (uint8_t *)msg_words;
+    memcpy(msg, initial_msg, len);
+    msg[len] = 128; // append the "1" bit; most significant bit is "1"
+    for (int i = len + 1; i < new_len; i++) {
         msg[i] = 0; // append "0" bits
     }
 
-    uint64_t bits_len = 8 * initial_len;
+    uint64_t bits_len = 8 * (uint64_t)initial_len;
     memcpy(msg + new_len, &bits_len, 8); // in little-endian
 
     for (int offset = 0; offset < new_len; offset += 64) {
@@ -69,8 +93,6 @@ __device__ void cuda_md5(const uint8_t* initial_msg, size_t initial_len, uint8_t
         h2 += c;
         h3 += d;
     }
-
-    free(msg);
 
     ((uint32_t*)digest)[0] = h0;
     ((uint32_t*)digest)[1] = h1;

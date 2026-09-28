@@ -24,9 +24,11 @@ if not COORDINADOR_URL:
 
 RABBIT_HOST = os.getenv("RABBIT_HOST", "localhost")
 RABBIT_PORT = int(os.getenv("RABBIT_PORT", "5672"))
-RABBIT_USER = os.getenv("RABBIT_USER", "grupo03")
-RABBIT_PASS = os.getenv("RABBIT_PASS", "grupo03")
+RABBIT_USER = os.getenv("RABBIT_USER")
+RABBIT_PASS = os.getenv("RABBIT_PASS")
 
+if not RABBIT_USER or not RABBIT_PASS:
+    raise RuntimeError("Faltan RABBIT_USER y/o RABBIT_PASS")
 QUEUE_TASKS = "task_queue"
 
 logging.basicConfig(

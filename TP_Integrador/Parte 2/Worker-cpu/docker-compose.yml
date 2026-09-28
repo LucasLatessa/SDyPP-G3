@@ -4,16 +4,12 @@ services:
     build:
       context: ..
       dockerfile: Worker-cpu/Dockerfile
-      args:
-        RABBIT_USER: ${RABBIT_USER:-sdypp}
-        RABBIT_PASS: ${RABBIT_PASS:-sdypp}
     container_name: sdyp-worker-cpu
-    restart: unless-stopped
     environment:
-      RABBIT_HOST: ${RABBIT_HOST:-34.150.250.236}
+      RABBIT_HOST: ${RABBIT_HOST:?Definir RABBIT_HOST}
       RABBIT_PORT: ${RABBIT_PORT:-5672}
-      RABBIT_USER: ${RABBIT_USER:-sdypp}
-      RABBIT_PASS: ${RABBIT_PASS:-sdypp}
-      ENDPOINT_COORDINADOR: ${ENDPOINT_COORDINADOR:-http://coordinador:5000/tarea_worker}
-      COORDINADOR_URL: ${COORDINADOR_URL:-http://coordinador:5000}
-      WORKER_ID: ${WORKER_ID:-worker-cpu-auto}
+      RABBIT_USER: ${RABBIT_USER:?Definir RABBIT_USER}
+      RABBIT_PASS: ${RABBIT_PASS:?Definir RABBIT_PASS}
+      ENDPOINT_COORDINADOR: ${ENDPOINT_COORDINADOR:?Definir ENDPOINT_COORDINADOR}
+      COORDINADOR_URL: ${COORDINADOR_URL:?Definir COORDINADOR_URL}
+      WORKER_ID: ${WORKER_ID:-worker-cpu-local}
