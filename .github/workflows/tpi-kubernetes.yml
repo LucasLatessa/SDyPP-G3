@@ -10,6 +10,8 @@ jobs:
     name: Build y Push de imagenes Docker (Coordinador, Pool Manager, Frontend, Worker CPU)
     if: startsWith(github.event.head_commit.message, '(go)')
     runs-on: ubuntu-latest
+    outputs:
+      frontend_digest: ${{ steps.build-frontend.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,6 +39,7 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/pool_manager:latest
 
       - name: Build-push frontend
+        id: build-frontend
         uses: docker/build-push-action@v5
         with:
           context: "./TP_Integrador/Parte 2/Front"
@@ -53,9 +56,6 @@ jobs:
           file: "./TP_Integrador/Parte 2/Worker-cpu/Dockerfile"
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/sdyp-worker-cpu:latest
-          build-args: |
-            RABBIT_USER=${{ secrets.RABBIT_USER }}
-            RABBIT_PASS=${{ secrets.RABBIT_PASS }}
 
   infra:
     name: Build K8S infra
@@ -91,7 +91,7 @@ jobs:
 
   deploy-apps:
     name: Despliegue de servicios y aplicaciones
-    needs: infra
+    needs: [build-images, infra]
     if: startsWith(github.event.head_commit.message, '(go)') || startsWith(github.event.head_commit.message, '(k8s)')
     runs-on: ubuntu-latest
 
@@ -129,11 +129,15 @@ jobs:
       - name: Deploy y Services app
         working-directory: "./TP_Integrador/Parte 2/K8s"
         env:
+          FRONTEND_IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/frontend
+          FRONTEND_DIGEST: ${{ needs.build-images.outputs.frontend_digest }}
           RABBIT_USER: ${{ secrets.RABBIT_USER }}
           RABBIT_PASS: ${{ secrets.RABBIT_PASS }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
           RABBITMQ_ERLANG_COOKIE: ${{ secrets.RABBITMQ_ERLANG_COOKIE }}
         run: |
+          : "${FRONTEND_DIGEST:?Missing frontend image digest}"
+
           kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
 
@@ -170,17 +174,21 @@ jobs:
 
           kubectl apply -f redis-services.yaml
           kubectl apply -f coordinador-services.yaml
+          kubectl apply -f coordinador-processor.yaml
+          kubectl apply -f coordinador-hpa.yaml
           kubectl apply -f pool-manager-services.yaml
           kubectl apply -f front-services.yaml
+          kubectl apply -f frontend-hpa.yaml
+          kubectl set image deployment/frontend frontend="${FRONTEND_IMAGE}@${FRONTEND_DIGEST}"
+          kubectl rollout status deployment/frontend --timeout=300s
 
           # Esperamos a que NGINX esté listo antes de mandarle las reglas de ruteo
           kubectl wait --namespace ingress-nginx --for=condition=available deployment/ingress-nginx-controller --timeout=180s
 
           kubectl apply -f ingress.yaml
 
-          # Forzamos el reinicio para que tomen la nueva imagen 'latest'
+          # El frontend ya se actualizó por digest; reiniciar los demás servicios.
           kubectl rollout restart deployment/coordinador
-          kubectl rollout restart deployment/frontend
           kubectl rollout restart deployment/pool-manager
           kubectl rollout restart deployment/redis
 
