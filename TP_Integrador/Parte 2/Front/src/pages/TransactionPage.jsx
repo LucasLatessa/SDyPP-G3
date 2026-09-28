@@ -9,7 +9,7 @@ import {
   getStoredWallets,
   saveStoredWallet,
 } from '../utils/crypto';
-
+const txIdRef = useRef(crypto.randomUUID());
 const API_URL = import.meta.env.VITE_API_URL;
 
 const TX_TYPES = [
@@ -71,6 +71,7 @@ export default function TransactionPage() {
     if (k === 'destino') {
       setDestPubKeyFile(null);
     }
+    setSign('')
   };
 
   // Handlers de archivos
@@ -235,6 +236,7 @@ export default function TransactionPage() {
 
       // Auto-firmar
       const testData = {
+        tx_id: txIdRef.current,
         monto: 50,
         origen: sender.publicKeyClean,
         destino: receiver.publicKeyClean,
@@ -256,13 +258,13 @@ export default function TransactionPage() {
     const dest = stripPemHeaders(form.destino);
 
     if (txType === 'TX') {
-      return { monto: Number(form.monto), origen: ori, destino: dest };
+      return { tx_id: txIdRef.current, monto: Number(form.monto), origen: ori, destino: dest };
     }
     if (txType === 'PROPERTY') {
-      return { nft: form.nft, owner: ori };
+      return { tx_id: txIdRef.current, nft: form.nft, owner: ori };
     }
     if (txType === 'TX_NFT') {
-      return { nft: form.nft, origen: ori, destino: dest };
+      return { tx_id: txIdRef.current, nft: form.nft, origen: ori, destino: dest };
     }
   };
 
@@ -323,6 +325,7 @@ export default function TransactionPage() {
   };
 
   const reset = () => {
+    txIdRef.current = crypto.randomUUID();
     setForm({ monto: '', origen: '', destino: '', nft: '', owner: '' });
     setSign('');
     setPubKeyFile(null);
