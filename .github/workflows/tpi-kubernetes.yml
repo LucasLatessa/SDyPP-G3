@@ -135,6 +135,7 @@ jobs:
           RABBIT_PASS: ${{ secrets.RABBIT_PASS }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
           RABBITMQ_ERLANG_COOKIE: ${{ secrets.RABBITMQ_ERLANG_COOKIE }}
+          WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
         run: |
           : "${FRONTEND_DIGEST:?Missing frontend image digest}"
 
@@ -154,6 +155,7 @@ jobs:
           : "${RABBIT_PASS:?Missing GitHub secret RABBIT_PASS}"
           : "${REDIS_PASSWORD:?Missing GitHub secret REDIS_PASSWORD}"
           : "${RABBITMQ_ERLANG_COOKIE:?Missing GitHub secret RABBITMQ_ERLANG_COOKIE}"
+          : "${WORKER_API_TOKEN:?Missing GitHub secret WORKER_API_TOKEN}"
 
           kubectl create secret generic app-secrets \
             --from-literal=RABBITMQ_DEFAULT_USER="${RABBIT_USER}" \
@@ -162,6 +164,7 @@ jobs:
             --from-literal=RABBIT_PASS="${RABBIT_PASS}" \
             --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
             --from-literal=RABBITMQ_ERLANG_COOKIE="${RABBITMQ_ERLANG_COOKIE}" \
+            --from-literal=WORKER_API_TOKEN="${WORKER_API_TOKEN}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
           # Elimina el RabbitMQ antiguo de una sola instancia.

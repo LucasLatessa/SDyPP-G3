@@ -9,10 +9,7 @@ import pika
 from Shared.messaging.rabbitmq import crear_conexion, crear_canal
 from Coordinador.services.blockchain_service import validar_guardar_bloque
 from Coordinador.services.validar_transaccion import validar_transaccion
-from Shared.config import (
-    QUEUE_NAME,
-    TipoTransaccion
-)
+from Shared.config import ( QUEUE_NAME, TipoTransaccion )
 from Shared.utils.logger import get_logger
 import json, time
 from uuid import uuid4
@@ -24,10 +21,16 @@ from Coordinador.services.validar_transaccion import (
     validar_property,
     validar_tx_nft,
 )
+import os
+import secrets
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
 # ----------------------------------------------------------------------
+
+WORKER_API_TOKEN = os.getenv("WORKER_API_TOKEN", "").strip()
+if not WORKER_API_TOKEN:
+    raise RuntimeError("Falta configurar WORKER_API_TOKEN")
 
 logger = get_logger(__name__)
 
@@ -173,6 +176,19 @@ def registrar_rutas(app, redis_client) -> None:
         """
         Recibe un bloque resuelto por un worker.
         """
+        esquema, _, token = request.headers.get("Authorization", "").partition(" ")
+
+        if ( esquema.lower() != "bearer" or not token
+            or not secrets.compare_digest(
+                token.encode("utf-8"),
+                WORKER_API_TOKEN.encode("utf-8") )
+        ):
+            return (
+                jsonify({"error": "Token de worker inválido o ausente"}),
+                401,
+                {"WWW-Authenticate": "Bearer"},
+            )
+        
         data = request.get_json(silent=True)
 
         if not isinstance(data, dict):

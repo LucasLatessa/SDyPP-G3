@@ -373,6 +373,15 @@ def levantar_worker_cpu_si_hace_falta(redis_client) -> bool:
             client.V1EnvVar(name="ENDPOINT_COORDINADOR", value="http://coordinador:5000/tarea_worker"),
             client.V1EnvVar(name="COORDINADOR_URL", value="http://coordinador:5000"),
             client.V1EnvVar(name="WORKER_ID", value=name),
+            client.V1EnvVar(
+                name="WORKER_API_TOKEN",
+                value_from=client.V1EnvVarSource(
+                    secret_key_ref=client.V1SecretKeySelector(
+                        name="app-secrets",
+                        key="WORKER_API_TOKEN",
+                    )
+                ),
+            ),
         ]
 
         # Definimos el contenedor

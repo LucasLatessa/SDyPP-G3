@@ -44,6 +44,11 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: REDIS_PASSWORD
+            - name: WORKER_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: WORKER_API_TOKEN
           resources:
             requests:
               cpu: "100m"
