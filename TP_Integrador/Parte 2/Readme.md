@@ -6,6 +6,8 @@ Manejar transferencias entre usuarios de forma segura y asegurando que el conten
 
 ## [Documentacion](https://docs.google.com/document/d/1-SNHJAbgMf1UBWImzGXjx7LE27BzxWo0tj-dMkY2ZgA/edit?usp=sharing)
 
+[Comparación de Redis y MySQL: fuentes oficiales y estimación aplicada al proyecto](Documentacion/Comparacion_Redis_MySQL.md).
+
 ## [Diagrama](https://miro.com/welcomeonboard/T3FBeFNHSDZ3ajRaSlNDQ3lmOHJxMHY5cTlPV3F5aGZjUlYrR0d0UkFnMVFvZVhvT1hNQmF3R3cwMW9DbnJJK2FRMjBrcWVtU2JOdGlGY2doYTl1dG4zOHVtN0x0ZmJBbm9oYWV6MkNxWTkxSFlDdStLYnFIejdFbURFZWNLUS90R2lncW1vRmFBVnlLcVJzTmdFdlNRPT0hdjE=?share_link_id=119593625078)
 
 ## Estructura del Repositorio
