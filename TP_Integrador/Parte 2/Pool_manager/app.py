@@ -16,6 +16,7 @@ from Shared.messaging.rabbitmq import crear_conexion, crear_canal
 from Shared.storage.redis import RedisUtils
 from Shared.utils.logger import get_logger
 from Shared.config import EXCHANGE_NAME, QUEUE_BLOCKS, QUEUE_TASKS, WORKER_TIMEOUT
+from Shared.utils.dificultad import disminuir_prefijo
 
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -105,7 +106,7 @@ def procesar_bloque(channel, bloque: Dict[str, Any], redis_client) -> None:
     if consumidores_activos <= 0:
         logger.warning("No hay workers activos. Intentando levantar worker CPU...")
 
-        levantar_worker_cpu_si_hace_falta()
+        levantar_worker_cpu_si_hace_falta(redis_client)
 
         consumidores_activos = esperar_workers(channel, timeout=20)
 
@@ -115,6 +116,16 @@ def procesar_bloque(channel, bloque: Dict[str, Any], redis_client) -> None:
             logger.warning("No se pudo levantar ningun worker. Bloque marcado para reproceso")
             return
 
+    prefijo_vigente = redis_client.get_prefijo()
+
+    if len(bloque["prefix"]) > len(prefijo_vigente):
+        logger.info(
+            "Bloque %s: prefijo %s -> %s antes de distribuir",
+            bloque["id"],
+            bloque["prefix"],
+            prefijo_vigente,
+        )
+        bloque["prefix"] = prefijo_vigente
 
     max_random = bloque["max_random"]
     rangos = dividir_rango(max_random, consumidores_activos)
@@ -241,7 +252,7 @@ def obtener_red_actual(client):
     return None
 
 
-def levantar_worker_cpu_si_hace_falta() -> bool:
+def levantar_worker_cpu_si_hace_falta(redis_client) -> bool:
     # if os.getenv("AUTO_START_WORKER_CPU", "false").lower() != "true":
     #     return False
     
@@ -258,7 +269,9 @@ def levantar_worker_cpu_si_hace_falta() -> bool:
         try:
             pod = v1.read_namespaced_pod(name=name, namespace=namespace)
             if pod.status.phase == "Running":
-                logger.info("Worker CPU automatico ya esta corriendo en K8s")
+                v1.create_namespaced_pod(namespace=namespace, body=pod_manifest)
+                disminuir_prefijo(redis_client, max_ceros=5)
+                logger.info( "Pod CPU creado; prefijo global revisado para los siguientes bloques." )
                 return True
             else:
                 logger.warning(f"Worker CPU existe pero está en estado: {pod.status.phase}")

@@ -11,6 +11,7 @@ from Shared.utils.logger import get_logger
 from Shared.config import WORKER_TIMEOUT, BLOQUES_MINIMOS_DISMINUIR_PREFIJO, MINIMO_PROMEDIO_DISMINUIR_PREFIJO
 from Shared.config import (TipoTransaccion)
 from Shared.utils.reservas import liberar_reserva
+from Shared.utils.dificultad import disminuir_prefijo
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
 # ----------------------------------------------------------------------
@@ -20,17 +21,6 @@ logger = get_logger(__name__)
 # ----------------------------------------------------------------------
 #                            FUNCIONES
 # ----------------------------------------------------------------------
-
-def disminuir_prefijo(redis_client):
-    prefijo = redis_client.get_prefijo()
-
-    if len(prefijo) == 0:
-      logger.info(f"Prefijo minimo alcanzado: {prefijo}")
-      return
-    
-    prefijo = prefijo[1:]
-    redis_client.set_prefijo(prefijo)
-    logger.info(f"Prefijo DISMINUIDO actualizado: {prefijo}")
 
 def aumentar_prefijo(redis_client):
     prefijo = redis_client.get_prefijo()
