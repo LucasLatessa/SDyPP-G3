@@ -5,7 +5,7 @@ metadata:
   labels:
     app: coordinador
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: coordinador
@@ -44,6 +44,33 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: REDIS_PASSWORD
+            - name: WORKER_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: WORKER_API_TOKEN
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          readinessProbe:
+            httpGet:
+              path: /status/live
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /status/live
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
 
 ---
 apiVersion: v1

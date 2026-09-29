@@ -5,11 +5,9 @@ Inicializa conexiones, rutas y procesos en background.
 
 from flask import Flask
 from flask_cors import CORS
-import threading
 
 from Shared.storage.redis import RedisUtils
 from Coordinador.api.routes import registrar_rutas
-from Coordinador.workers.paquete_processor import procesar_paquetes
 from Shared.utils.logger import get_logger
 
 # ----------------------------------------------------------------------
@@ -30,20 +28,8 @@ logger.info("Inicializando coordinador...")
 redis_client = RedisUtils()
 redis_client.inicializar_prefijo()
 
-thread = threading.Thread(
-    target=procesar_paquetes,
-    args=(redis_client,),
-    daemon=True,
-)
+registrar_rutas(app, redis_client)
 
-registrar_rutas(app, redis_client, thread)
-
-# ----------------------------------------------------------------------
-#                            BACKGROUND
-# ----------------------------------------------------------------------
-
-thread.start()
-logger.info("Thread de procesamiento iniciado")
 
 # ----------------------------------------------------------------------
 #                            MAIN

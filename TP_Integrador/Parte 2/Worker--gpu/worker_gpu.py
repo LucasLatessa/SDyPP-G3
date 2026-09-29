@@ -17,16 +17,28 @@ ENDPOINT_COORDINADOR = os.getenv(
 )
 
 COORDINADOR_URL = os.getenv("COORDINADOR_URL")
+
 if not COORDINADOR_URL:
     COORDINADOR_URL = ENDPOINT_COORDINADOR.rstrip("/")
     if COORDINADOR_URL.endswith("/tarea_worker"):
         COORDINADOR_URL = COORDINADOR_URL[: -len("/tarea_worker")]
 
+
+RABBIT_USER = os.getenv("RABBIT_USER")
+RABBIT_PASS = os.getenv("RABBIT_PASS")
+
+if not RABBIT_USER or not RABBIT_PASS:
+    raise RuntimeError("Faltan RABBIT_USER y/o RABBIT_PASS")
+
+WORKER_API_TOKEN = os.getenv("WORKER_API_TOKEN", "").strip()
+
+if not WORKER_API_TOKEN:
+    raise RuntimeError("Falta configurar WORKER_API_TOKEN")
+
 RABBIT_HOST = os.getenv("RABBIT_HOST", "localhost")
 RABBIT_PORT = int(os.getenv("RABBIT_PORT", "5672"))
-RABBIT_USER = os.getenv("RABBIT_USER", "grupo03")
-RABBIT_PASS = os.getenv("RABBIT_PASS", "grupo03")
 
+# Configuración de mensajería
 QUEUE_TASKS = "task_queue"
 
 logging.basicConfig(
@@ -38,9 +50,14 @@ logger = logging.getLogger(__name__)
 
 def enviar_resultado(resultado: dict[str, Any]) -> None:
     try:
-        response = requests.post(ENDPOINT_COORDINADOR, json=resultado, timeout=5)
+        response = requests.post(
+            ENDPOINT_COORDINADOR,
+            json=resultado,
+            headers={"Authorization": f"Bearer {WORKER_API_TOKEN}"},
+            timeout=5,
+        )
 
-        if response.status_code == 201:
+        if response.status_code in (200, 201):
             logger.info("Resultado enviado correctamente al coordinador")
         else:
             logger.warning(

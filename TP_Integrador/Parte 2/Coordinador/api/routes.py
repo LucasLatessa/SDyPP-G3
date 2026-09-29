@@ -9,14 +9,11 @@ import pika
 from Shared.messaging.rabbitmq import crear_conexion, crear_canal
 from Coordinador.services.blockchain_service import validar_guardar_bloque
 from Coordinador.services.validar_transaccion import validar_transaccion
-from Shared.config import (
-    QUEUE_NAME,
-    TipoTransaccion
-)
+from Shared.config import ( QUEUE_NAME, TipoTransaccion )
 from Shared.utils.logger import get_logger
 import json, time
 from uuid import uuid4
-from redis.exceptions import RedisError
+from redis.exceptions import RedisError, LockError
 from werkzeug.exceptions import BadRequest, UnsupportedMediaType
 from Shared.utils.reservas import liberar_reserva
 from Coordinador.services.validar_transaccion import (
@@ -24,10 +21,16 @@ from Coordinador.services.validar_transaccion import (
     validar_property,
     validar_tx_nft,
 )
+import os
+import secrets
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
 # ----------------------------------------------------------------------
+
+WORKER_API_TOKEN = os.getenv("WORKER_API_TOKEN", "").strip()
+if not WORKER_API_TOKEN:
+    raise RuntimeError("Falta configurar WORKER_API_TOKEN")
 
 logger = get_logger(__name__)
 
@@ -36,7 +39,7 @@ logger = get_logger(__name__)
 # ----------------------------------------------------------------------
 
 
-def registrar_rutas(app, redis_client, processor_thread) -> None:
+def registrar_rutas(app, redis_client) -> None:
     """
     Registra los endpoints en la aplicación Flask.
 
@@ -173,30 +176,98 @@ def registrar_rutas(app, redis_client, processor_thread) -> None:
         """
         Recibe un bloque resuelto por un worker.
         """
-        data = request.get_json()
+        esquema, _, token = request.headers.get("Authorization", "").partition(" ")
 
-        logger.info(f"Bloque recibido ID={data.get('id')}")
+        if ( esquema.lower() != "bearer" or not token
+            or not secrets.compare_digest(
+                token.encode("utf-8"),
+                WORKER_API_TOKEN.encode("utf-8") )
+        ):
+            return (
+                jsonify({"error": "Token de worker inválido o ausente"}),
+                401,
+                {"WWW-Authenticate": "Bearer"},
+            )
+        
+        data = request.get_json(silent=True)
+
+        if not isinstance(data, dict):
+            return jsonify({"error": "Se requiere un JSON válido."}), 400
+
+        block_id = data.get("id")
+
+        if not isinstance(block_id, str) or not block_id:
+            return jsonify({"error": "Falta un id de bloque válido."}), 400
 
         if data.get("found") is False:
-            registrado = redis_client.registrar_tarea_sin_solucion(
-                block_id=data["id"],
-                start=data["start"],
-                end=data["end"],
-                worker_id=data.get("worker_id"),
-            )
-
-            if not registrado:
-                return jsonify({"mensaje": "La tarea no coincide con el bloque en proceso"}), 409
-
-            return jsonify({"mensaje": "Tarea registrada sin solucion"}), 200
-
-
-        ok, mensaje = validar_guardar_bloque(data, redis_client)
-
-        if ok:
-            return jsonify({"mensaje": mensaje}), 201
+            requeridos = {"id", "found", "start", "end"}
         else:
+            requeridos = {
+                "id",
+                "found",
+                "numero",
+                "base_string_chain",
+                "blockchain_content",
+                "hash",
+                "prefix",
+                "tiempo_proceso",
+                "transaccion",
+            }
+
+        faltantes = requeridos - set(data)
+
+        if faltantes:
+            return jsonify({
+                "error": f"Faltan campos: {sorted(faltantes)}"
+            }), 400
+
+        lock = redis_client.redis_client.lock(
+            f"lock:resultado:{block_id}",
+            timeout=30,
+            blocking_timeout=3,
+        )
+
+        if not lock.acquire():
+            return jsonify({
+                "mensaje": "Otro resultado de este bloque está siendo procesado."
+            }), 409
+
+        try:
+            logger.info(f"Bloque recibido ID={block_id}")
+
+            if data["found"] is False:
+                registrado = redis_client.registrar_tarea_sin_solucion(
+                    block_id=block_id,
+                    start=data["start"],
+                    end=data["end"],
+                    worker_id=data.get("worker_id"),
+                )
+
+                if not registrado:
+                    return jsonify({
+                        "mensaje": "La tarea no coincide con el bloque en proceso"
+                    }), 409
+
+                return jsonify({
+                    "mensaje": "Tarea registrada sin solución"
+                }), 200
+
+            ok, mensaje = validar_guardar_bloque(data, redis_client)
+
+            if ok:
+                return jsonify({"mensaje": mensaje}), 201
+
             return jsonify({"mensaje": mensaje}), 400
+
+        finally:
+            try:
+                if lock.owned():
+                    lock.release()
+            except LockError:
+                logger.warning(
+                    "Se perdió o venció el lock del bloque %s",
+                    block_id,
+                )
         
     "-------------------------------------------------------------------"
     
@@ -261,31 +332,17 @@ def registrar_rutas(app, redis_client, processor_thread) -> None:
 
         except Exception as error:
             rabbit_ok = False
-            logger.warning(
-                "Healthcheck RabbitMQ fallo: %s",
-                error,
-            )
+            logger.warning( "Healthcheck RabbitMQ fallo: %s", error )
 
         finally:
-            if (
-                rabbit_connection is not None
-                and rabbit_connection.is_open
-            ):
+            if ( rabbit_connection is not None and rabbit_connection.is_open ):
                 rabbit_connection.close()
 
-        dependencies["rabbitmq"] = (
-            "ok" if rabbit_ok else "error"
-        )
+        dependencies["rabbitmq"] = ( "ok" if rabbit_ok else "error" )
 
-        dependencies["processor"] = (
-            "running" if processor_thread.is_alive() else "stopped"
-        )
+        dependencies["processor"] = "external"
 
-        healthy = (
-            dependencies["redis"] == "ok"
-            and dependencies["rabbitmq"] == "ok"
-            and dependencies["processor"] == "running"
-        )
+        healthy = ( dependencies["redis"] == "ok" and dependencies["rabbitmq"] == "ok" )
         payload = {
             "status": "ok" if healthy else "degraded",
             "dependencies": dependencies,

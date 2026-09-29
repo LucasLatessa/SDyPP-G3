@@ -3,10 +3,11 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "cuda_md5.cu"
-
 #define THREADS 256
 #define MAX_MESSAGE_LEN 512
+#define MD5_MAX_MESSAGE_LEN MAX_MESSAGE_LEN
+
+#include "cuda_md5.cu"
 
 __device__ void uint64_to_str(unsigned long long num, char *str, int *len) {
     int i = 0;
@@ -158,6 +159,12 @@ int main(int argc, char *argv[]) {
 
     if (input_len + 32 >= MAX_MESSAGE_LEN) {
         fprintf(stderr, "Input demasiado largo para MAX_MESSAGE_LEN\n");
+        write_json_empty();
+        return 1;
+    }
+
+    if (prefix_len > 32) {
+        fprintf(stderr, "Prefix demasiado largo para un hash MD5\n");
         write_json_empty();
         return 1;
     }
