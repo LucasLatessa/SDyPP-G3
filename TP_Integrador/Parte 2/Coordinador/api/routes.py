@@ -9,7 +9,13 @@ import pika
 from Shared.messaging.rabbitmq import crear_conexion, crear_canal
 from Coordinador.services.blockchain_service import validar_guardar_bloque
 from Coordinador.services.validar_transaccion import validar_transaccion
-from Shared.config import ( QUEUE_NAME, TipoTransaccion )
+from Shared.config import ( QUEUE_NAME,
+    QUEUE_BLOCKS,
+    QUEUE_TASKS,
+    REDIS_LIST_KEY_NAME,
+    PROCESSING_BLOCK_KEY,
+    TipoTransaccion,
+)
 from Shared.utils.logger import get_logger
 import json, time
 from uuid import uuid4
@@ -309,51 +315,166 @@ def registrar_rutas(app, redis_client) -> None:
 
     @app.route("/status", methods=["GET"])
     def status():
-        """
-        Estado completo del servicio y sus dependencias críticas.
-        """
-        dependencies = {}
-
-        try:
-            redis_client.redis_client.ping()
-            dependencies["redis"] = "ok"
-        except Exception as e:
-            dependencies["redis"] = "error"
-            logger.warning("Healthcheck Redis falló: %s", e)
+        checks = {
+            "redis": {"status": "error"},
+            "rabbitmq": {"status": "error"},
+            "block_processor": {"status": "error"},
+            "pool_manager": {"status": "error"},
+            "workers": {"status": "error", "active": 0},
+            "blockchain": {"status": "error"},
+        }
 
         rabbit_connection = None
 
+        # ---------------------------------------------------------------
+        # Redis, Block Processor, Pool Manager y blockchain
+        # ---------------------------------------------------------------
+        try:
+            r = redis_client.redis_client
+
+            r.ping()
+
+            # También comprueba que Redis permita escribir.
+            if not r.set(
+                "health:coordinator",
+                str(time.time()),
+                ex=30,
+            ):
+                raise RuntimeError("Redis no permitió escribir")
+
+            checks["redis"] = {
+                "status": "ok",
+            }
+
+            # El lock ya existe en la implementación actual.
+            pool_leader = bool(
+                r.exists("lock:pool-manager:leader")
+            )
+
+            checks["pool_manager"] = {
+                "status": "ok" if pool_leader else "error",
+                "leader": pool_leader,
+            }
+
+            # Heartbeat del Block Processor.
+            processor_raw = r.get("health:block-processor")
+
+            processor_age = None
+            processor_ok = False
+
+            if processor_raw:
+                processor_timestamp = float(processor_raw)
+                processor_age = time.time() - processor_timestamp
+                processor_ok = processor_age <= 120
+
+            checks["block_processor"] = {
+                "status": "ok" if processor_ok else "error",
+                "age_seconds": (
+                    round(processor_age, 2)
+                    if processor_age is not None
+                    else None
+                ),
+            }
+
+            prefix_raw = r.get("prefix_key")
+            prefix = (
+                prefix_raw.decode("utf-8")
+                if isinstance(prefix_raw, bytes)
+                else prefix_raw
+            )
+
+            checks["blockchain"] = {
+                "status": "ok" if prefix else "error",
+                "blocks": r.llen(REDIS_LIST_KEY_NAME),
+                "prefix": prefix,
+                "processing_block": bool(
+                    r.exists(PROCESSING_BLOCK_KEY)
+                ),
+            }
+
+        except Exception as error:
+            checks["redis"] = {
+                "status": "error",
+                "error": str(error),
+            }
+
+            logger.warning(
+                "Healthcheck Redis falló: %s",
+                error,
+            )
+
+        # ---------------------------------------------------------------
+        # RabbitMQ, colas y workers
+        # ---------------------------------------------------------------
         try:
             rabbit_connection = crear_conexion(
                 max_attempts=1,
                 wait_seconds=0,
             )
-            rabbit_ok = rabbit_connection.is_open
+
+            channel = rabbit_connection.channel()
+
+            queues = {}
+
+            for queue_name in (
+                QUEUE_NAME,
+                QUEUE_BLOCKS,
+                QUEUE_TASKS,
+            ):
+                result = channel.queue_declare(
+                    queue=queue_name,
+                    passive=True,
+                )
+
+                queues[queue_name] = {
+                    "messages": result.method.message_count,
+                    "consumers": result.method.consumer_count,
+                }
+
+            active_workers = queues[QUEUE_TASKS]["consumers"]
+
+            checks["rabbitmq"] = {
+                "status": "ok",
+                "queues": queues,
+            }
+
+            checks["workers"] = {
+                "status": "ok" if active_workers > 0 else "error",
+                "active": active_workers,
+            }
 
         except Exception as error:
-            rabbit_ok = False
-            logger.warning( "Healthcheck RabbitMQ fallo: %s", error )
+            checks["rabbitmq"] = {
+                "status": "error",
+                "error": str(error),
+            }
+
+            logger.warning(
+                "Healthcheck RabbitMQ falló: %s",
+                error,
+            )
 
         finally:
-            if ( rabbit_connection is not None and rabbit_connection.is_open ):
+            if (
+                rabbit_connection is not None
+                and rabbit_connection.is_open
+            ):
                 rabbit_connection.close()
 
-        dependencies["rabbitmq"] = ( "ok" if rabbit_ok else "error" )
+        # ---------------------------------------------------------------
+        # Resultado general
+        # ---------------------------------------------------------------
+        system_ok = all(
+            check["status"] == "ok"
+            for check in checks.values()
+        )
 
-        dependencies["processor"] = "external"
-
-        healthy = ( dependencies["redis"] == "ok" and dependencies["rabbitmq"] == "ok" )
         payload = {
-            "status": "ok" if healthy else "degraded",
-            "dependencies": dependencies,
+            "status": "ok" if system_ok else "degraded",
+            "checks": checks,
         }
 
-        logger.info(
-            "Healthcheck completo: status=%s dependencies=%s",
-            payload["status"],
-            dependencies,
-        )
-        return jsonify(payload), 200 if healthy else 503
+        return jsonify(payload), 200 if system_ok else 503
 
     @app.route("/status/live", methods=["GET"])
     def status_live():

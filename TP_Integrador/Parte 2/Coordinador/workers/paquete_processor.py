@@ -20,16 +20,14 @@ from Shared.config import (
 )
 from Shared.utils.logger import get_logger
 
-# ----------------------------------------------------------------------
-#                         CONFIGURACIONES
-# ----------------------------------------------------------------------
-
 logger = get_logger(__name__)
 
 # ----------------------------------------------------------------------
 #                            FUNCIONES
 # ----------------------------------------------------------------------
 
+PROCESSOR_HEARTBEAT_KEY = "health:block-processor"
+PROCESSOR_HEARTBEAT_TTL = 120
 
 def procesar_paquetes(redis_client) -> None:
     while True:
@@ -44,6 +42,8 @@ def procesar_paquetes(redis_client) -> None:
             )
 
             while connection.is_open and channel.is_open:
+                redis_client.redis_client.set( PROCESSOR_HEARTBEAT_KEY, str(time.time()), ex=PROCESSOR_HEARTBEAT_TTL )
+
                 paquete = []
                 delivery_tags = []
 

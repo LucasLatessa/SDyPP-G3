@@ -192,6 +192,8 @@ jobs:
 
           # El frontend ya se actualizó por digest; reiniciar los demás servicios.
           kubectl rollout restart deployment/coordinador
+          kubectl rollout restart deployment/block-processor
+          kubectl rollout status deployment/block-processor --timeout=300s
           kubectl rollout restart deployment/pool-manager
           kubectl rollout restart deployment/redis
 
