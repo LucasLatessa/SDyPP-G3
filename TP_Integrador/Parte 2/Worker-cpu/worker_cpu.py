@@ -98,8 +98,36 @@ def enviar_resultado(resultado) -> None:
         if response.status_code in (200, 201):
             logger.info("Resultado enviado correctamente al coordinador")
         else:
-            logger.warning(f"Error al enviar resultado: {response.status_code}")
+            try:
+                respuesta = response.json()
+            except ValueError:
+                respuesta = {}
 
+            mensaje = respuesta.get("mensaje", "")
+
+            if (
+                response.status_code == 400
+                and mensaje == "Bloque duplicado. Bloque descartado"
+            ):
+                logger.info(
+                    "El bloque %s ya fue confirmado por otro worker; "
+                    "la solucion propia se descarta.",
+                    resultado["id"],
+                )
+
+            elif response.status_code == 409:
+                logger.info(
+                    "Otro resultado del bloque %s se esta procesando; "
+                    "se detiene esta respuesta.",
+                    resultado["id"],
+                )
+
+            else:
+                logger.warning(
+                    "Error al enviar resultado: status=%s body=%s",
+                    response.status_code,
+                    response.text,
+                )
     except Exception as e:
         logger.error(f"Fallo al enviar resultado: {e}")
 
