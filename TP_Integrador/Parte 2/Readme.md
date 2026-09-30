@@ -31,18 +31,31 @@ Manejar transferencias entre usuarios de forma segura y asegurando que el conten
 cd "TP_Integrador\Parte 2"
 ```
 
+Antes de construir, crear `.env` con una clave de Redis local y un token compartido por el coordinador y el worker. El archivo `.env` queda excluido de Git:
+
+```powershell
+Copy-Item env.example .env
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+$rng.Dispose()
+$token = [BitConverter]::ToString($bytes).Replace('-', '').ToLowerInvariant()
+$lines = Get-Content .env
+$lines -replace '^WORKER_API_TOKEN=.*$', "WORKER_API_TOKEN=$token" |
+  Set-Content .env -Encoding ascii
+docker compose -p tp-integrador config --quiet
+```
+
 2. Construir la imagen del worker CPU. El pool manager usa Kubernetes en producción, por lo que en local el worker se inicia manualmente.
 
 ```powershell
 docker build `
 	--file Worker-cpu/Dockerfile `
-	--build-arg RABBIT_USER=grupo03 `
-	--build-arg RABBIT_PASS=grupo03 `
 	--tag sdyp-worker-cpu:latest `
 	.
 ```
 
-3. Levantar Redis, RabbitMQ, el coordinador, el pool manager y el frontend:
+3. Levantar Redis, RabbitMQ, el coordinador, el procesador de bloques, el pool manager y el frontend:
 
 ```powershell
 docker compose -p tp-integrador up --build -d
@@ -54,6 +67,7 @@ docker compose -p tp-integrador up --build -d
 docker run -d `
 	--name worker-cpu-local `
 	--network tp-integrador_default `
+	--env-file .env `
 	-e RABBIT_HOST=rabbitmq `
 	-e RABBIT_PORT=5672 `
 	-e RABBIT_USER=grupo03 `
@@ -90,6 +104,7 @@ Ver logs:
 
 ```powershell
 docker compose -p tp-integrador logs -f coordinador
+docker compose -p tp-integrador logs -f block_processor
 docker compose -p tp-integrador logs -f pool_manager
 docker logs -f worker-cpu-local
 ```
@@ -103,7 +118,7 @@ docker compose -p tp-integrador down
 
 ### Alternativa: worker CPU con Python
 
-También se puede ejecutar el worker desde el host. Desde `Parte 2/Worker-cpu`, instalar `pika`, `requests` y `python-dotenv`, configurar `RABBIT_HOST=localhost`, `RABBIT_USER=grupo03`, `RABBIT_PASS=grupo03` y `COORDINADOR_URL=http://localhost:5000`, y ejecutar:
+También se puede ejecutar el worker desde el host. Desde `Parte 2/Worker-cpu`, instalar `pika`, `requests` y `python-dotenv`, configurar `RABBIT_HOST=localhost`, `RABBIT_USER=grupo03`, `RABBIT_PASS=grupo03` y `COORDINADOR_URL=http://localhost:5000`. El worker carga `WORKER_API_TOKEN` desde el `.env` del directorio padre. Luego ejecutar:
 
 ```powershell
 python worker_cpu.py

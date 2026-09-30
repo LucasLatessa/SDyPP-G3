@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   redis-0:
     image: redis:7.4-alpine
     command: ["sh", "/scripts/start-redis.sh"]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
       REDIS_NODE_NAME: redis-0
     volumes:
       - ./redis-ha/redis/start-redis.sh:/scripts/start-redis.sh:ro
@@ -21,7 +19,7 @@ services:
     image: redis:7.4-alpine
     command: ["sh", "/scripts/start-redis.sh"]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
       REDIS_NODE_NAME: redis-1
     volumes:
       - ./redis-ha/redis/start-redis.sh:/scripts/start-redis.sh:ro
@@ -40,7 +38,7 @@ services:
     image: redis:7.4-alpine
     command: ["sh", "/scripts/start-redis.sh"]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
       REDIS_NODE_NAME: redis-2
     volumes:
       - ./redis-ha/redis/start-redis.sh:/scripts/start-redis.sh:ro
@@ -59,7 +57,7 @@ services:
     image: redis:7.4-alpine
     command: ["sh", "/scripts/start-sentinel.sh"]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
     volumes:
       - ./redis-ha/sentinel/sentinel.conf.template:/templates/sentinel.conf.template:ro
       - ./redis-ha/sentinel/start-sentinel.sh:/scripts/start-sentinel.sh:ro
@@ -77,7 +75,7 @@ services:
     image: redis:7.4-alpine
     command: ["sh", "/scripts/start-sentinel.sh"]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
     volumes:
       - ./redis-ha/sentinel/sentinel.conf.template:/templates/sentinel.conf.template:ro
       - ./redis-ha/sentinel/start-sentinel.sh:/scripts/start-sentinel.sh:ro
@@ -95,7 +93,7 @@ services:
     image: redis:7.4-alpine
     command: ["sh", "/scripts/start-sentinel.sh"]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
     volumes:
       - ./redis-ha/sentinel/sentinel.conf.template:/templates/sentinel.conf.template:ro
       - ./redis-ha/sentinel/start-sentinel.sh:/scripts/start-sentinel.sh:ro
@@ -113,7 +111,7 @@ services:
     image: haproxy:3.1-alpine
     command: ["sh", "/scripts/start-haproxy.sh"]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
     ports:
       - "6379:6379"
     volumes:
@@ -223,6 +221,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.coordinador
+    image: tp-integrador-coordinador:local
     depends_on:
       rabbitmq:
         condition: service_started
@@ -237,7 +236,24 @@ services:
       RABBIT_PASS: grupo03
       REDIS_HOST: redis
       REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
+      WORKER_API_TOKEN: ${WORKER_API_TOKEN:?Define WORKER_API_TOKEN in .env}
+    restart: unless-stopped
+
+  block_processor:
+    image: tp-integrador-coordinador:local
+    command: ["python", "-m", "Coordinador.processor"]
+    depends_on:
+      coordinador:
+        condition: service_started
+    environment:
+      RABBIT_HOST: rabbitmq
+      RABBIT_PORT: "5672"
+      RABBIT_USER: grupo03
+      RABBIT_PASS: grupo03
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
     restart: unless-stopped
 
   pool_manager:
@@ -256,17 +272,12 @@ services:
       RABBIT_PASS: grupo03
       REDIS_HOST: redis
       REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      AUTO_START_WORKER_CPU: "true"
-      WORKER_CPU_IMAGE: sdyp-worker-cpu:latest
-      AUTO_WORKER_CPU_NAME: worker_cpu_auto
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
     restart: unless-stopped
-  
+
   frontend:
     build:
-      context: ./front
+      context: ./Front
       dockerfile: Dockerfile  
       args:
         - VITE_API_URL=http://localhost:5000 
@@ -290,4 +301,4 @@ volumes:
   rabbitmq-1-data:
   rabbitmq-2-data:
 
-      
+

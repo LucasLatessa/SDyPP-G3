@@ -57,6 +57,8 @@ kubectl apply -f rabbit-services.yaml
 kubectl apply -f redis-services.yaml
 ```
 
+Con volúmenes vacíos, `redis-node-0` inicia como maestro para que los Sentinel puedan descubrirse a través de Redis. Los Sentinel crean su configuración inicial apuntando a ese nodo; después, las réplicas esperan la decisión por quorum. En reinicios con datos Redis persistidos, `redis-node-0` también consulta a Sentinel para respetar un maestro promovido. La semilla `redis-node-0` solo es segura en un arranque nuevo: si se pierden los PVC de Redis o Sentinel por separado, restaurar el estado del conjunto y el `sentinel.conf` con el maestro vigente antes de reiniciarlo.
+
 ### 5.3. Coordinador
 
 ```
@@ -101,4 +103,3 @@ kubectl get certificate
 ```
 
 Si dice READY: True, abre tu navegador en https://unlucoin.info
- 

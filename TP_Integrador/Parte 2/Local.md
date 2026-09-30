@@ -2,9 +2,10 @@
 
 El entorno local está compuesto por:
 
-- **Redis Stack**: persistencia de la blockchain y Redis Insight.
+- **Redis HA y Redis Insight**: persistencia de la blockchain y vista de los datos.
 - **RabbitMQ**: colas de transacciones y tareas, con interfaz de administración.
 - **Coordinador**: API Flask servida con Gunicorn.
+- **Procesador de bloques**: agrupa las transacciones y publica los desafíos.
 - **Pool Manager**: distribución de tareas hacia los workers.
 - **Worker CPU**: resolución local de desafíos Proof of Work.
 - **Frontend**: aplicación React servida por Nginx.
@@ -22,23 +23,35 @@ docker compose version
 
 Todos los comandos principales deben ejecutarse desde `TP_Integrador/Parte 2`:
 
+Crear `.env` antes de usar Compose. El ejemplo incluye la contraseña local de Redis; generar un token propio para que el coordinador y el worker puedan comunicarse:
+
+```powershell
+Copy-Item env.example .env
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+$rng.Dispose()
+$token = [BitConverter]::ToString($bytes).Replace('-', '').ToLowerInvariant()
+$lines = Get-Content .env
+$lines -replace '^WORKER_API_TOKEN=.*$', "WORKER_API_TOKEN=$token" |
+  Set-Content .env -Encoding ascii
+```
+
 Validar la configuración de Compose antes de levantarla:
 
 ```powershell
-docker compose -p tp-integrador config
+docker compose -p tp-integrador config --quiet
 ```
 
 El nombre `tp-integrador` identifica el proyecto Compose. Usarlo siempre evita mezclar esta instalación con otra.
 
 ## 3. Construir la imagen del worker CPU
 
-El worker CPU se construye antes de levantar el stack porque el `pool_manager` utiliza la imagen `sdyp-worker-cpu:latest`.
+El worker CPU se construye antes de levantar el stack para iniciarlo manualmente después de Compose.
 
 ```powershell
 docker build `
   --file Worker-cpu/Dockerfile `
-  --build-arg RABBIT_USER=grupo03 `
-  --build-arg RABBIT_PASS=grupo03 `
   --tag sdyp-worker-cpu:latest `
   .
 ```
@@ -51,7 +64,7 @@ docker image ls sdyp-worker-cpu
 
 ## 4. Levantar los servicios principales
 
-Este comando construye las imágenes locales del coordinador, pool manager y frontend, descarga Redis y RabbitMQ si hace falta, crea la red y arranca los contenedores en segundo plano:
+Este comando construye las imágenes locales del coordinador, pool manager y frontend, descarga Redis y RabbitMQ si hace falta, crea la red y arranca los contenedores (incluido el procesador de bloques) en segundo plano:
 
 ```powershell
 docker compose -p tp-integrador up --build -d
@@ -71,6 +84,7 @@ El worker debe estar en la misma red Docker que el coordinador y RabbitMQ. El no
 docker run -d `
   --name worker-cpu-local `
   --network tp-integrador_default `
+  --env-file .env `
   -e RABBIT_HOST=rabbitmq `
   -e RABBIT_PORT=5672 `
   -e RABBIT_USER=grupo03 `
@@ -101,6 +115,7 @@ docker rm -f worker-cpu-local
 docker run -d `
   --name worker-cpu-local `
   --network tp-integrador_default `
+  --env-file .env `
   -e RABBIT_HOST=rabbitmq `
   -e RABBIT_PORT=5672 `
   -e RABBIT_USER=grupo03 `
@@ -212,6 +227,7 @@ Logs de un servicio específico:
 
 ```powershell
 docker compose -p tp-integrador logs -f coordinador
+docker compose -p tp-integrador logs -f block_processor
 docker compose -p tp-integrador logs -f pool_manager
 docker compose -p tp-integrador logs -f redis
 docker compose -p tp-integrador logs -f rabbitmq
@@ -222,6 +238,7 @@ Mostrar solo las últimas líneas:
 
 ```powershell
 docker compose -p tp-integrador logs --tail 100 coordinador
+docker compose -p tp-integrador logs --tail 100 block_processor
 docker logs --tail 100 worker-cpu-local
 ```
 
@@ -293,6 +310,7 @@ docker rm -f worker-cpu-local
 docker run -d `
   --name worker-cpu-local `
   --network tp-integrador_default `
+  --env-file .env `
   -e RABBIT_HOST=rabbitmq `
   -e RABBIT_PORT=5672 `
   -e RABBIT_USER=grupo03 `

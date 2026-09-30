@@ -57,8 +57,11 @@ data:
     SELF="$HOSTNAME.$DOMAIN"
     . /config/discover-master.sh
 
+    # Solo el primer arranque de redis-node-0 puede omitir Sentinel.
+    # Con datos persistidos, incluso tras un failover, manda el quorum.
     if [ "${REDIS_BOOTSTRAP:-false}" = "true" ] &&
-       [ "$HOSTNAME" = "redis-node-0" ]; then
+       [ "$HOSTNAME" = "redis-node-0" ] &&
+       [ -z "$(ls -A /data/redis)" ]; then
       MASTER="$SELF"
     else
       while :; do
@@ -106,6 +109,11 @@ data:
     if [ ! -f "$CONFIG" ]; then
       if [ "${REDIS_BOOTSTRAP:-false}" = "true" ]; then
         MASTER="redis-node-0.$DOMAIN"
+        # El Service headless publica la IP incluso antes del readiness.
+        # Esperar su DNS evita que Sentinel falle durante el primer arranque.
+        until nslookup "$MASTER" >/dev/null 2>&1; do
+          sleep 2
+        done
       else
         MASTER="$(discover_master "$DOMAIN")"
       fi
@@ -234,7 +242,7 @@ spec:
                   name: app-secrets
                   key: REDIS_PASSWORD
             - name: REDIS_BOOTSTRAP
-              value: "false"
+              value: "true"
           ports:
             - containerPort: 6379
           readinessProbe:
@@ -260,7 +268,9 @@ spec:
                   name: app-secrets
                   key: REDIS_PASSWORD
             - name: REDIS_BOOTSTRAP
-              value: "false"
+              # Solo se usa cuando no existe sentinel.conf en el volumen.
+              # Redis sigue eligiendo al maestro por quorum de Sentinel.
+              value: "true"
           ports:
             - containerPort: 26379
           readinessProbe:
