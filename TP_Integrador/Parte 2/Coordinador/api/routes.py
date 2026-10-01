@@ -73,7 +73,9 @@ def registrar_rutas(app, redis_client) -> None:
 
         try:
             datos = request.get_json()
+            logger.info("Datos recibidos: %s", datos)
         except (BadRequest, UnsupportedMediaType):
+            logger.error("Error al recibir la transaccion: Se requiere un objeto JSON válido.")
             return jsonify({"error": "Se requiere un objeto JSON válido."}), 400
 
         r = redis_client.redis_client
@@ -144,6 +146,7 @@ def registrar_rutas(app, redis_client) -> None:
                 ),
             )
             publicacion_confirmada = True
+            logger.info("Transaccion encolada tx_id=%s", tx_id)
             return jsonify({"mensaje": "Transacción recibida y encolada", "tx_id": tx_id}), 200
 
         except (pika.exceptions.UnroutableError, pika.exceptions.NackError):

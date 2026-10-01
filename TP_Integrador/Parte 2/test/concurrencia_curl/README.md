@@ -95,6 +95,8 @@ Si el coordinador se encuentra corriendo en un cluster, una IP de red o un NodeP
 ```bash
 # Ejemplo contra contenedor Docker expuesto o IP de red local
 python test_curl_concurrente.py --url http://192.168.1.50:5000/transaccion -c 15 -n 100
+python test_curl_concurrente.py --url http://unlucoin.info/api/transaccion -c 15 -n 100
+
 
 # Ejemplo contra Ingress o servicio de Kubernetes
 python test_curl_concurrente.py --url http://coordinador.local/transaccion -c 25 -n 200
