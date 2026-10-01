@@ -62,12 +62,9 @@ def procesar_paquetes(redis_client) -> None:
                         len(paquete),
                     )
 
-                    prefijo = redis_client.get_prefijo()
-
                     bloque = {
                         "id": str(uuid.uuid4()),
                         "transaccion": paquete,
-                        "prefix": prefijo,
                         "base_string_chain": STRING_CHAIN,
                         "max_random": MAX_RANDOM,
                     }

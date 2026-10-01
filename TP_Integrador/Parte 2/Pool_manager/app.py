@@ -130,7 +130,7 @@ def procesar_bloque(channel, bloque: Dict[str, Any], redis_client, detener=None)
             logger.warning("No se pudo levantar ningun worker. Bloque marcado para reproceso")
             return True
 
-    prefijo_vigente = redis_client.get_prefijo()
+    bloque["prefix"] = redis_client.get_prefijo()
 
     ultimo = redis_client.get_ultimo()
 
@@ -140,15 +140,6 @@ def procesar_bloque(channel, bloque: Dict[str, Any], redis_client, detener=None)
     else:
         bloque["blockchain_content"] = ultimo["blockchain_content"]
         bloque["previous_block_hash"] = ultimo["hash"]
-
-    if len(bloque["prefix"]) > len(prefijo_vigente):
-        logger.info(
-            "Bloque %s: prefijo %s -> %s antes de distribuir",
-            bloque["id"],
-            bloque["prefix"],
-            prefijo_vigente,
-        )
-        bloque["prefix"] = prefijo_vigente
 
     max_random = bloque["max_random"]
     rangos = dividir_rango(max_random, consumidores_activos)
