@@ -16,4 +16,4 @@ COPY Coordinador/ ./Coordinador/
 
 ENV PYTHONPATH="/app"
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "Coordinador.app:app"]
+CMD ["gunicorn", "--config", "python:Coordinador.gunicorn_config", "Coordinador.app:app"]
