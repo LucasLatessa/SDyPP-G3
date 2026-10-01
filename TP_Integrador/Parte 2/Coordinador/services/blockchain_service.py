@@ -81,6 +81,35 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
         logger.warning(f"Bloque duplicado ID={data['id']}. Bloque descartado")
         return False, "Bloque duplicado. Bloque descartado"
 
+    if not data["hash"].startswith(data["prefix"]):
+        return False, "El hash no cumple la dificultad del bloque"
+
+    estado = redis_client.get_bloque_en_proceso()
+    if not estado or estado.get("id") != data["id"]:
+        return False, "El bloque no es el que está en proceso"
+
+    desafio = estado.get("block") or {}
+
+    for campo in (
+        "transaccion",
+        "prefix",
+        "base_string_chain",
+        "blockchain_content",
+    ):
+        if data.get(campo) != desafio.get(campo):
+            return False, f"El campo {campo} no coincide con el desafío"
+
+    ultimo = redis_client.get_ultimo()
+    hash_previo_actual = ultimo["hash"] if ultimo else "None"
+
+    if desafio.get("previous_block_hash") != hash_previo_actual:
+        redis_client.marcar_reproceso_bloque("STALE_HEAD")
+        return False, "La punta cambió; hay que volver a minar el bloque"
+
+    if ultimo and data["blockchain_content"] != ultimo["blockchain_content"]:
+        redis_client.marcar_reproceso_bloque("STALE_HEAD")
+        return False, "El bloque fue minado sobre una punta anterior"
+
     # Si el worker paso el tiempo maximo estipulado, disminuimos el prefijo para los bloques siguientes
     if data["tiempo_proceso"] > WORKER_TIMEOUT:
         disminuir_prefijo(redis_client)
@@ -95,20 +124,8 @@ def validar_guardar_bloque(data, redis_client) -> tuple[bool, str]:
     blockchain_content = calcular_hash_v2(blockchain_data)
 
     # Obtengo el bloque anterior para conectar, si no hay quiere decir que este es el origen
-    try:
-        bloque_previo = redis_client.get_ultimo()
-    except Exception as e:
-        logger.error(f"Error obteniendo bloque previo: {e}")
-        bloque_previo = None
-
-    if bloque_previo:
-        #print(f"Hash del bloque previo:  {bloque_previo["hash"]}")
-        data["previous_block"] = bloque_previo["hash"]
-        logger.info(f"Hash bloque previo {data['previous_block']}")
-    else:
-        #print(f"Hash del bloque previo: None")
-        logger.info("Hash bloque previo: None")
-        data["previous_block"] = "None"
+    data["previous_block"] = hash_previo_actual
+    logger.info("Hash bloque previo %s", hash_previo_actual)
 
     data["timestamp"] = time.time()
     data["blockchain_content"] = blockchain_content

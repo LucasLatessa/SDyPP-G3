@@ -62,7 +62,6 @@ def procesar_paquetes(redis_client) -> None:
                         len(paquete),
                     )
 
-                    last_element = redis_client.get_ultimo()
                     prefijo = redis_client.get_prefijo()
 
                     bloque = {
@@ -70,11 +69,6 @@ def procesar_paquetes(redis_client) -> None:
                         "transaccion": paquete,
                         "prefix": prefijo,
                         "base_string_chain": STRING_CHAIN,
-                        "blockchain_content": (
-                            last_element["blockchain_content"]
-                            if last_element
-                            else "[" + str(time.time()) + "]"
-                        ),
                         "max_random": MAX_RANDOM,
                     }
 

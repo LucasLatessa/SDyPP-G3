@@ -132,6 +132,15 @@ def procesar_bloque(channel, bloque: Dict[str, Any], redis_client, detener=None)
 
     prefijo_vigente = redis_client.get_prefijo()
 
+    ultimo = redis_client.get_ultimo()
+
+    if ultimo is None:
+        bloque.setdefault("blockchain_content", f"[{time.time()}]")
+        bloque["previous_block_hash"] = "None"
+    else:
+        bloque["blockchain_content"] = ultimo["blockchain_content"]
+        bloque["previous_block_hash"] = ultimo["hash"]
+
     if len(bloque["prefix"]) > len(prefijo_vigente):
         logger.info(
             "Bloque %s: prefijo %s -> %s antes de distribuir",
