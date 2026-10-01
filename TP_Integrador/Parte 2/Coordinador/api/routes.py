@@ -73,7 +73,7 @@ def registrar_rutas(app, redis_client) -> None:
 
         try:
             datos = request.get_json()
-            logger.info("Datos recibidos: %s", datos)
+            #logger.info("Datos recibidos: %s", datos)
         except (BadRequest, UnsupportedMediaType):
             logger.error("Error al recibir la transaccion: Se requiere un objeto JSON válido.")
             return jsonify({"error": "Se requiere un objeto JSON válido."}), 400
@@ -289,7 +289,7 @@ def registrar_rutas(app, redis_client) -> None:
        if not redis_client.exists_id(block_id):
           #print(block_id)
           redis_client.actualizar_updated_at(block_id)
-          logger.info("Bloque no resuelto. Actualizando updated_at")
+          #logger.info("Bloque no resuelto. Actualizando updated_at")
           return jsonify({"error": "Bloque no encontrado"}), 404
        
        return jsonify({

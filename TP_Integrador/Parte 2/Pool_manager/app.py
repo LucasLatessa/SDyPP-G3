@@ -331,11 +331,13 @@ def levantar_worker_cpu_si_hace_falta(redis_client) -> bool:
         v1 = client.CoreV1Api()
         namespace = "default"
 
+        # Disminuir prefijo
+        disminuir_prefijo(redis_client, max_ceros=5)
+        
         # Verificar si el pod ya existe
         try:
             pod = v1.read_namespaced_pod(name=name, namespace=namespace)
             if pod.status.phase == "Running":
-                disminuir_prefijo(redis_client, max_ceros=5)
                 logger.info("El worker CPU ya está activo.")
                 return True
             else:
