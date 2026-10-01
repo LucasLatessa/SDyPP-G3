@@ -9,6 +9,7 @@ from flask_cors import CORS
 from Shared.storage.redis import RedisUtils
 from Coordinador.api.routes import registrar_rutas
 from Shared.utils.logger import get_logger
+from Coordinador.processor import iniciar_procesador, detener_procesador
 
 # ----------------------------------------------------------------------
 #                         CONFIGURACIONES
@@ -34,17 +35,17 @@ registrar_rutas(app, redis_client)
 # ----------------------------------------------------------------------
 #                            MAIN
 # ----------------------------------------------------------------------
-
 if __name__ == "__main__":
-    logger.info("Servidor Flask iniciado")
-    app.run(host="0.0.0.0", debug=False)
+    control = iniciar_procesador()
 
-# if __name__ == "__main__":
-#     try:
-#         app.run(host="0.0.0.0", debug=True)
-#     except KeyboardInterrupt:
-#         # Definir una bandera para detener el hilo
-#         stop_event = threading.Event()
-#         # Solicitar detener el hilo
-#         stop_event.set()
-#         print("Servidor parado")
+    try:
+        logger.info("Servidor Flask iniciado")
+        app.run(
+            host="0.0.0.0",
+            port=5000,
+            debug=False,
+            use_reloader=False,
+        )
+    finally:
+        detener_procesador(control)
+

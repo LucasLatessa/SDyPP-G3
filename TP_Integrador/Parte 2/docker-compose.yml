@@ -240,22 +240,6 @@ services:
       WORKER_API_TOKEN: ${WORKER_API_TOKEN:?Define WORKER_API_TOKEN in .env}
     restart: unless-stopped
 
-  block_processor:
-    image: tp-integrador-coordinador:local
-    command: ["python", "-m", "Coordinador.processor"]
-    depends_on:
-      coordinador:
-        condition: service_started
-    environment:
-      RABBIT_HOST: rabbitmq
-      RABBIT_PORT: "5672"
-      RABBIT_USER: grupo03
-      RABBIT_PASS: grupo03
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?Define REDIS_PASSWORD in .env}
-    restart: unless-stopped
-
   pool_manager:
     build:
       context: .

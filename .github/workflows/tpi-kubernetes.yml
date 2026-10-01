@@ -177,7 +177,6 @@ jobs:
 
           kubectl apply -f redis-services.yaml
           kubectl apply -f coordinador-services.yaml
-          kubectl apply -f coordinador-processor.yaml
           kubectl apply -f coordinador-hpa.yaml
           kubectl apply -f pool-manager-services.yaml
           kubectl apply -f front-services.yaml
@@ -192,8 +191,6 @@ jobs:
 
           # El frontend ya se actualizó por digest; reiniciar los demás servicios.
           kubectl rollout restart deployment/coordinador
-          kubectl rollout restart deployment/block-processor
-          kubectl rollout status deployment/block-processor --timeout=300s
           kubectl rollout restart deployment/pool-manager
           kubectl rollout restart deployment/redis
 

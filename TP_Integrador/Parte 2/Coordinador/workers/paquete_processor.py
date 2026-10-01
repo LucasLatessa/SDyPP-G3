@@ -29,11 +29,20 @@ logger = get_logger(__name__)
 PROCESSOR_HEARTBEAT_KEY = "health:block-processor"
 PROCESSOR_HEARTBEAT_TTL = 120
 
-def procesar_paquetes(redis_client) -> None:
-    while True:
+class LiderazgoPerdido(Exception):
+    pass
+
+
+def verificar_liderazgo(lock, detener, finalizar):
+    if detener.is_set() or finalizar.is_set() or not lock.owned():
+        raise LiderazgoPerdido("El coordinador dejó de ser líder")
+
+def procesar_paquetes(redis_client, lock, detener, finalizar) -> None:
+    while not detener.is_set() and not finalizar.is_set():
         connection = None
 
         try:
+            verificar_liderazgo(lock, detener, finalizar)
             connection = crear_conexion(max_attempts=1)
             channel = crear_canal(connection)
 
@@ -42,12 +51,14 @@ def procesar_paquetes(redis_client) -> None:
             )
 
             while connection.is_open and channel.is_open:
+                verificar_liderazgo(lock, detener, finalizar)
                 redis_client.redis_client.set( PROCESSOR_HEARTBEAT_KEY, str(time.time()), ex=PROCESSOR_HEARTBEAT_TTL )
 
                 paquete = []
                 delivery_tags = []
 
                 for _ in range(TAMANO_BLOQUE_PROCESAR):
+                    verificar_liderazgo(lock, detener, finalizar)
                     method_frame, _, body = channel.basic_get( queue=QUEUE_NAME, auto_ack=False)
 
                     if not method_frame:
@@ -57,6 +68,7 @@ def procesar_paquetes(redis_client) -> None:
                     delivery_tags.append( method_frame.delivery_tag )
 
                 if paquete:
+                    verificar_liderazgo(lock, detener, finalizar)
                     logger.info(
                         "Procesando paquete de %s transacciones",
                         len(paquete),
@@ -94,7 +106,18 @@ def procesar_paquetes(redis_client) -> None:
                     "Pasaron %s segundos, procesamiento de paquetes",
                     PROCESS_INTERVAL,
                 )
-                time.sleep(PROCESS_INTERVAL)
+
+                limite = time.monotonic() + PROCESS_INTERVAL
+
+                while time.monotonic() < limite:
+                    verificar_liderazgo(lock, detener, finalizar)
+
+                    connection.process_data_events(
+                        time_limit=max( 0, min(1, limite - time.monotonic())),
+                    )
+
+        except LiderazgoPerdido:
+            raise
 
         except Exception as error:
             logger.error(
@@ -110,4 +133,8 @@ def procesar_paquetes(redis_client) -> None:
                 except Exception:
                     pass
 
-        time.sleep(5)
+        limite_reintento = time.monotonic() + 5
+
+        while time.monotonic() < limite_reintento:
+            if detener.is_set() or finalizar.wait(0.5):
+                return
