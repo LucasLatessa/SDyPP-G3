@@ -196,7 +196,6 @@ def ejecutar_con_failover() -> None:
         )
 
         if not lock.acquire(blocking=False):
-            logger.info("Pool Manager en espera: otro pod es el líder.")
             time.sleep(5)
             continue
 
