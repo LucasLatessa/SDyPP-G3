@@ -46,9 +46,7 @@ def procesar_paquetes(redis_client, lock, detener, finalizar) -> None:
             connection = crear_conexion(max_attempts=1)
             channel = crear_canal(connection)
 
-            logger.info(
-                "Procesador conectado a RabbitMQ"
-            )
+            logger.info( "Procesador conectado a RabbitMQ" )
 
             while connection.is_open and channel.is_open:
                 verificar_liderazgo(lock, detener, finalizar)

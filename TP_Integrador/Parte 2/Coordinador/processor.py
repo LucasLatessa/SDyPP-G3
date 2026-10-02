@@ -48,9 +48,6 @@ def ejecutar_con_failover(finalizar):
             adquirido = lock.acquire(blocking=False)
 
             if not adquirido:
-                logger.info(
-                    "Procesador en espera: otro coordinador es líder"
-                )
                 finalizar.wait(RETRY_INTERVAL)
                 continue
 
