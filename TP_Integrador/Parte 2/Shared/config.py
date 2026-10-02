@@ -49,8 +49,8 @@ class TipoTransaccion(Enum):
 PROCESSING_BLOCK_KEY = "processing_block"  
 
 # Configuracion para el procesamiento de paquetes
-TAMANO_BLOQUE_PROCESAR = 200
-PROCESS_INTERVAL = 60  # Deberia ser cada 60 segundos
+TAMANO_BLOQUE_PROCESAR = 10
+PROCESS_INTERVAL = 60  
 RABBIT_TIMEOUT = 10
 
 # 2^32 - 1 para alinearse con el tamanio maximo de un 
