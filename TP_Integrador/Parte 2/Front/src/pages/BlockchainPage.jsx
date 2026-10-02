@@ -285,14 +285,12 @@ function Stat({ label, val, color }) {
 export default function BlockchainPage() {
   const [blocks, setBlocks] = useState([]);
   const [prefijo, setPrefijo] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lastFetch, setLastFetch] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
 
   const fetchBlocks = useCallback(async () => {
-    setLoading(true);
-    setError('');
     try {
       const res = await fetch(`${API_URL}/blockchain`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -304,35 +302,46 @@ export default function BlockchainPage() {
       setLastFetch(new Date());
     } catch (err) {
       setError(`No se pudo conectar a ${API_URL}/blockchain — ${err.message}`);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
-const fetchPrefijo = useCallback(async () => {
-  try {
-    const res = await fetch(`${API_URL}/prefijo`);
-    
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    
-    const data = await res.text(); 
-    
-    setPrefijo(data); // Guardamos el valor en el estado
-  } catch (err) {
-    console.error(`Error obteniendo el prefijo: ${err.message}`);
-    // Opcional: manejar el error visualmente con un toast o estado de error
-    // setError(`No se pudo obtener el prefijo — ${err.message}`);
-  }
-}, []);
+  const fetchPrefijo = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/prefijo`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.text();
+      setPrefijo(data);
+    } catch (err) {
+      setError(`No se pudo obtener el prefijo — ${err.message}`);
+    }
+  }, []);
 
+  const refreshBlockchain = useCallback(async () => {
+    await Promise.all([fetchBlocks(), fetchPrefijo()]);
+    setLoading(false);
+  }, [fetchBlocks, fetchPrefijo]);
 
-  useEffect(() => { fetchBlocks(); fetchPrefijo();}, [fetchBlocks,fetchPrefijo]);
+  const handleRefresh = useCallback(() => {
+    setLoading(true);
+    setError('');
+    return refreshBlockchain();
+  }, [refreshBlockchain]);
+
+  const toggleAutoRefresh = () => {
+    if (!autoRefresh) handleRefresh();
+    setAutoRefresh(a => !a);
+  };
+
+  useEffect(() => {
+    const id = setTimeout(refreshBlockchain, 0);
+    return () => clearTimeout(id);
+  }, [refreshBlockchain]);
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const id = setInterval(fetchBlocks, 5000);
+    const id = setInterval(handleRefresh, 5000);
     return () => clearInterval(id);
-  }, [autoRefresh, fetchBlocks]);
+  }, [autoRefresh, handleRefresh]);
 
   const totalTxs = blocks.reduce((acc, b) => acc + (Array.isArray(b.transaccion) ? b.transaccion.length : 0), 0);
 
@@ -350,10 +359,10 @@ const fetchPrefijo = useCallback(async () => {
             <Stat label="PREFIJO ACTUAL" val={prefijo} color="var(--accent-green)" />
           </div>
           <div className={styles.controls}>
-            <button className={`${styles.refreshBtn} ${loading ? styles.refreshLoading : ''}`} onClick={fetchBlocks, fetchPrefijo} disabled={loading}>
+            <button className={`${styles.refreshBtn} ${loading ? styles.refreshLoading : ''}`} onClick={handleRefresh} disabled={loading}>
               {loading ? <span className={styles.spinner} /> : '↻'} ACTUALIZAR
             </button>
-            <button className={`${styles.autoBtn} ${autoRefresh ? styles.autoBtnOn : ''}`} onClick={() => setAutoRefresh(a => !a)}>
+            <button className={`${styles.autoBtn} ${autoRefresh ? styles.autoBtnOn : ''}`} onClick={toggleAutoRefresh}>
               {autoRefresh ? '■ LIVE ON' : '▶ LIVE'}
             </button>
           </div>

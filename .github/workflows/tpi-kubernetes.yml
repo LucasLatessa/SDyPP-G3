@@ -192,7 +192,7 @@ jobs:
           # El frontend ya se actualizó por digest; reiniciar los demás servicios.
           kubectl rollout restart deployment/coordinador
           kubectl rollout restart deployment/pool-manager
-          kubectl rollout restart deployment/redis
+          kubectl rollout restart deployment/redis-proxy
 
   infra-down:
     name: Eliminar K8s Infra
