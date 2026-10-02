@@ -332,7 +332,7 @@ def levantar_worker_cpu_si_hace_falta(redis_client) -> bool:
         namespace = "default"
 
         # Disminuir prefijo
-        disminuir_prefijo(redis_client, max_ceros=5)
+        disminuir_prefijo(redis_client, max_ceros=6)
         
         # Verificar si el pod ya existe
         try:
