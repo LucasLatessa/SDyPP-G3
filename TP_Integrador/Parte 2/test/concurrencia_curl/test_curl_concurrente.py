@@ -195,15 +195,6 @@ def ejecutar_test_concurrencia(
     print(f"   Máxima:  {lat_max:.2f} ms")
     print("-" * 70)
 
-    # Diagnóstico
-    if tasa_exito >= 99.0:
-        print(" [PASSED] El coordinador soporta la concurrencia solicitada satisfactoriamente.")
-    elif errores_500 > 0:
-        print(" [FAILED] Detectados errores HTTP 500. Posible cuello de botella en workers síncronos o bloqueo en dependencias.")
-    else:
-        print(f" [WARNING] Tasa de éxito {tasa_exito:.2f}%. Revisar logs del coordinador.")
-    print("=" * 70 + "\n")
-
     return {
         "concurrencia": concurrencia,
         "total_requests": total_requests,

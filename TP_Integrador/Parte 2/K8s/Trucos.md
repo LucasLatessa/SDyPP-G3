@@ -59,6 +59,12 @@ kubectl get challenges
 
 kubectl get clusterissuer
 
+#### Ver todos los logs para el coordinador u otra app
+
+kubectl logs -l app=coordinador -f --prefix=true --timestamps
+
 #### Pro Tip: Ahorra tiempo
 
 Set-Alias -Name k -Value kubectl
+
+
